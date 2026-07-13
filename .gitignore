@@ -6,3 +6,7 @@ node_modules/
 # scripts/build-static.cjs copies those into dist/). Not meant to be committed.
 build/
 
+# Ad-hoc copies of dist/ used for build-determinism testing (dist/ itself is
+# tracked and committed intentionally for deployment).
+dist_run*/
+

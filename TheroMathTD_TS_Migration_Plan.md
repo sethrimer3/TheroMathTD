@@ -22,20 +22,31 @@
   `<script type="module">` imports and no dev server/bundler is required.
 - **`package.json`:** `devDependencies` has `typescript@^5.7.0`, `eslint@^10.2.0`, `electron@^42.2.0`.
   No `@types/*` packages installed. `npm run typecheck` (`tsc --noEmit`) and `npm run build` both exist.
-- **Files converted so far (8 `.ts` files, all under strict mode, zero `any`):**
+- **Files converted so far (43 `.ts` files, all under strict mode, zero `any`):**
   `assets/uiTabManager.ts`, `assets/spireFloatingMenu.ts`, `assets/tabLockManager.ts`,
   `assets/spireTabVisibility.ts`, `assets/autoSave.ts`, `assets/preferences.ts`,
-  `scripts/core/formatting.ts`, `scripts/core/mathText.ts`.
-- **Remaining plain JavaScript:** **358 `.js` files** outside `dist/` and `node_modules` (dist is
-  build output and mirrors source 1:1 — it should never be migrated directly, only regenerated).
-  Total size of `assets/` + `scripts/` JS is ~6.0 MB / ~155,000 lines.
+  `scripts/core/formatting.ts`, `scripts/core/mathText.ts` (Phases 1–3), plus all 33 files under
+  `assets/data/towers/` (32 tower-definition modules + `index.ts`) and the new
+  `assets/data/towers/types.ts` (Phase 4).
+- **Migration count methodology (see `JavaToTypeScriptConversionPlan.md`'s "Documentation and Tooling
+  Repair" section for full detail):** a *converted* module is an authored `.ts` file excluding
+  `.d.ts`; a *remaining* module is an authored `.js` file with no same-path `.ts` sibling; `dist/`,
+  `build/`, and `node_modules/` are excluded from both counts; a compiled `.js` sibling of an
+  already-migrated `.ts` file is **not** double-counted as "remaining." (A prior version of this
+  document reported "358 remaining `.js` files" / "~366 total," which conflated the raw on-disk `.js`
+  count with the true remaining count — the 8 Phase 1–3 modules' compiled `.js` siblings were being
+  counted twice. That has been corrected below.)
+- **Remaining plain JavaScript (corrected):** **316 `.js` files** with no `.ts` sibling, outside
+  `dist/`, `build/`, and `node_modules/` (dist is build output and mirrors source 1:1 — it should
+  never be migrated directly, only regenerated).
 - **Everything currently compiles/lints clean**: `npm run typecheck`, `npm run build`, `npm run lint`
   all pass. `npm test` (smoke test) fails on 4 pre-existing, unrelated missing-favicon errors (not a
-  migration blocker).
+  migration blocker). `npm run test:unit` is 38/38.
 
-**Progress so far:** 8 of ~366 JS/TS source files converted (~2%), concentrated in navigation,
-persistence primitives, and user preferences — deliberately the lowest-risk, most widely-imported
-utility tier, per the existing plan's own stated strategy.
+**Progress so far:** 43 of 359 total authored JS/TS source modules converted (~12%), concentrated in
+navigation, persistence primitives, user preferences (Phases 1–3), and static tower-definition data
+(Phase 4) — deliberately the lowest-risk, most widely-imported utility/config tier, per the existing
+plan's own stated strategy.
 
 ---
 
@@ -65,9 +76,12 @@ utility tier, per the existing plan's own stated strategy.
 
 ### Structural groupings (for phase planning)
 
-- **`assets/data/towers/*.js`** (~24 files) — static tower definition tables. Declarative, no
-  simulation logic, no DOM. Excellent typing target: define one `TowerDefinition` schema and apply
-  it everywhere.
+- **`assets/data/towers/*.ts`** (33 files — corrected from a prior "~24" estimate by reading the
+  registry's imports directly: 32 tower-definition modules + `index.ts`) — static tower definition
+  tables. Declarative, no simulation logic, no DOM. **Migrated in full in Phase 4** (2026-07-13),
+  including a new shared `TowerDefinition` interface in `assets/data/towers/types.ts` and a derived
+  `TowerId` union exported from `index.ts`. See `JavaToTypeScriptConversionPlan.md`'s Phase 4 section
+  for the full file list, type design, and validation results.
 - **`assets/towerEquations/**`** (~25 files) — pure math/equation-rendering helpers per tower "letter."
   Mostly pure functions once `mathText.ts`/`formatting.ts` (already typed) are the only shared deps.
 - **`scripts/features/towers/**`** (~70 files) — the actual tower simulations (fractal generators,
@@ -159,15 +173,21 @@ updating that ledger document after each phase, per its own operating instructio
 ### Phases 1–3 — Navigation, core utilities, preferences (COMPLETE)
 8 files converted; see Section 1. No action needed.
 
-### Phase 4 — Static Configuration & Data Schemas *(next, already recommended by the existing plan)*
-**Scope:** `assets/data/towers/*.js` (~24 files, including `index.js`) and, if cleanly separable,
-`assets/towerEquations/**` static definition tables (as opposed to their render/compute logic).
-**Why first:** Purely declarative, minimal cross-file coupling, no DOM, no animation-frame loops.
-Defining one `TowerDefinition`/`TowerEquationDefinition` interface here pays for itself immediately
-in every later tower-related phase (5, 6, 8 below) by giving them a typed contract to consume instead
-of `any`.
-**Risk:** Low. Main risk is under-modeling optional/variant fields across the ~24 tower files — read
-several before committing to one shared interface shape.
+### Phase 4 — Static Configuration & Data Schemas (COMPLETE, 2026-07-13)
+**Scope executed:** `assets/data/towers/*.js` → `.ts` (33 files: 32 tower-definition modules +
+`index.ts`, corrected from the original "~24" estimate), plus a new `assets/data/towers/types.ts`.
+`assets/towerEquations/**` was **not** included in this phase — that cluster contains real
+compute/render logic (per the original Phase 6 scope below) rather than purely static tables, so it
+remains deferred.
+**Outcome:** All 33 files migrated (none excluded — every file in the folder is a single
+`Object.freeze({...})` literal or the registry's import/re-export, confirmed by reading every file in
+full). See `JavaToTypeScriptConversionPlan.md`'s Phase 4 section for the full type design, file list,
+and validation results (typecheck/build/lint clean, 38/38 unit tests, deterministic two-pass build
+diff).
+**Risk realized:** Low, as predicted. The one deviation from the original estimate was file count
+(33, not ~24) and required build-tooling work (tsconfig glob-based `include` +
+`scripts/sync-ts-output.cjs` rewritten for recursive discovery) as a prerequisite, which was not
+anticipated in the original phase description but did not change the risk profile.
 
 ### Phase 5 — Game State Containers
 **Scope:** `assets/state/cognitiveRealmState.js`, `assets/state/monetizationState.js`,
@@ -251,7 +271,8 @@ Once file-by-file conversion is complete:
 ## 5. Files/Modules To Tackle First vs. Last (Summary)
 
 **First (lowest risk, highest leverage, already largely done or next up):**
-navigation → core formatting/persistence → preferences → **tower data schemas (`assets/data/towers/*.js`)** → game-state containers → tower equation math.
+navigation → core formatting/persistence → preferences → **tower data schemas
+(`assets/data/towers/*.ts`, COMPLETE)** → game-state containers (next) → tower equation math.
 
 **Middle:** UI tab/menu/overlay controllers (parallelizable in small batches).
 
@@ -267,8 +288,10 @@ earlier phases.
 
 ## 6. Blockers / Dependencies Needing Action
 
-- **No blockers currently prevent starting Phase 4.** Tooling, strict mode, and the build pipeline are
-  already working end-to-end for 8 files.
+- **No blockers currently prevent starting Phase 5.** Tooling, strict mode, and the build pipeline are
+  already working end-to-end for 43 files, and `tsconfig.json`/`scripts/sync-ts-output.cjs` now
+  discover new `.ts` sources automatically via glob patterns rather than requiring a manual file-list
+  edit per phase.
 - **No `@types` packages need installing today** — no typed third-party npm runtime dependency was
   found imported into `assets/`/`scripts/`. If MathJax or another CDN-script global is encountered
   again in a new file, reuse/extend the existing `Window.MathJax` augmentation from

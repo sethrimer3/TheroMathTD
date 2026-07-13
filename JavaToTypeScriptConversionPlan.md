@@ -424,17 +424,17 @@ Do not treat this list as a fixed roadmap. Each completed phase must recommend t
 
 ## Next Suggested Step
 
-**Recommended Phase 4: Static Configuration and Tower Definition Data Schemas.**
+**Recommended Phase 5: Game State Containers (`assets/state/*.js`).**
 
-With navigation (Phase 1), core formatting/persistence primitives (Phase 2), and the user-preferences module (Phase 3) now typed, the next highest-leverage, lowest-risk slice is typing the static/config-shaped data that many gameplay systems read but that itself contains no simulation logic — e.g. tower definition tables, upgrade-cost tables, or other declarative config objects (the exact file(s) must be re-derived by reading this plan and inspecting the current repository at the start of that phase, per the standing operating instructions, rather than assumed from this note). This continues the "small, widely-imported utility/config tier before anything stateful/simulation-heavy" progression explicitly called out in Phase 3's rationale, and stays well clear of towers/enemies/combat/playfield-rendering runtime logic, which should remain deferred to a later phase once more of their typed dependencies exist.
+With navigation (Phase 1), core formatting/persistence primitives (Phase 2), user preferences (Phase 3), and static tower-definition data (Phase 4, including the new `TowerDefinition`/`TowerId` contract) now typed, the next highest-leverage, lowest-risk slice is `assets/state/cognitiveRealmState.js`, `assets/state/monetizationState.js`, `assets/state/resourceState.js`, and `assets/state/spireResourceState.js` (re-verify this exact file list by inspecting `assets/state/` at the start of that phase — do not assume it is unchanged from this note). These are small, focused, declarative-plus-simple-accessor files; typing them turns `AutoSaveSnapshot`'s currently-opaque `Record<string, unknown>` fields (Phase 2) into named types incrementally, without committing to the full "save-schema project" that is explicitly out of scope for any single phase (see `TheroMathTD_TS_Migration_Plan.md` Risk #6).
 
-**Acceptance criteria for Phase 4:**
-- The phase's actual file scope is re-derived by reading this plan plus a fresh inspection of the repository (do not assume the exact filename without checking; static config in this repo may be spread across several small files rather than one).
-- Migrated file(s) compile under strict TypeScript with literal unions/interfaces for each config shape (tower id, stat fields, cost curves, etc. as applicable) — no `any`, no unexplained non-null assertions, no `@ts-ignore`/`@ts-nocheck`.
-- `npm run typecheck` and `npm run build` clean; `npm run lint`/`npm test` show no new failures versus this document's Phase 3 baseline (the same 4 pre-existing favicon smoke-test errors are expected and not a regression).
-- Every existing importer of the migrated file(s) requires no changes beyond `tsconfig.json`'s `include` list (verified via `grep -l` for each migrated module's old `.js` import specifier).
-- `scripts/unit-test-core.cjs` (or a clearly-related sibling script, still framework-free `node:assert/strict`) gains tests for any non-trivial derived/computed values in the migrated config (e.g. a cost-scaling formula), not just static data presence.
-- Manual/browser verification confirms no visible change in whatever UI reads the migrated config (e.g. tower costs/stats displayed unchanged).
+**Acceptance criteria for Phase 5:**
+- The phase's actual file scope is re-derived by reading this plan plus a fresh inspection of `assets/state/` (do not assume the file list is unchanged from this note).
+- Migrated file(s) compile under strict TypeScript with explicit interfaces for each state shape — no `any`, no unexplained non-null assertions, no `@ts-ignore`/`@ts-nocheck`.
+- `npm run typecheck` and `npm run build` clean; `npm run lint`/`npm test` show no new failures versus this document's Phase 4 baseline (the same 4 pre-existing favicon smoke-test errors are expected and not a regression).
+- Every existing importer of the migrated file(s) requires no changes beyond `tsconfig.json`'s glob-based `include` (verified via `grep -rl` for each migrated module's old `.js` import specifier) — confirm the blast radius first since Phase 3's rationale flagged this cluster as "likely read by many playfield/tower/UI files."
+- `scripts/unit-test-core.cjs` (or a clearly-related sibling script, still framework-free `node:assert/strict`) gains tests for any non-trivial derived/computed values in the migrated state modules, not just static data presence.
+- Manual/browser verification confirms no visible change in whatever UI reads the migrated state, if a headless/automatable browser is available in that session; if not, record explicitly (as this session did for Phase 4) that manual verification was not performed rather than assuming it.
 - The plan document is updated in the same session per the standing "After implementation" instructions, including an Implementation Log entry that does not erase this or any prior entry.
 
 ---
@@ -533,3 +533,27 @@ See the "Phase 3 — User Preferences Module (`assets/preferences.js`) (COMPLETE
 - `assets/buildInfo.js#BUILD_NUMBER` incremented from 725 to 726.
 
 **Next suggested step:** See the "Next Suggested Step" section below (recommending Phase 4: Static Configuration and Tower Definition Data Schemas, or an equivalent bounded next slice).
+
+### 2026-07-13 — Documentation repair and Phase 4 executed
+
+**Status:** COMPLETE
+
+A fresh session re-read every required doc (`AGENT_START_HERE.md`, `AGENTS.md`, `docs/JAVASCRIPT_MODULE_SYSTEM.md`, both migration plan documents, `tsconfig.json`, `scripts/sync-ts-output.cjs`, `scripts/build-static.cjs`) and ran baselines. `npm run typecheck`/`npm run build` initially failed with `'tsc' is not recognized` because `node_modules/typescript` was absent despite being listed in `package.json`; `npm install` resolved this (1 package added, no `package.json` changes). After that, baseline `npm run typecheck`, `npm run build`, `npm run lint` were clean, `npm run test:unit` was 29/29, and `npm test` failed with the same 4 pre-existing favicon errors as every prior phase.
+
+**Documentation repair (see "Documentation and Tooling Repair" section above for full detail):**
+- Recomputed migration counts using an explicit, stated methodology (converted = authored `.ts` excl. `.d.ts`; remaining = authored `.js` with no `.ts` sibling; generated `dist`/`build`/`node_modules` excluded; compiled `.js` siblings of migrated `.ts` not double-counted as "remaining"). Found `TheroMathTD_TS_Migration_Plan.md`'s prior "358 remaining `.js` files" / "366 total" figures conflated raw JS-file count with true remaining-unconverted count (the 8 already-migrated modules' compiled `.js` siblings were being counted twice). Corrected pre-Phase-4 baseline: 8 converted, 350 remaining, 358 total. Corrected post-Phase-4: 43 converted, 316 remaining, 359 total.
+- Corrected `assets/data/towers/` file count from the stale "~24" in `TheroMathTD_TS_Migration_Plan.md` to the verified **33** (32 tower-definition imports in `index.js` + `index.js` itself), confirmed by reading the registry directly and counting.
+- Rewrote Core Migration Principle 9 (see the Core Migration Principles section above) to prohibit duplicate hand-authored JS/TS implementations of the same module while explicitly permitting the project's existing build-generated `.js`-sibling strategy — no change to the actual build architecture, only to the principle's wording, since the old wording contradicted the project's own accepted Decision Log entries.
+- Reworked TypeScript-source discovery for scalability: `tsconfig.json`'s `include` changed from an explicit 8-file list to glob patterns (`assets/**/*.ts`, `scripts/**/*.ts`) plus a `build`/`dist`/`node_modules` `exclude`; `scripts/sync-ts-output.cjs` rewritten to recursively walk `build/ts-out/` with Node's built-in `fs`/`path` (no glob package added) and copy back only compiled `.js` files that have a matching `.ts` source still present in the repo, rather than reading `tsconfig.json`'s (now glob-based) `include` list directly. Both `tsconfig.json` and `TheroMathTD_TS_Migration_Plan.md` updated to reflect this.
+
+**Phase 4 migration performed:** See the "Phase 4 — Static Tower Definition Data (`assets/data/towers/`) (COMPLETE)" section above for full detail. Summary:
+- Migrated all 33 files in `assets/data/towers/` (32 tower-definition modules + `index.js`) to strict TypeScript, plus introduced a new `assets/data/towers/types.ts` defining the shared `TowerDefinition` interface (9 required + 6 optional fields, each field's optionality/presence verified against all 33 original files before writing the interface, not assumed from a single example).
+- Every tower constant kept its `Object.freeze(...)` call, exact literal values, and exact export names; the object literal inside `Object.freeze()` is now `{...} as const satisfies TowerDefinition` (preserves literal types and validates shape without widening or unsafe-asserting).
+- `assets/data/towers/index.ts` kept its exact re-export block and `towers` array (same elements, same order), added `as const satisfies readonly TowerDefinition[]` on the array, and introduced `export type TowerId = (typeof towers)[number]['id']` derived directly from the completed registry.
+- No importer required changes — `assets/configuration.js` (the sole consumer of the registry) kept its existing `./data/towers/index.js` import specifier unchanged.
+- Extended `scripts/unit-test-core.cjs` with a new `importTowerRegistry()` helper and 9 new tests covering id uniqueness, numeric-field validity, `nextTierId` resolution, ordering/named-export consistency, gate/placeable special-casing, `Object.freeze` preservation, and two build-output invariants (every migrated `.ts` has a compiled `.js` sibling; no stray JS without a `.ts` source). Suite total: 38/38 passing.
+- `npm run typecheck`, `npm run build`, `npm run lint` all clean; `npm test` fails with the same 4 pre-existing favicon errors (re-confirmed byte-identical output before and after this session's changes); `npm run test:unit` 38/38.
+- Ran `npm run build` twice from a clean `build/` directory and diffed the two resulting `dist/` trees recursively — zero differences, confirming deterministic output.
+- Manual/browser verification was **not** performed this session (no browser-automation tool was invoked); this is recorded explicitly rather than assumed or claimed.
+
+**Next suggested step:** See the "Next Suggested Step" section below (recommending Phase 5: Game State Containers, `assets/state/*.js`).
