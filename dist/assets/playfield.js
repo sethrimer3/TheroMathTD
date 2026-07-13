@@ -246,10 +246,8 @@ const _EQUILATERAL_TRIANGLE_HEIGHT_RATIO = Math.sqrt(3) / 2;
 // Pre-calculated constants for performance optimization in tight render loops
 const _PI = Math.PI;
 const TWO_PI = Math.PI * 2;
-const HALF_PI = Math.PI / 2;
 const _PI_OVER_6 = Math.PI / 6;
 const _PI_TIMES_1_2 = Math.PI * 1.2;
-const HALF = 0.5;
 // Tunables for the β sticking sequence and slow effect cadence.
 const _BETA_STICK_HIT_COUNT = 3;
 const _BETA_STICK_HIT_INTERVAL = 0.18;
@@ -326,13 +324,6 @@ export class SimplePlayfield {
     // Track the most recent endless checkpoint so defeat screens can offer a retry.
     this.endlessCheckpoint = null;
     this.endlessCheckpointUsed = false;
-    this.autoWaveEnabled = true;
-    this.autoStartLeadTime = 5;
-    this.autoStartTimer = null;
-    this.autoStartDeadline = 0;
-    // Track the most recent endless checkpoint so defeat screens can offer a retry.
-    this.endlessCheckpoint = null;
-    this.endlessCheckpointUsed = false;
 
     // Combat stats manager will be initialized after needed methods are available
     this.combatStatsManager = null;
@@ -370,7 +361,6 @@ export class SimplePlayfield {
     this.alphaBursts = [];
     this.betaBursts = [];
     this.gammaBursts = [];
-      this.gammaStarBursts = [];
     this.gammaStarBursts = []; // Track star burst effects on enemies hit by gamma projectiles
     this.nuBursts = [];
     // Track swarm clouds from stored shot particles

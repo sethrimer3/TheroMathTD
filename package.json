@@ -7,7 +7,8 @@
     "doc": "docs"
   },
   "scripts": {
-    "build": "node scripts/build-static.cjs",
+    "typecheck": "tsc --noEmit",
+    "build": "tsc && node scripts/build-static.cjs",
     "desktop": "npm run build && electron .",
     "electron": "electron .",
     "lint": "eslint .",
@@ -27,6 +28,7 @@
   "homepage": "https://github.com/sethrimer3/TheroMathTD#readme",
   "devDependencies": {
     "electron": "^42.2.0",
-    "eslint": "^10.2.0"
+    "eslint": "^10.2.0",
+    "typescript": "^5.7.0"
   }
 }
