@@ -19,6 +19,8 @@
   },
   "include": [
     "assets/uiTabManager.ts",
-    "assets/spireFloatingMenu.ts"
+    "assets/spireFloatingMenu.ts",
+    "assets/tabLockManager.ts",
+    "assets/spireTabVisibility.ts"
   ]
 }
