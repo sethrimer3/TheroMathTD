@@ -121,7 +121,7 @@ No TypeScript conversion phase is recorded as complete in this plan.
 | 0 | Establish migration plan and agent handoff process | COMPLETE | `JavaToTypeScriptConversionPlan.md` created on 2026-07-13 |
 | 1 | Add incremental TypeScript infrastructure and migrate shared menu/tab navigation | COMPLETE | See Implementation Log entry 2026-07-13 (Phase 1) |
 | 2 | Core Formatting and Save/Persistence Utility Types | COMPLETE | See Phase 2 section and Implementation Log entry 2026-07-13 (Phase 2 executed) |
-| 3 | To be selected after Phase 2 based on dependency and risk findings | NOT STARTED | See **Next Suggested Step** |
+| 3 | User Preferences Module (`assets/preferences.js`) | IN PROGRESS | Started 2026-07-13; see Phase 3 section below |
 
 ---
 
@@ -183,11 +183,15 @@ See the Implementation Log entry dated 2026-07-13 ("Phase 1 executed") for the f
 
 ---
 
-## Next Suggested Step
+## Phase 3 — User Preferences Module (`assets/preferences.js`) (IN PROGRESS)
 
-### Phase 3 — User Preferences Module (`assets/preferences.js`) (proposed)
+**Status:** IN PROGRESS
+**Implementation start date:** 2026-07-13
+**Migration type:** Behavior-preserving migration
 
-**Status:** NOT STARTED
+**Live-document re-verification performed before implementation:** re-read this plan at the start of this session; "Next Suggested Step" still named this exact phase with the same suggested scope. `assets/preferences.js` was inspected directly: it is a single 1627-line file mixing (a) storage-backed preference get/set/normalize logic and (b) DOM-binding functions (`bind*`) that wire settings-page controls and mutate the DOM directly, plus a few dependent-getter injection points (`setGraphicsModeContext`, `setNotationRefreshHandler`, `setLoadoutSlotChangeHandler`, `setFrameRateLimitChangeHandler`). Its importers were enumerated via grep: `assets/main.js`, `assets/kufSimulation.js`, `assets/playfield/playfieldPreferences.js`, `assets/playfield/render/CrystalBackgroundRenderer.js`, `assets/playfield/render/RenderCoordinator.js`, `assets/playfield/render/layers/BackgroundRenderer.js`, `assets/playfield/render/layers/EnemyRenderer.js`, `assets/playfield/render/layers/TrackRenderer.js`, `assets/playfield/systems/BackgroundSwimmerSystem.js`, `assets/playfield/systems/TrackRiverSystem.js`, `assets/playfield/systems/VisualEffectsSystem.js`, `assets/playfield/ui/TowerSelectionWheel.js`, `assets/playfield/ui/WaveTallyOverlays.js`. All of these only *read* getter functions (e.g. `isLowGraphicsModeActive`, `areGlyphEquationsVisible`) — per the task's scope boundary, they stay JS and are not touched; only `preferences.js` itself (the module that owns/persists/validates the preference state) is in scope.
+
+**Scope executed exactly as proposed:** `assets/preferences.js` → `assets/preferences.ts`, using the same typed-adapter precedent as `autoSave.ts`/`spireFloatingMenu.ts` in prior phases (mixed pure-logic + DOM-binding file migrated as a single unit rather than split, since its dependencies are narrow and already null-safe).
 **Migration type:** Behavior-preserving migration (proposed)
 **Primary objective:** Type the user-preferences module now that its two most-used dependencies (`autoSave.ts`'s storage helpers/keys and `formatting.ts`'s notation enum) are already strictly typed, closing the loop on the remaining "small, widely-imported utility" tier before moving into anything stateful/simulation-heavy (towers, enemies, playfield).
 
