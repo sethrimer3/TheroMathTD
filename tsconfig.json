@@ -25,6 +25,7 @@
     "assets/spireTabVisibility.ts",
     "assets/autoSave.ts",
     "scripts/core/formatting.ts",
-    "scripts/core/mathText.ts"
+    "scripts/core/mathText.ts",
+    "assets/preferences.ts"
   ]
 }
