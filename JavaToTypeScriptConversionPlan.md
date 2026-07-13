@@ -124,172 +124,31 @@ No TypeScript conversion phase is recorded as complete in this plan.
 
 ---
 
+## Phase 1 — TypeScript Infrastructure and Shared Navigation Migration (COMPLETE)
+
+**Status:** COMPLETE (2026-07-13)
+**Migration type:** Behavior-preserving migration
+
+See the Implementation Log entry dated 2026-07-13 ("Phase 1 executed") for the full file list, types introduced, and validation results. Summary:
+
+- Converted `assets/uiTabManager.ts`, `assets/spireFloatingMenu.ts`, `assets/tabLockManager.ts`, and `assets/spireTabVisibility.ts` to strict TypeScript. These are the complete set of modules that own primary-tab state, tab locking, spire-tab visibility, and the floating Spire menu.
+- `assets/main.js` was **not** converted and required **no** edits — all four modules kept their existing public export names/shapes, so the existing `import ... from './foo.js'` specifiers in `main.js` continued to resolve unchanged once `tsc` emitted the compiled `.js` back next to each `.ts` source.
+- Added `typescript` devDependency, `tsconfig.json` (strict, DOM libs, `noEmitOnError`), `npm run typecheck`, and folded `tsc` + a small sync step into `npm run build`. Decision record and rationale are in the Decision Log below (why `outDir` is a separate `build/ts-out/` and not in place, and why plain `tsc` was chosen over Vite/esbuild).
+- `assets/tabLockManager.js` and `assets/spireTabVisibility.js` were *not* discovered by the original grep-for-`setActiveTab` pass because they don't call `setActiveTab` themselves — they were only found by reading this plan document, which had already landed in the repo mid-task via an unrelated merge. Any future phase should re-derive scope by reading this file first, per the operating instructions above, rather than relying solely on code search.
+
 ## Next Suggested Step
 
-### Phase 1 — TypeScript Infrastructure and Shared Navigation Migration
+### Phase 2 — Core Formatting and Save/Persistence Utility Types (proposed)
 
-**Status:** NOT STARTED  
-**Migration type:** Behavior-preserving migration  
-**Primary objective:** Introduce the minimum sustainable TypeScript build and validation infrastructure, then migrate the shared menu and tab-navigation ownership modules to strict TypeScript without changing the game’s appearance or behavior.
+**Status:** NOT STARTED
+**Migration type:** Behavior-preserving migration (proposed)
+**Primary objective:** Type the small, dependency-light utility modules that navigation and most other subsystems already import, before touching anything stateful or simulation-heavy.
 
-### Why this is the recommended first slice
+**Why this is the recommended next slice:** `assets/autoSave.js` (storage read/write, all the `*_STORAGE_KEY` constants) and `scripts/core/formatting.js` / `scripts/core/mathText.js` are imported nearly everywhere, including by the just-migrated navigation modules (`uiTabManager.ts` imports `readStorage`/`writeStorage`/`ACTIVE_TAB_STORAGE_KEY` from `autoSave.js` today, untyped). Typing these utilities next gives every subsequent phase (including navigation) real types for their common dependencies instead of implicit `any` from `allowJs`, without requiring any gameplay, combat, or save-schema changes.
 
-Navigation is already partly modularized and has relatively clear DOM and callback boundaries. It exercises several important TypeScript concerns—DOM element typing, finite tab identifiers, callback contracts, accessibility state, storage restoration, and JavaScript-to-TypeScript interoperation—without requiring the first phase to modify combat, simulations, save schemas, or balance logic.
+**Suggested scope:** `assets/autoSave.js` → `.ts` (storage helpers and key constants only — leave autosave *scheduling*/game-state serialization behavior behind a typed but otherwise unchanged surface), `scripts/core/formatting.js`, `scripts/core/mathText.js`.
 
-This phase should establish the migration pattern that later systems follow.
-
-### Required investigation
-
-Before changing extensions, trace the complete shared navigation boundary, including:
-
-- `assets/uiTabManager.js`
-- `assets/tabLockManager.js`
-- `assets/spireTabVisibility.js`
-- navigation responsibilities inside `assets/spireFloatingMenu.js`
-- relevant imports and callback wiring in `assets/main.js`
-- tab and panel markup in `index.html`
-- active-tab persistence in the current save/storage utilities
-- keyboard, pointer, touch, focus, ARIA, lock, and visibility behavior
-
-Do not assume every file containing “tab” or “menu” belongs in scope. Individual tab content, gameplay menus, overlays, tower systems, simulations, Codex content, achievements content, and settings internals remain JavaScript unless a minimal compatibility edit is required.
-
-### Infrastructure requirements
-
-Add the minimum maintainable infrastructure needed for JavaScript and TypeScript to coexist:
-
-- TypeScript development dependency
-- strict `tsconfig.json`
-- DOM library support
-- modern ES-module output or bundling
-- JavaScript coexistence during migration
-- `npm run typecheck`
-- a browser build that correctly compiles and loads `.ts` modules
-- preserved Electron startup
-- preserved static assets and `dist` behavior
-
-A standard tool such as Vite is acceptable if repository inspection shows it is the smallest reliable solution. Do not redesign the entire build system beyond what incremental TypeScript support requires.
-
-### Intended TypeScript scope
-
-Convert the modules that directly own shared navigation behavior. The final exact list must be determined from dependency tracing rather than blindly following filenames.
-
-Strong candidates are:
-
-- `assets/uiTabManager.js` → `assets/uiTabManager.ts`
-- `assets/tabLockManager.js` → `assets/tabLockManager.ts`
-- `assets/spireTabVisibility.js` → `assets/spireTabVisibility.ts`
-
-`assets/spireFloatingMenu.js` combines navigation with live resource-counter updates. The agent must inspect this coupling and choose the smallest safe option:
-
-1. migrate the complete controller if its dependency types can remain narrow and stable; or
-2. extract only shared navigation ownership into a typed module while retaining a small JavaScript resource-display adapter.
-
-Do not migrate unrelated resource, progression, or simulation systems merely to type this controller.
-
-`assets/main.js` must remain JavaScript in this phase. Minimal import and integration edits are permitted.
-
-### Types likely needed
-
-Use the identifiers and structures actually present in the codebase. Likely useful contracts include:
-
-- `TabId`
-- `SpireTabId`
-- `TabButtonElement`
-- `TabPanelElement`
-- `TabManagerOptions`
-- `TabManagerCallbacks`
-- `TabLockOptions`
-- `SpireTabVisibilityOptions`
-- `SpireFloatingMenuOptions`
-- controller return interfaces
-
-Prefer literal unions for finite identifiers, for example the actual current set derived from markup and code rather than a general `string`.
-
-### Behavior that must remain unchanged
-
-- default and restored active tab
-- active classes and panel visibility
-- `aria-pressed`, `aria-selected`, `aria-hidden`, `aria-disabled`, and `aria-expanded`
-- focus and `tabindex` behavior
-- left/right arrow navigation
-- numeric tab hotkeys
-- Enter and Space activation
-- overlay and text-input shortcut guards
-- tab-selection sound callbacks
-- stage-tab hover/focus animation
-- tutorial-based tab locks
-- Spire unlock visibility
-- floating Spire menu open/close behavior
-- resource-counter display behavior if `spireFloatingMenu` is touched
-- mouse, touch, and mobile portrait behavior
-- Electron behavior
-- active-tab storage compatibility
-- CSS selectors, classes, visual timing, and user-facing labels
-
-### Prohibited scope
-
-Do not:
-
-- convert `assets/main.js`
-- convert the entire `assets` directory
-- convert tower, enemy, combat, level, save, audio, simulation, or progression systems
-- redesign the menu or tab layout
-- alter unlock rules
-- alter save keys or formats
-- introduce React, Vue, Svelte, or another UI framework
-- mass-rename `.js` files
-- silence errors with widespread `any` or TypeScript suppression comments
-
-### Validation requirements
-
-Record a baseline and final result for all available commands, including at minimum:
-
-```bash
-npm install
-npm run lint
-npm test
-npm run build
-npm run typecheck
-```
-
-Add focused automated tests where practical for:
-
-1. default tab initialization;
-2. restoration of the stored active tab;
-3. selection of each accessible primary tab;
-4. safe rejection of unavailable or invalid tabs;
-5. active/inactive class and ARIA synchronization;
-6. keyboard navigation and direct hotkeys;
-7. text-input and overlay guards;
-8. tab lock and unlock state;
-9. Spire tab visibility;
-10. floating Spire menu navigation if included in the typed scope.
-
-Also verify manually or through browser automation:
-
-- startup without console errors;
-- all currently accessible tabs;
-- locked-tab behavior;
-- floating Spire navigation;
-- desktop viewport;
-- mobile portrait viewport;
-- Electron startup when the environment supports it.
-
-### Phase 1 completion criteria
-
-Phase 1 is complete only when:
-
-- TypeScript-aware build and type-check commands are operational;
-- JavaScript and TypeScript coexist without checking generated output into source folders;
-- the agreed shared navigation-owner modules are strict `.ts` source files;
-- `assets/main.js` remains the integration layer;
-- the game builds and launches;
-- existing smoke tests pass or are correctly adapted to the new build pipeline;
-- focused navigation tests pass;
-- no new browser console errors are observed;
-- navigation behavior is unchanged on desktop and mobile;
-- Electron startup is verified or the inability to test it is explicitly documented;
-- this plan is updated with the completed work and one newly recommended next phase.
+**Acceptance criteria:** same shape as Phase 1 — `npm run typecheck` and `npm run build` clean, `npm test`/`npm run lint` show no new failures versus the baseline recorded in this document, all existing importers (including `uiTabManager.ts`, `spireFloatingMenu.ts`, `tabLockManager.ts`, `spireTabVisibility.ts`, and `main.js`) require no changes beyond `tsconfig.json`'s `include` list, and manual browser verification shows no behavior change in number formatting, save/load, or active-tab restoration.
 
 ---
 
@@ -325,13 +184,23 @@ Do not treat this list as a fixed roadmap. Each completed phase must recommend t
 
 **Reasoning:** Navigation already has extracted owner modules, finite identifiers, visible acceptance criteria, and limited direct interaction with combat and simulation logic. It is a suitable proving ground for the build pipeline and JavaScript/TypeScript compatibility strategy.
 
+### 2026-07-13 — Plain `tsc`, not Vite/esbuild, and a split `outDir` rather than in-place emit
+
+**Decision:** Use plain `tsc` (no bundler) for Phase 1. Compiler output goes to `build/ts-out/` (gitignored), and a small script (`scripts/sync-ts-output.cjs`) copies only the files that were actually authored as `.ts` back next to their sources in `assets/`, immediately after `tsc` runs, as part of `npm run build`.
+
+**Reasoning:** The runtime has no bundler and imports plain ES modules by relative path (`./uiTabManager.js`, etc.), so the smallest solution that satisfies "browser build system" is transpilation, not bundling — Vite would be strictly more infrastructure than the import graph requires. In-place emission (`outDir` == the `assets/` source directory) was tried first and rejected: with `allowJs: true`, `tsc` treats every plain-`.js` module a `.ts` file imports (e.g. `assets/autoSave.js`, `assets/tutorialState.js`) as an "input" too, and refuses to write compiled output over an input file (`TS5055`) once that input's directory is also the output directory. Routing output to a separate folder and selectively copying back only the genuine `.ts` outputs avoids that conflict while still leaving working `.js` files sitting next to their `.ts` sources in `assets/`, so `index.html` continues to open directly with no build step, exactly as before this phase (a fresh clone or someone editing only plain `.js` files never needs to run `tsc` at all; only after editing a `.ts` file does `npm run build` — or a manual `npx tsc && node scripts/sync-ts-output.cjs` — need to run before reopening `index.html`).
+
+**Trade-off documented:** `.ts` sources are gitignored out of `dist/` (via a `filter` in `scripts/build-static.cjs`) but the compiled `.js` siblings in `assets/` are ordinary tracked files, exactly like every other `.js` module in the repo — there is no "generated file" marker distinguishing them from hand-written JavaScript at a glance. Anyone editing `assets/uiTabManager.ts` must remember to rerun the build (or `npm run typecheck` + `npx tsc`) before their edits take effect at runtime; the compiled `.js` will silently keep serving the old behavior otherwise. This is called out here so it is not rediscovered as a mystery bug.
+
 ---
 
 ## Known Issues / Deferred Findings
 
-- Existing automated coverage is not sufficient to prove full navigation behavior. Phase 1 should improve this before relying on later large migrations.
-- `assets/spireFloatingMenu.js` combines navigation concerns with resource-counter rendering and unlock display. Phase 1 must avoid allowing that coupling to expand its scope into unrelated game-state migration.
+- Existing automated coverage is not sufficient to prove full navigation behavior beyond the manual/browser checks performed in Phase 1. A future phase should add Node-runnable pure-logic tests (e.g. for `focusAndActivateTab`'s wraparound math, or `updateTabLockStates`' per-tab unlock matrix) once these modules' DOM coupling is reduced enough to make that practical without a DOM-shim dependency.
+- `assets/spireFloatingMenu.ts` combines navigation concerns (tab routing via `setActiveTab`) with resource-counter rendering and per-spire unlock/lock icon swapping. Phase 1 migrated the whole file as-is (its dependencies are narrow, injected via options, and already had safe fallbacks) rather than splitting it, per the phase's own stated option to do so when types can remain narrow and stable.
 - `assets/main.js` remains a large integration file. This is acknowledged but intentionally deferred; broad conversion of that file would undermine the staged migration strategy.
+- Suspected pre-existing defect (left unchanged, not fixed): in `uiTabManager.ts`'s `setActiveTab`, the fallback branch (taken only when `tabs`/`panels` haven't been populated yet) re-queries the DOM and calls `notifyTabChange` only when `activeTab` (the tab actually marked `.active` in the DOM) is found — if the requested `target` doesn't match any tab-button's `data-tab`, the function silently no-ops instead of surfacing an error. This existed in the original `.js` and was preserved exactly.
+- Pre-existing, unrelated to this migration: `npm test` (scripts/smoke-test.cjs) fails on a clean checkout because `assets/favicon/` does not exist in the working tree (referenced by `index.html`). Confirmed present before Phase 1 changes via `git stash`; not a regression.
 
 ---
 
@@ -354,3 +223,44 @@ Do not treat this list as a fixed roadmap. Each completed phase must recommend t
 **Validation performed:** Documentation-only change; no runtime code was modified.
 
 **Next suggested step:** Execute Phase 1 as defined above, then update this document before concluding the agent task.
+
+### 2026-07-13 — Phase 1 executed
+
+**Status:** COMPLETE
+
+**Files converted to strict TypeScript:**
+
+- `assets/uiTabManager.ts` (was `.js`) — primary tab registry, `setActiveTab`, keyboard/hotkey navigation, active-tab persistence, stage-tab hover animation.
+- `assets/spireFloatingMenu.ts` (was `.js`) — floating Spire tray open/close, per-spire lock/unlock icon and counter refresh, `setActiveTab` wiring for spire menu items.
+- `assets/tabLockManager.ts` (was `.js`) — tutorial-gated tab lock/unlock state for the primary tab bar.
+- `assets/spireTabVisibility.ts` (was `.js`) — powder/fluid split-tab visibility and per-spire stacked-tab/toggle visibility.
+
+**Files receiving compatibility edits:** None. `assets/main.js` imports all four modules by their existing `./foo.js` specifiers; those specifiers still resolve because `tsc` emits `.js` output back next to each `.ts` source (see Decision Log). No import path, export name, or call-site changes were required anywhere.
+
+**Types/interfaces introduced:** `TabId` (literal union of the 10 actual `data-tab` values in `index.html`: `tower`, `towers`, `powder`, `fluid`, `lamed`, `tsadi`, `shin`, `kuf`, `achievements`, `options`), `TabManagerCallbacks`, `SpireTabId` (the 6 spire tray ids), `SpireMenuControllerOptions`, `SpireMenuController`, `FluidTabElements`, `SpireResourceHudElements`, `SpireResourceState`, `PowderVisibilityState`, `SpireTabVisibilityManagerOptions`, `SpireTabVisibilityManager`.
+
+**Infrastructure added:** `typescript` devDependency; `tsconfig.json` (strict, `DOM`/`DOM.Iterable`/`ES2022` libs, `allowJs`, `noEmitOnError`, `outDir: ./build/ts-out`); `npm run typecheck` (`tsc --noEmit`); `npm run build` now runs `tsc && node scripts/sync-ts-output.cjs && node scripts/build-static.cjs`; new `scripts/sync-ts-output.cjs`; `scripts/build-static.cjs` now filters `.ts` files out of the `dist/` copy; `eslint.config.mjs` ignores `**/*.ts` and `build/**` (no `@typescript-eslint` parser is installed — `tsc --noEmit` is the type-safety gate, eslint stays scoped to JS); `.gitignore` adds `build/`.
+
+**Validation commands and results (before == after for every pre-existing check; `typecheck` and the TS-aware `build` did not exist before):**
+
+- `npm install` — succeeds before and after (added `typescript` to devDependencies/lockfile).
+- `npm run lint` — clean (exit 0), before and after.
+- `npm test` (`scripts/smoke-test.cjs`) — fails before and after with the same 4 pre-existing errors, all about a missing `assets/favicon/` directory unrelated to this migration (confirmed identical via `git stash`). No new failures.
+- `npm run build` — succeeds before and after; after Phase 1 it additionally runs `tsc` (clean) and `scripts/sync-ts-output.cjs`, and `dist/` contains the compiled `.js` for all four modules with no `.ts` files copied in.
+- `npm run typecheck` — new in this phase; clean (no errors) against all four migrated modules with `strict: true`.
+
+**Manual/browser verification performed:** Served the repo over a local static server (`file://` module loading is blocked by browser CORS for ES modules regardless of TypeScript, so this is the standard way to exercise `<script type="module">` locally) and drove the app via automated browser tooling:
+
+- App loads with no console errors.
+- Default tab (`tower`/Stage) is active on first load; `aria-selected`/`active` class match.
+- Clicking an unlocked tab (`options`) switches `active`/`aria-selected`/`aria-hidden`/`hidden` on both the tab button and its panel, and persists to `localStorage['glyph-defense-idle:active-tab']`.
+- Locked tabs (`towers`, `achievements` on a fresh save, gated by `tabLockManager`) correctly report `disabled: true`, `aria-disabled: true`, and the "Locked - Complete Tutorial" `aria-label`, and clicking them does not switch tabs — confirmed this is the pre-existing tutorial-gate behavior, not a regression.
+- Enter-key activation on a focused, unlocked tab button switches the tab and updates storage.
+- The floating Spire menu toggle (`spire-menu-toggle-powder`) opens its tray (`aria-expanded` → `true`, tray gains `spire-floating-menu--visible`).
+- `spire-tab-stack` carries the same `spire-tab-stack--layout-6` class and the initial locked-tab disabled/aria-label state matches pre-migration expectations.
+
+**Behavior that could not be automatically/browser-verified in this environment:** Electron startup (no Electron window could be driven by the available browser-automation tooling in this sandboxed session); real touch/pointer input on a physical mobile device; long-running keyboard arrow-navigation wraparound across all 10 tabs in sequence (only single-step Enter/click and toggle interactions were exercised).
+
+**Suspected pre-existing defects left unchanged:** see the two new bullets added to Known Issues / Deferred Findings above (silent no-op on unmatched `target` in the DOM-requery fallback path of `setActiveTab`).
+
+**Next suggested step:** See the "Phase 2 — Core Formatting and Save/Persistence Utility Types" entry under Next Suggested Step above.
