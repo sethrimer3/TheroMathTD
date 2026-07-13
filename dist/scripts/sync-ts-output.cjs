@@ -25,7 +25,13 @@ if (!tsSources.length) {
 
 for (const relativeTsPath of tsSources) {
   const relativeJsPath = relativeTsPath.replace(/\.ts$/, '.js');
-  const compiledPath = path.join(tsOutDir, path.basename(relativeJsPath));
+  // tsconfig.json sets an explicit rootDir ("."), so tsc mirrors each source's
+  // full relative path (not just its basename) under build/ts-out/. This must
+  // stay in sync with rootDir: relying on basename-only lookup breaks as soon
+  // as .ts sources live in more than one top-level directory (e.g. assets/ and
+  // scripts/core/), since their basenames could collide or tsc could otherwise
+  // choose a different common-ancestor rootDir.
+  const compiledPath = path.join(tsOutDir, relativeJsPath);
   const destinationPath = path.join(rootDir, relativeJsPath);
 
   if (!fs.existsSync(compiledPath)) {

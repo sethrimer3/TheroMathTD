@@ -120,7 +120,7 @@ No TypeScript conversion phase is recorded as complete in this plan.
 |---|---|---|---|
 | 0 | Establish migration plan and agent handoff process | COMPLETE | `JavaToTypeScriptConversionPlan.md` created on 2026-07-13 |
 | 1 | Add incremental TypeScript infrastructure and migrate shared menu/tab navigation | COMPLETE | See Implementation Log entry 2026-07-13 (Phase 1) |
-| 2 | To be selected after Phase 1 based on dependency and risk findings | NOT STARTED | See **Next Suggested Step** |
+| 2 | Core Formatting and Save/Persistence Utility Types | IN PROGRESS | See Phase 2 section and Implementation Log entry 2026-07-13 (Phase 2 started) |
 
 ---
 
@@ -136,19 +136,18 @@ See the Implementation Log entry dated 2026-07-13 ("Phase 1 executed") for the f
 - Added `typescript` devDependency, `tsconfig.json` (strict, DOM libs, `noEmitOnError`), `npm run typecheck`, and folded `tsc` + a small sync step into `npm run build`. Decision record and rationale are in the Decision Log below (why `outDir` is a separate `build/ts-out/` and not in place, and why plain `tsc` was chosen over Vite/esbuild).
 - `assets/tabLockManager.js` and `assets/spireTabVisibility.js` were *not* discovered by the original grep-for-`setActiveTab` pass because they don't call `setActiveTab` themselves — they were only found by reading this plan document, which had already landed in the repo mid-task via an unrelated merge. Any future phase should re-derive scope by reading this file first, per the operating instructions above, rather than relying solely on code search.
 
-## Next Suggested Step
+## Phase 2 — Core Formatting and Save/Persistence Utility Types (IN PROGRESS)
 
-### Phase 2 — Core Formatting and Save/Persistence Utility Types (proposed)
-
-**Status:** NOT STARTED
-**Migration type:** Behavior-preserving migration (proposed)
+**Status:** IN PROGRESS
+**Implementation start date:** 2026-07-13
+**Migration type:** Behavior-preserving migration
 **Primary objective:** Type the small, dependency-light utility modules that navigation and most other subsystems already import, before touching anything stateful or simulation-heavy.
 
-**Why this is the recommended next slice:** `assets/autoSave.js` (storage read/write, all the `*_STORAGE_KEY` constants) and `scripts/core/formatting.js` / `scripts/core/mathText.js` are imported nearly everywhere, including by the just-migrated navigation modules (`uiTabManager.ts` imports `readStorage`/`writeStorage`/`ACTIVE_TAB_STORAGE_KEY` from `autoSave.js` today, untyped). Typing these utilities next gives every subsequent phase (including navigation) real types for their common dependencies instead of implicit `any` from `allowJs`, without requiring any gameplay, combat, or save-schema changes.
+**Intended scope (as re-confirmed against the live document before implementation):** `assets/autoSave.js` → `.ts` (storage helpers and key constants, typed strictly; autosave *scheduling*/game-state serialization behavior stays behind a typed-but-unchanged surface using narrow injected-dependency interfaces rather than deep game-state schemas), `scripts/core/formatting.js` → `.ts`, `scripts/core/mathText.js` → `.ts`.
 
-**Suggested scope:** `assets/autoSave.js` → `.ts` (storage helpers and key constants only — leave autosave *scheduling*/game-state serialization behavior behind a typed but otherwise unchanged surface), `scripts/core/formatting.js`, `scripts/core/mathText.js`.
+**Scope deviation notes going in:** `assets/autoSave.js` mixes concerns (pure storage primitives + `*_STORAGE_KEY` constants at the top, versus a `dependencies` injection object and scheduling/orchestration functions below that call back into snapshot getters/setters owned by other modules). Per the plan's own guidance ("if it's cleanly separable, migrate the whole file; if not, use the narrowest safe typed-adapter approach"), the injected snapshot values are treated as opaque/unknown-shaped payloads (typed as `Record<string, unknown>` or generic `unknown`, not as full game-state interfaces) so that typing the file does not require designing a save-schema type system — that remains explicitly out of scope for this phase. The whole file is converted to `.ts` (matching the Phase 1 precedent of migrating `spireFloatingMenu.ts` as a single mixed-concern file when dependencies are narrow and injected via options), but the *shape* of injected game-state snapshots is intentionally left weakly typed.
 
-**Acceptance criteria:** same shape as Phase 1 — `npm run typecheck` and `npm run build` clean, `npm test`/`npm run lint` show no new failures versus the baseline recorded in this document, all existing importers (including `uiTabManager.ts`, `spireFloatingMenu.ts`, `tabLockManager.ts`, `spireTabVisibility.ts`, and `main.js`) require no changes beyond `tsconfig.json`'s `include` list, and manual browser verification shows no behavior change in number formatting, save/load, or active-tab restoration.
+**Acceptance criteria:** `npm run typecheck` and `npm run build` clean, `npm test`/`npm run lint` show no new failures versus the baseline recorded in this document, all existing importers (including `uiTabManager.ts`, `spireFloatingMenu.ts`, `tabLockManager.ts`, `spireTabVisibility.ts`, `main.js`, and the various `*Preferences.js` modules) require no changes beyond `tsconfig.json`'s `include` list, and manual browser verification shows no behavior change in number formatting, save/load, or active-tab restoration.
 
 ---
 

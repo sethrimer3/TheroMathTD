@@ -15,12 +15,16 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmitOnError": true,
-    "outDir": "./build/ts-out"
+    "outDir": "./build/ts-out",
+    "rootDir": "."
   },
   "include": [
     "assets/uiTabManager.ts",
     "assets/spireFloatingMenu.ts",
     "assets/tabLockManager.ts",
-    "assets/spireTabVisibility.ts"
+    "assets/spireTabVisibility.ts",
+    "assets/autoSave.ts",
+    "scripts/core/formatting.ts",
+    "scripts/core/mathText.ts"
   ]
 }

@@ -12,7 +12,8 @@
     "desktop": "npm run build && electron .",
     "electron": "electron .",
     "lint": "eslint .",
-    "test": "node scripts/smoke-test.cjs"
+    "test": "node scripts/smoke-test.cjs",
+    "test:unit": "node scripts/unit-test-core.cjs"
   },
   "repository": {
     "type": "git",
