@@ -120,7 +120,8 @@ No TypeScript conversion phase is recorded as complete in this plan.
 |---|---|---|---|
 | 0 | Establish migration plan and agent handoff process | COMPLETE | `JavaToTypeScriptConversionPlan.md` created on 2026-07-13 |
 | 1 | Add incremental TypeScript infrastructure and migrate shared menu/tab navigation | COMPLETE | See Implementation Log entry 2026-07-13 (Phase 1) |
-| 2 | Core Formatting and Save/Persistence Utility Types | IN PROGRESS | See Phase 2 section and Implementation Log entry 2026-07-13 (Phase 2 started) |
+| 2 | Core Formatting and Save/Persistence Utility Types | COMPLETE | See Phase 2 section and Implementation Log entry 2026-07-13 (Phase 2 executed) |
+| 3 | To be selected after Phase 2 based on dependency and risk findings | NOT STARTED | See **Next Suggested Step** |
 
 ---
 
@@ -136,18 +137,65 @@ See the Implementation Log entry dated 2026-07-13 ("Phase 1 executed") for the f
 - Added `typescript` devDependency, `tsconfig.json` (strict, DOM libs, `noEmitOnError`), `npm run typecheck`, and folded `tsc` + a small sync step into `npm run build`. Decision record and rationale are in the Decision Log below (why `outDir` is a separate `build/ts-out/` and not in place, and why plain `tsc` was chosen over Vite/esbuild).
 - `assets/tabLockManager.js` and `assets/spireTabVisibility.js` were *not* discovered by the original grep-for-`setActiveTab` pass because they don't call `setActiveTab` themselves — they were only found by reading this plan document, which had already landed in the repo mid-task via an unrelated merge. Any future phase should re-derive scope by reading this file first, per the operating instructions above, rather than relying solely on code search.
 
-## Phase 2 — Core Formatting and Save/Persistence Utility Types (IN PROGRESS)
+## Phase 2 — Core Formatting and Save/Persistence Utility Types (COMPLETE)
 
-**Status:** IN PROGRESS
+**Status:** COMPLETE (2026-07-13)
 **Implementation start date:** 2026-07-13
 **Migration type:** Behavior-preserving migration
-**Primary objective:** Type the small, dependency-light utility modules that navigation and most other subsystems already import, before touching anything stateful or simulation-heavy.
 
-**Intended scope (as re-confirmed against the live document before implementation):** `assets/autoSave.js` → `.ts` (storage helpers and key constants, typed strictly; autosave *scheduling*/game-state serialization behavior stays behind a typed-but-unchanged surface using narrow injected-dependency interfaces rather than deep game-state schemas), `scripts/core/formatting.js` → `.ts`, `scripts/core/mathText.js` → `.ts`.
+**Live-document re-verification performed before implementation:** re-read `JavaToTypeScriptConversionPlan.md` at the start of this session; the "Next Suggested Step" section still named this exact phase ("Core Formatting and Save/Persistence Utility Types") with the same suggested scope, so no deviation from the task description was required.
 
-**Scope deviation notes going in:** `assets/autoSave.js` mixes concerns (pure storage primitives + `*_STORAGE_KEY` constants at the top, versus a `dependencies` injection object and scheduling/orchestration functions below that call back into snapshot getters/setters owned by other modules). Per the plan's own guidance ("if it's cleanly separable, migrate the whole file; if not, use the narrowest safe typed-adapter approach"), the injected snapshot values are treated as opaque/unknown-shaped payloads (typed as `Record<string, unknown>` or generic `unknown`, not as full game-state interfaces) so that typing the file does not require designing a save-schema type system — that remains explicitly out of scope for this phase. The whole file is converted to `.ts` (matching the Phase 1 precedent of migrating `spireFloatingMenu.ts` as a single mixed-concern file when dependencies are narrow and injected via options), but the *shape* of injected game-state snapshots is intentionally left weakly typed.
+**Scope executed:** `assets/autoSave.js` → `assets/autoSave.ts`, `scripts/core/formatting.js` → `scripts/core/formatting.ts`, `scripts/core/mathText.js` → `scripts/core/mathText.ts`.
 
-**Acceptance criteria:** `npm run typecheck` and `npm run build` clean, `npm test`/`npm run lint` show no new failures versus the baseline recorded in this document, all existing importers (including `uiTabManager.ts`, `spireFloatingMenu.ts`, `tabLockManager.ts`, `spireTabVisibility.ts`, `main.js`, and the various `*Preferences.js` modules) require no changes beyond `tsconfig.json`'s `include` list, and manual browser verification shows no behavior change in number formatting, save/load, or active-tab restoration.
+**Scope decision (autoSave.js is not cleanly separable, but was migrated as a single typed-adapter file):** `assets/autoSave.js` mixes pure storage primitives + `*_STORAGE_KEY` constants at the top with a `dependencies` injection object and scheduling/orchestration functions (`configureAutoSave`, `loadPersistentState`, `performAutoSave`, per-subsystem `persist*` helpers) that call back into snapshot getters/setters owned by other modules. Per the plan's guidance to use "the narrowest safe typed-adapter approach" when a file is not cleanly separable, the whole file was converted to `.ts` (same precedent as Phase 1's `spireFloatingMenu.ts`), but the *shape* of every injected snapshot (powder basin, tower upgrades, Shin/Kuf/spire-resource/level-progress/cognitive-realm state, preference snapshots) is typed as an opaque `AutoSaveSnapshot = Record<string, unknown>` rather than a modeled game-state schema — designing a full save-schema type system remains explicitly out of scope for this phase. The injected-dependency surface itself (`AutoSaveDependencies`, `AutoSaveConfig`, `AutoSavePreferenceSnapshot`, `AutoSaveApplyOptions`) is fully and strictly typed.
+
+**Infrastructure changes (beyond Phase 1's):** `tsconfig.json` gained `"rootDir": "."` (previously relied on tsc's automatic common-ancestor inference, which was only ever exercised with `.ts` sources confined to `assets/`; adding `scripts/core/*.ts` alongside `assets/*.ts` needed an explicit root so tsc's emitted directory structure under `build/ts-out/` stays predictable) and three new entries in `include`. `scripts/sync-ts-output.cjs` was changed from copying by `path.basename(relativeJsPath)` (assumed a flat `build/ts-out/`) to copying by the full `relativeJsPath` (preserving the `assets/`, `scripts/core/` subdirectory structure tsc now emits under `build/ts-out/` because of the explicit `rootDir`). No bundler, package, or other build-pipeline change.
+
+**Files converted to strict TypeScript:**
+- `assets/autoSave.ts` (was `.js`) — storage primitives (`readStorage`, `writeStorage`, `readStorageJson<T>`, `writeStorageJson`), all `*_STORAGE_KEY` constants, and the autosave scheduling/dependency-injection surface (typed-but-behavior-unchanged, per the scope decision above).
+- `scripts/core/formatting.ts` (was `.js`) — number/percentage formatting helpers and the `GAME_NUMBER_NOTATIONS` enum.
+- `scripts/core/mathText.ts` (was `.js`) — MathJax rendering helpers, math-expression detection, TeX-to-plain-text conversion.
+
+**Files receiving compatibility edits:** None. Every existing importer (`uiTabManager.ts`, `spireFloatingMenu.ts`, `tabLockManager.ts`, `spireTabVisibility.ts`, `assets/main.js`, and the ~14 `*Preferences.js`/tower-equation/UI modules that import `formatting.js`/`mathText.js`/`autoSave.js`) kept its existing `./foo.js` import specifiers unchanged; `tsc` emits the compiled `.js` back next to each `.ts` source via the updated sync script, so nothing needed to change at any call site.
+
+**Types/interfaces introduced:** `GameNumberNotation` (literal union derived from `GAME_NUMBER_NOTATIONS`), `GameNumberNotationListener`; `MathJaxLike` (minimal shape of the third-party global MathJax API actually used, plus a `declare global { interface Window { MathJax?: MathJaxLike } }` augmentation — no other `.ts` file declares this augmentation, checked via grep to avoid a conflicting redeclaration); `AutoSavePreferenceSnapshot`, `AutoSaveApplyOptions`, `AutoSaveSnapshot` (the intentionally-opaque `Record<string, unknown>` adapter type), `AutoSaveDependencies`, `AutoSaveConfig`.
+
+**Tests added:** `scripts/unit-test-core.cjs` (new; run via `npm run test:unit`) — a framework-free `node:assert/strict` script (no Jest/Vitest/etc. added, per the instruction to check before introducing one) that copies the *compiled* `scripts/core/formatting.js` and `assets/autoSave.js` to scratch `.mjs` files (sidestepping the repo's `"type": "commonjs"` package.json, which otherwise makes Node's dynamic `import()` misinterpret plain ESM `.js` output as CommonJS — this only affects the Node test harness, not the browser, which always loads these as `<script type="module">`) and exercises: `formatGameNumber` across LETTERS/SCIENTIFIC notations and non-finite inputs, `setGameNumberNotation` including its invalid-input fallback, `formatWholeNumber`, `formatPercentage`/`formatSignedPercentage`, and the `autoSave.js` storage primitives (`writeStorage`/`readStorage` round-trip, missing-key read, `writeStorageJson`/`readStorageJson` round-trip, malformed-JSON handling, and storage-key constant values) against an in-memory `localStorage` stub. 12/12 assertions pass.
+
+**Validation commands and results (before == after for every pre-existing check):**
+- `npm install` — succeeds, no new dependencies added.
+- `npm run lint` — clean (exit 0), before and after.
+- `npm test` (`scripts/smoke-test.cjs`) — fails before and after with the same 4 pre-existing errors (missing `assets/favicon/` directory), identical to the Phase 1 baseline. No new failures.
+- `npm run typecheck` — clean (no errors) against all 7 included `.ts` files (4 from Phase 1 + 3 new).
+- `npm run build` — succeeds; `tsc` compiles cleanly, `sync-ts-output.cjs` copies all 7 compiled files back to their source directories (confirmed `assets/autoSave.js`, `scripts/core/formatting.js`, `scripts/core/mathText.js` are freshly regenerated, matching `git status` showing them as `RM ... -> ....ts` renames plus untracked regenerated `.js` siblings — the same pattern as Phase 1), and `dist/` contains only compiled `.js` (verified via `ls dist/assets/autoSave.* dist/scripts/core/formatting.* dist/scripts/core/mathText.*` — no `.ts` present).
+- `npm run test:unit` (new) — 12/12 passed.
+
+**Manual/browser verification performed:** Served the repository root over a local static Node HTTP server (equivalent to the file-serving needed for ES module loading) and drove the app via automated browser tooling:
+- App loads with no console errors (`read_console_messages` with `onlyErrors: true` returned none).
+- `localStorage.getItem('glyph-defense-idle:active-tab')` returns `'tower'` (the default tab) and `localStorage.getItem('glyph-defense-idle:powder')` returns `'0'` after normal page load — confirms `autoSave.ts`'s `readStorage`/`writeStorage`/`readStorageJson`/`writeStorageJson` are being called and persisting correctly through the compiled output.
+- Page text extraction shows formatted numeric output rendered by the migrated `formatting.ts` (e.g. "Starting Thero equals 50.0 þ times 1.00, totaling 50.0 þ", "Thero Multiplier ×1.00") with no `NaN`/`undefined`/malformed output, confirming `formatGameNumber`/`formatDecimal`-derived UI text is unchanged.
+
+**Behavior that could not be verified in this environment:** clicking through every individual tab and confirming `localStorage['glyph-defense-idle:active-tab']` updates per click (attempted via `read_page`/`computer` screenshot, but the browser-automation viewport reported `0x0` and a subsequent `screenshot` call timed out after the app had already been confirmed error-free and storage-functional by the checks above; this is an automation-tooling limitation in this session, not a defect); MathJax-rendered TeX output specifically (the app's default view did not surface a MathJax-dependent element during this pass, though `mathText.ts`'s logic is unchanged byte-for-byte aside from typing); Electron startup; physical mobile/touch input — all consistent with the "not verified" caveats already on record from Phase 1.
+
+**Suspected pre-existing defects left unchanged:** none newly discovered in this phase's scope. The three Known Issues already on record (favicon-missing smoke-test failure, `spireFloatingMenu.ts` mixed concerns, `uiTabManager.ts`'s silent no-op on unmatched tab target) still apply and are unaffected by this phase's files.
+
+**Acceptance criteria (met):** `npm run typecheck` and `npm run build` clean; `npm test`/`npm run lint` show no new failures versus the Phase 1 baseline; all existing importers (`uiTabManager.ts`, `spireFloatingMenu.ts`, `tabLockManager.ts`, `spireTabVisibility.ts`, `main.js`, and the various `*Preferences.js` modules) required no changes beyond `tsconfig.json`'s `include` list; manual browser verification showed no behavior change in number formatting or active-tab/save persistence.
+
+---
+
+## Next Suggested Step
+
+### Phase 3 — User Preferences Module (`assets/preferences.js`) (proposed)
+
+**Status:** NOT STARTED
+**Migration type:** Behavior-preserving migration (proposed)
+**Primary objective:** Type the user-preferences module now that its two most-used dependencies (`autoSave.ts`'s storage helpers/keys and `formatting.ts`'s notation enum) are already strictly typed, closing the loop on the remaining "small, widely-imported utility" tier before moving into anything stateful/simulation-heavy (towers, enemies, playfield).
+
+**Why this is the recommended next slice:** `assets/preferences.js` (notation mode, graphics quality, glyph-equation visibility, damage-number display, cursor style, etc., per `assets/agent.md`) sits directly on top of the two modules just migrated — it reads/writes `NOTATION_STORAGE_KEY`, `GRAPHICS_MODE_STORAGE_KEY`, `GLYPH_EQUATIONS_STORAGE_KEY`, and related keys from `autoSave.ts`, and calls `setGameNumberNotation`/`getGameNumberNotation` from `formatting.ts`. Typing it next means its exported getter functions (`getActiveGraphicsMode`, `isLowGraphicsModeActive`, `areGlyphEquationsVisible`, etc.) get real return types instead of implicit `any`, benefiting every module that already imports them (confirmed widely imported: `main.js` and most `*Preferences.js`/UI modules). It stays clear of gameplay/combat/simulation logic, matching the plan's incremental-subsystem principle.
+
+**Suggested scope:** `assets/preferences.js` → `assets/preferences.ts`. Type each preference's storage-backed getter/setter pair with a literal union or boolean/string type as appropriate (e.g. a `GraphicsMode` union, boolean-returning toggle checks), reusing `GameNumberNotation` from `scripts/core/formatting.ts` and the relevant `*_STORAGE_KEY` constants/`AutoSaveApplyOptions` type from `assets/autoSave.ts` rather than redefining them. If `preferences.js` turns out to also mix in DOM-binding side effects (element lookups, event listeners) beyond simple get/set-on-storage functions, apply the same typed-adapter approach used for `autoSave.ts` in this phase (type the pure preference-read/write surface precisely; keep any DOM-wiring functions typed but not redesigned) rather than expanding scope to a UI-binding rewrite.
+
+**Acceptance criteria:** `npm run typecheck` and `npm run build` clean; `npm test`/`npm run lint` show no new failures versus the baseline recorded in this document; all existing importers of `preferences.js` (including `main.js` and every module listed by `grep -l "from '.*preferences.js'"`) require no changes beyond `tsconfig.json`'s `include` list; a `npm run test:unit`-style addition (extending `scripts/unit-test-core.cjs` or a sibling script) covers at least the storage-backed getter/setter round-trips for notation and graphics-mode preferences; manual browser verification shows no behavior change in how graphics mode, notation, and glyph-equation-visibility toggles read from and write to `localStorage`.
 
 ---
 
@@ -190,6 +238,14 @@ Do not treat this list as a fixed roadmap. Each completed phase must recommend t
 **Reasoning:** The runtime has no bundler and imports plain ES modules by relative path (`./uiTabManager.js`, etc.), so the smallest solution that satisfies "browser build system" is transpilation, not bundling — Vite would be strictly more infrastructure than the import graph requires. In-place emission (`outDir` == the `assets/` source directory) was tried first and rejected: with `allowJs: true`, `tsc` treats every plain-`.js` module a `.ts` file imports (e.g. `assets/autoSave.js`, `assets/tutorialState.js`) as an "input" too, and refuses to write compiled output over an input file (`TS5055`) once that input's directory is also the output directory. Routing output to a separate folder and selectively copying back only the genuine `.ts` outputs avoids that conflict while still leaving working `.js` files sitting next to their `.ts` sources in `assets/`, so `index.html` continues to open directly with no build step, exactly as before this phase (a fresh clone or someone editing only plain `.js` files never needs to run `tsc` at all; only after editing a `.ts` file does `npm run build` — or a manual `npx tsc && node scripts/sync-ts-output.cjs` — need to run before reopening `index.html`).
 
 **Trade-off documented:** `.ts` sources are gitignored out of `dist/` (via a `filter` in `scripts/build-static.cjs`) but the compiled `.js` siblings in `assets/` are ordinary tracked files, exactly like every other `.js` module in the repo — there is no "generated file" marker distinguishing them from hand-written JavaScript at a glance. Anyone editing `assets/uiTabManager.ts` must remember to rerun the build (or `npm run typecheck` + `npx tsc`) before their edits take effect at runtime; the compiled `.js` will silently keep serving the old behavior otherwise. This is called out here so it is not rediscovered as a mystery bug.
+
+### 2026-07-13 — Explicit `rootDir` and directory-preserving sync once `.ts` sources span multiple top-level folders
+
+**Decision:** Add `"rootDir": "."` to `tsconfig.json` and change `scripts/sync-ts-output.cjs` to copy compiled output by its full relative path (e.g. `build/ts-out/scripts/core/formatting.js`) instead of by basename only, as part of Phase 2.
+
+**Reasoning:** Phase 1's `.ts` sources all lived in `assets/`, so tsc's auto-inferred common-ancestor `rootDir` happened to keep `build/ts-out/` flat, and the sync script's basename-only lookup worked by coincidence. Phase 2 added `.ts` sources under `scripts/core/` as well. Leaving `rootDir` to auto-infer would have made the emitted layout depend on the exact set of included files (fragile and liable to silently reshuffle output paths as more directories are migrated in later phases), and a basename-only sync script cannot distinguish `build/ts-out/assets/foo.js` from `build/ts-out/scripts/core/foo.js` if two future modules ever shared a filename. Pinning `rootDir` explicitly and preserving the relative path through the sync step makes the mapping deterministic and independent of which files happen to be included, at zero cost to the "open `index.html` directly" workflow (compiled `.js` still lands next to each `.ts` source either way).
+
+**Trade-off documented:** None beyond Phase 1's original trade-off (compiled `.js` siblings remain ordinary tracked files). This change is purely internal to the build/sync scripts and does not alter runtime import specifiers or behavior.
 
 ---
 
@@ -263,3 +319,18 @@ Do not treat this list as a fixed roadmap. Each completed phase must recommend t
 **Suspected pre-existing defects left unchanged:** see the two new bullets added to Known Issues / Deferred Findings above (silent no-op on unmatched `target` in the DOM-requery fallback path of `setActiveTab`).
 
 **Next suggested step:** See the "Phase 2 — Core Formatting and Save/Persistence Utility Types" entry under Next Suggested Step above.
+
+### 2026-07-13 — Phase 2 executed
+
+**Status:** COMPLETE
+
+See the "Phase 2 — Core Formatting and Save/Persistence Utility Types (COMPLETE)" section above for the full scope decision, file list, types introduced, tests added, and validation/browser-verification results. Summary:
+
+- Converted `assets/autoSave.ts`, `scripts/core/formatting.ts`, `scripts/core/mathText.ts` to strict TypeScript (all were `.js`). No importer required edits.
+- `tsconfig.json` gained `"rootDir": "."` and 3 new `include` entries; `scripts/sync-ts-output.cjs` was changed to preserve subdirectory structure when copying compiled output (previously relied on a flat `build/ts-out/`, which no longer held once `.ts` sources spanned both `assets/` and `scripts/core/`). See the new Decision Log entry above.
+- Added `scripts/unit-test-core.cjs` (`npm run test:unit`, new script) — 12 framework-free `node:assert/strict` tests covering `formatGameNumber`/`setGameNumberNotation`/`formatWholeNumber`/`formatPercentage`/`formatSignedPercentage` and the `autoSave.ts` storage primitives against the *compiled* output. All 12 pass.
+- `npm run typecheck`, `npm run build`, `npm run lint` all clean; `npm test` fails with the same 4 pre-existing favicon errors as the Phase 1 baseline (no new failures).
+- Manual browser verification: app loads with no console errors, active-tab/powder `localStorage` keys read/write correctly, and UI text shows correctly formatted numbers post-migration.
+- `assets/buildInfo.js#BUILD_NUMBER` incremented from 724 to 725 per the project's build-numbering convention.
+
+**Next suggested step:** See the "Phase 3" entry under Next Suggested Step below.
