@@ -389,6 +389,264 @@ async function run() {
     }
   });
 
+  // --- assets/state/resourceState.js (Phase 5A) ---------------------------
+  const resourceStateModule = await importAsEsm('assets/state/resourceState.js');
+
+  test('createResourceStateContainers: uses calculateStartingThero for the initial score', () => {
+    const { baseResources, resourceState } = resourceStateModule.createResourceStateContainers({
+      calculateStartingThero: () => 42,
+      baseScoreRate: 1,
+      baseEnergyRate: 2,
+      baseFluxRate: 3,
+    });
+    assert.equal(baseResources.score, 42);
+    assert.equal(resourceState.score, 42);
+  });
+
+  test('createResourceStateContainers: falls back to a starting score of 0 when the callback is absent/invalid', () => {
+    const withoutCallback = resourceStateModule.createResourceStateContainers({
+      baseScoreRate: 1,
+      baseEnergyRate: 2,
+      baseFluxRate: 3,
+    });
+    assert.equal(withoutCallback.baseResources.score, 0);
+
+    const withNonFunctionCallback = resourceStateModule.createResourceStateContainers({
+      calculateStartingThero: 'not-a-function',
+      baseScoreRate: 1,
+      baseEnergyRate: 2,
+      baseFluxRate: 3,
+    });
+    assert.equal(withNonFunctionCallback.baseResources.score, 0);
+  });
+
+  test('createResourceStateContainers: exact resource defaults are copied from the base rates, running starts false', () => {
+    const { baseResources, resourceState } = resourceStateModule.createResourceStateContainers({
+      calculateStartingThero: () => 10,
+      baseScoreRate: 5,
+      baseEnergyRate: 6,
+      baseFluxRate: 7,
+    });
+    assert.deepEqual(baseResources, { score: 10, scoreRate: 5, energyRate: 6, fluxRate: 7 });
+    assert.equal(resourceState.scoreRate, 5);
+    assert.equal(resourceState.energyRate, 6);
+    assert.equal(resourceState.fluxRate, 7);
+    assert.equal(resourceState.running, false);
+  });
+
+  test('createResourceStateContainers: registration callback receives the exact same object references returned by the factory', () => {
+    let received = null;
+    const result = resourceStateModule.createResourceStateContainers({
+      calculateStartingThero: () => 1,
+      baseScoreRate: 1,
+      baseEnergyRate: 1,
+      baseFluxRate: 1,
+      registerResourceContainers: (containers) => {
+        received = containers;
+      },
+    });
+    assert.equal(received.baseResources, result.baseResources);
+    assert.equal(received.resourceState, result.resourceState);
+  });
+
+  test('createResourceStateContainers: missing registration callback is a safe no-op', () => {
+    assert.doesNotThrow(() => {
+      resourceStateModule.createResourceStateContainers({
+        calculateStartingThero: () => 1,
+        baseScoreRate: 1,
+        baseEnergyRate: 1,
+        baseFluxRate: 1,
+      });
+    });
+  });
+
+  // --- assets/state/spireResourceState.js (Phase 5A) ----------------------
+  const spireResourceStateModule = await importAsEsm('assets/state/spireResourceState.js');
+
+  test('createSpireResourceState: complete default state with no overrides', () => {
+    const state = spireResourceStateModule.createSpireResourceState();
+    assert.deepEqual(state.powder, { unlocked: false, storySeen: false });
+    assert.deepEqual(state.shin, { unlocked: false, storySeen: false });
+    assert.deepEqual(state.kuf, { unlocked: false, storySeen: false });
+    assert.equal(state.fluid.particleFactorMilestone, 100);
+    assert.equal(state.fluid.betGlyphsAwarded, 0);
+    assert.equal(state.lamed.starMass, 10);
+    assert.equal(state.lamed.dragLevel, 0);
+    assert.equal(state.lamed.simulationSnapshot, null);
+    assert.equal(state.tsadi.bindingAgents, 0);
+    assert.deepEqual(state.tsadi.discoveredMolecules, []);
+  });
+
+  test('createSpireResourceState: branch-specific override merging (top-level fields)', () => {
+    const state = spireResourceStateModule.createSpireResourceState({
+      lamed: { unlocked: true, dragLevel: 3 },
+      tsadi: { bindingAgents: 5 },
+    });
+    assert.equal(state.lamed.unlocked, true);
+    assert.equal(state.lamed.dragLevel, 3);
+    // Non-overridden top-level field on the same branch survives.
+    assert.equal(state.lamed.starMass, 10);
+    assert.equal(state.tsadi.bindingAgents, 5);
+    assert.equal(state.tsadi.unlocked, false);
+  });
+
+  test('createSpireResourceState: nested upgrades/stats merge precedence (override wins, base fills gaps)', () => {
+    const state = spireResourceStateModule.createSpireResourceState({
+      lamed: { stats: { totalAbsorptions: 9 } },
+    });
+    assert.equal(state.lamed.stats.totalAbsorptions, 9);
+    // Non-overridden nested stat fields survive from the base default.
+    assert.equal(state.lamed.stats.totalMassGained, 0);
+    assert.equal(state.lamed.stats.starMilestoneReached, 0);
+    assert.equal(state.lamed.upgrades.starMass, 0);
+  });
+
+  test('createSpireResourceState: defaults are not mutated by a prior override call', () => {
+    spireResourceStateModule.createSpireResourceState({
+      lamed: { dragLevel: 99, stats: { totalAbsorptions: 500 } },
+      fluid: { betGlyphsAwarded: 12345 },
+    });
+    const freshState = spireResourceStateModule.createSpireResourceState();
+    assert.equal(freshState.lamed.dragLevel, 0);
+    assert.equal(freshState.lamed.stats.totalAbsorptions, 0);
+    assert.equal(freshState.fluid.betGlyphsAwarded, 0);
+  });
+
+  test('createSpireResourceState: each call returns fresh, independent nested objects (no shared references)', () => {
+    const stateA = spireResourceStateModule.createSpireResourceState();
+    const stateB = spireResourceStateModule.createSpireResourceState();
+    assert.notEqual(stateA.lamed, stateB.lamed);
+    assert.notEqual(stateA.lamed.stats, stateB.lamed.stats);
+    stateA.lamed.stats.totalAbsorptions = 777;
+    assert.equal(stateB.lamed.stats.totalAbsorptions, 0);
+  });
+
+  // --- assets/state/monetizationState.js (Phase 5A) ------------------------
+  // Each test that touches module-level state re-imports a fresh copy (the
+  // module keeps in-memory `currentState`/listeners at module scope with no
+  // reset function), so a scratch copy per test avoids cross-test bleed.
+  async function importFreshMonetizationState() {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thero-unit-test-monetization-'));
+    const destPath = path.join(tmpDir, 'monetizationState.mjs');
+    fs.copyFileSync(path.join(rootDir, 'assets/state/monetizationState.js'), destPath);
+    return import(pathToFileURL(destPath).href);
+  }
+
+  // watchAdMock() uses a real setTimeout(1000ms); stub it globally for these
+  // tests so triggerSpireBoost/triggerGemBoost resolve immediately instead of
+  // making the suite wait a full second per call.
+  const realSetTimeout = global.setTimeout;
+  global.setTimeout = (fn) => {
+    fn();
+    return 0;
+  };
+
+  {
+    global.window = { localStorage: createLocalStorageStub() };
+    const monetization = await importFreshMonetizationState();
+
+    test('monetizationState: default snapshot has premium locked and all cooldowns at 0', () => {
+      const snapshot = monetization.getMonetizationState();
+      assert.equal(snapshot.premiumUnlocked, false);
+      assert.deepEqual(snapshot.boostCooldowns, {
+        powder: 0, fluid: 0, lamed: 0, tsadi: 0, shin: 0, kuf: 0, gems: 0,
+      });
+    });
+
+    test('monetizationState: getMonetizationState returns a clone, not the live cooldown object', () => {
+      const snapshotA = monetization.getMonetizationState();
+      snapshotA.boostCooldowns.lamed = 999999;
+      const snapshotB = monetization.getMonetizationState();
+      assert.equal(snapshotB.boostCooldowns.lamed, 0);
+    });
+
+    test('monetizationState: unlockPremium sets premiumUnlocked and persists to storage', () => {
+      monetization.unlockPremium();
+      assert.equal(monetization.getMonetizationState().premiumUnlocked, true);
+      const stored = JSON.parse(global.window.localStorage.getItem(monetization.MONETIZATION_STORAGE_KEY));
+      assert.equal(stored.premiumUnlocked, true);
+    });
+
+    test('monetizationState: addMonetizationListener invokes immediately with current state, and unsubscribe stops future notifications', () => {
+      const seen = [];
+      const unsubscribe = monetization.addMonetizationListener((snapshot) => seen.push(snapshot.premiumUnlocked));
+      assert.equal(seen.length, 1);
+      assert.equal(seen[0], true); // premium was unlocked by the previous test
+      unsubscribe();
+      monetization.unlockPremium();
+      assert.equal(seen.length, 1, 'listener should not be called again after unsubscribe');
+    });
+
+    test('monetizationState: triggerSpireBoost rejects an invalid spire id', async () => {
+      const result = await monetization.triggerSpireBoost('not-a-spire', () => {});
+      assert.deepEqual(result, { success: false, error: 'Invalid spire ID' });
+    });
+  }
+
+  {
+    // Fresh module instance per remaining group so cooldown state starts at 0.
+    global.window = { localStorage: createLocalStorageStub() };
+    const monetization = await importFreshMonetizationState();
+
+    test('monetizationState: getBoostCooldown reports no cooldown initially, using controlled Date.now', () => {
+      const realNow = Date.now;
+      Date.now = () => 1_000_000;
+      try {
+        const cooldown = monetization.getBoostCooldown('lamed');
+        assert.equal(cooldown.onCooldown, false);
+        assert.equal(cooldown.remainingMs, 0);
+      } finally {
+        Date.now = realNow;
+      }
+    });
+
+    test('monetizationState: successful idle boost invokes applyIdleTime with (spireId, 7200) and starts a 1hr cooldown', async () => {
+      const realNow = Date.now;
+      Date.now = () => 1_000_000;
+      try {
+        let calledWith = null;
+        const result = await monetization.triggerSpireBoost('tsadi', (spireId, idleTimeSeconds) => {
+          calledWith = [spireId, idleTimeSeconds];
+        });
+        assert.deepEqual(result, { success: true, idleTimeSeconds: 2 * 60 * 60 });
+        assert.deepEqual(calledWith, ['tsadi', 7200]);
+        const cooldown = monetization.getBoostCooldown('tsadi');
+        assert.equal(cooldown.onCooldown, true);
+        assert.equal(cooldown.remainingMs, 60 * 60 * 1000);
+      } finally {
+        Date.now = realNow;
+      }
+    });
+
+    test('monetizationState: a second boost attempt on the same spire while on cooldown is rejected', async () => {
+      const result = await monetization.triggerSpireBoost('tsadi', () => {});
+      assert.equal(result.success, false);
+      assert.equal(result.error, 'Boost on cooldown');
+      assert.ok(result.remainingMs > 0);
+    });
+
+    test('monetizationState: successful gem boost invokes grantGems(100) and returns its result', async () => {
+      const result = await monetization.triggerGemBoost((amount) => {
+        assert.equal(amount, 100);
+        return 100;
+      });
+      assert.deepEqual(result, { success: true, gemsGranted: 100 });
+    });
+  }
+
+  test('monetizationState: loadMonetizationState merges a persisted snapshot without a window/localStorage guard crash', async () => {
+    const originalWindow = global.window;
+    try {
+      global.window = undefined;
+      const monetization = await importFreshMonetizationState();
+      assert.doesNotThrow(() => monetization.loadMonetizationState());
+    } finally {
+      global.window = originalWindow;
+    }
+  });
+
+  global.setTimeout = realSetTimeout;
+
   // --- report --------------------------------------------------------------
   if (failures.length) {
     console.error(`\nUnit tests failed: ${failures.length}/${passed + failures.length}`);
