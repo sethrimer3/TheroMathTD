@@ -8,7 +8,7 @@
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "build": "tsc && node scripts/build-static.cjs",
+    "build": "tsc && node scripts/sync-ts-output.cjs && node scripts/build-static.cjs",
     "desktop": "npm run build && electron .",
     "electron": "electron .",
     "lint": "eslint .",

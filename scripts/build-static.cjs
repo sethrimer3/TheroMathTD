@@ -17,6 +17,10 @@ function copyEntry(name) {
     recursive: true,
     force: true,
     errorOnExist: false,
+    // Skip TypeScript sources: compiled .js siblings (produced by `tsc` +
+    // scripts/sync-ts-output.cjs, run before this script as part of `npm run
+    // build`) already sit next to them and are what the runtime imports.
+    filter: (src) => !src.endsWith('.ts'),
   });
 }
 

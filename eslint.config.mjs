@@ -1,6 +1,8 @@
 export default [
   {
-    ignores: ["node_modules/**", "dist/**"],
+    // TypeScript sources are type-checked by `npm run typecheck` (tsc --strict);
+    // no @typescript-eslint parser/plugin is installed, so keep .ts out of eslint's scope.
+    ignores: ["node_modules/**", "dist/**", "build/**", "**/*.ts"],
   },
   {
     languageOptions: {

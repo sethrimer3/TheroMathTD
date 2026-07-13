@@ -15,8 +15,7 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmitOnError": true,
-    "rootDir": "./assets",
-    "outDir": "./assets"
+    "outDir": "./build/ts-out"
   },
   "include": [
     "assets/uiTabManager.ts",
