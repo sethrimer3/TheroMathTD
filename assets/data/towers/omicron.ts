@@ -1,0 +1,19 @@
+/**
+ * Omicron Tower definition extracted from the gameplay configuration.
+ */
+import type { TowerDefinition } from './types.js';
+
+export const OMICRON_TOWER = Object.freeze({
+  id: 'omicron',
+  symbol: 'ο',
+  name: 'ο Tower',
+  tier: 15,
+  baseCost: 240000000000,
+  damage: 1500,
+  rate: 0.58,
+  range: 0.54,
+  icon: 'assets/images/tower-omicron.svg',
+  nextTierId: 'pi',
+} as const satisfies TowerDefinition);
+
+export default OMICRON_TOWER;

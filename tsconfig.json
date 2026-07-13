@@ -19,13 +19,12 @@
     "rootDir": "."
   },
   "include": [
-    "assets/uiTabManager.ts",
-    "assets/spireFloatingMenu.ts",
-    "assets/tabLockManager.ts",
-    "assets/spireTabVisibility.ts",
-    "assets/autoSave.ts",
-    "scripts/core/formatting.ts",
-    "scripts/core/mathText.ts",
-    "assets/preferences.ts"
+    "assets/**/*.ts",
+    "scripts/**/*.ts"
+  ],
+  "exclude": [
+    "build",
+    "dist",
+    "node_modules"
   ]
 }

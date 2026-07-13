@@ -1,0 +1,19 @@
+/**
+ * Omega Tower definition extracted from the gameplay configuration.
+ */
+import type { TowerDefinition } from './types.js';
+
+export const OMEGA_TOWER = Object.freeze({
+  id: 'omega',
+  symbol: 'Ω',
+  name: 'ω Tower',
+  tier: 24,
+  baseCost: 9600000000000000,
+  damage: 8000,
+  rate: 0.4,
+  range: 0.74,
+  icon: 'assets/images/tower-omega.svg',
+  nextTierId: 'infinity',
+} as const satisfies TowerDefinition);
+
+export default OMEGA_TOWER;
