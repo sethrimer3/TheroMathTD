@@ -22,12 +22,14 @@
   `<script type="module">` imports and no dev server/bundler is required.
 - **`package.json`:** `devDependencies` has `typescript@^5.7.0`, `eslint@^10.2.0`, `electron@^42.2.0`.
   No `@types/*` packages installed. `npm run typecheck` (`tsc --noEmit`) and `npm run build` both exist.
-- **Files converted so far (43 `.ts` files, all under strict mode, zero `any`):**
+- **Files converted so far (46 `.ts` files, all under strict mode, zero `any`):**
   `assets/uiTabManager.ts`, `assets/spireFloatingMenu.ts`, `assets/tabLockManager.ts`,
   `assets/spireTabVisibility.ts`, `assets/autoSave.ts`, `assets/preferences.ts`,
   `scripts/core/formatting.ts`, `scripts/core/mathText.ts` (Phases 1–3), plus all 33 files under
   `assets/data/towers/` (32 tower-definition modules + `index.ts`) and the new
-  `assets/data/towers/types.ts` (Phase 4).
+  `assets/data/towers/types.ts` (Phase 4), plus `assets/state/resourceState.ts`,
+  `assets/state/spireResourceState.ts`, `assets/state/monetizationState.ts` (Phase 5A).
+  `assets/state/cognitiveRealmState.js` remains unmigrated (Phase 5B, deferred).
 - **Migration count methodology (see `JavaToTypeScriptConversionPlan.md`'s "Documentation and Tooling
   Repair" section for full detail):** a *converted* module is an authored `.ts` file excluding
   `.d.ts`; a *remaining* module is an authored `.js` file with no same-path `.ts` sibling; `dist/`,
@@ -36,17 +38,19 @@
   document reported "358 remaining `.js` files" / "~366 total," which conflated the raw on-disk `.js`
   count with the true remaining count — the 8 Phase 1–3 modules' compiled `.js` siblings were being
   counted twice. That has been corrected below.)
-- **Remaining plain JavaScript (corrected):** **316 `.js` files** with no `.ts` sibling, outside
+- **Remaining plain JavaScript (corrected):** **313 `.js` files** with no `.ts` sibling, outside
   `dist/`, `build/`, and `node_modules/` (dist is build output and mirrors source 1:1 — it should
   never be migrated directly, only regenerated).
 - **Everything currently compiles/lints clean**: `npm run typecheck`, `npm run build`, `npm run lint`
   all pass. `npm test` (smoke test) fails on 4 pre-existing, unrelated missing-favicon errors (not a
-  migration blocker). `npm run test:unit` is 38/38.
+  migration blocker). `npm run test:unit` is 58/58.
 
-**Progress so far:** 43 of 359 total authored JS/TS source modules converted (~12%), concentrated in
-navigation, persistence primitives, user preferences (Phases 1–3), and static tower-definition data
-(Phase 4) — deliberately the lowest-risk, most widely-imported utility/config tier, per the existing
-plan's own stated strategy.
+**Progress so far:** 46 of 359 total authored JS/TS source modules converted (~13%), concentrated in
+navigation, persistence primitives, user preferences (Phases 1–3), static tower-definition data
+(Phase 4), and the three smaller `assets/state/*.js` game-state containers (Phase 5A) — deliberately
+the lowest-risk, most widely-imported utility/config tier, per the existing plan's own stated
+strategy. `assets/state/cognitiveRealmState.js` (Phase 5B) remains the one deferred file in that
+folder.
 
 ---
 

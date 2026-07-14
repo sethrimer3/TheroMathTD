@@ -710,7 +710,7 @@ See the "Phase 5 — Game State Containers" section above for full detail. Summa
 - `npm run typecheck`, `npm run build`, `npm run lint` all clean; `npm test` fails with the same 4 pre-existing favicon errors (no new failures); `npm run test:unit` 58/58.
 - Manual/browser verification was **not** performed this session (no browser-automation tool call was made); recorded explicitly rather than assumed.
 - Recalculated migration counts per the Phase 4 methodology: converted `.ts` modules 43 → **46** (+3: `resourceState.ts`, `spireResourceState.ts`, `monetizationState.ts`); total authored source modules unchanged at **359** (conversions, not new files); remaining unconverted `.js` 316 → **313**.
-- `assets/buildInfo.js#BUILD_NUMBER` was left unchanged in this pass; see the note under Documentation updates below regarding whether this session's convention required an increment.
+- `assets/buildInfo.js#BUILD_NUMBER` incremented from 726 to 727 per `AGENT_START_HERE.md`'s standing convention ("increment by 1 for every change"). Note: Phase 4 did not increment this value (still read 726 at the start of this session, unchanged since Phase 3), so this phase resumes the convention rather than continuing an unbroken sequence.
 
 **Suspected pre-existing defects recorded, not fixed:** `spireResourceState.ts`'s inherited `mergeBranch` helper unconditionally adds a `generators: {}` field to the `lamed`/`tsadi` branches even though neither branch's shape declares one; no consumer currently reads it. See Known Issues above.
 
