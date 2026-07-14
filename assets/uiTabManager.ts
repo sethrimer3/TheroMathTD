@@ -7,23 +7,17 @@ export type TabId =
   | 'tower'
   | 'towers'
   | 'powder'
-  | 'fluid'
-  | 'lamed'
-  | 'tsadi'
-  | 'shin'
-  | 'kuf'
   | 'achievements'
   | 'options';
 
-type TabHotkey = '1' | '2' | '3' | '4' | '5' | '6';
+type TabHotkey = '1' | '2' | '3' | '4' | '5';
 
 const tabHotkeys = new Map<TabHotkey, TabId>([
   ['1', 'tower'],
   ['2', 'towers'],
   ['3', 'powder'],
-  ['4', 'fluid'],
-  ['5', 'achievements'],
-  ['6', 'options'],
+  ['4', 'achievements'],
+  ['5', 'options'],
 ]);
 
 export interface TabManagerCallbacks {

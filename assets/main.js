@@ -28,7 +28,6 @@ import {
   FALLBACK_BASE_ENERGY_RATE,
   FALLBACK_BASE_FLUX_RATE,
   ensureGameplayConfigLoaded,
-  loadFluidSimulationProfile,
   calculateStartingThero,
   getTowerLoadoutLimit,
   overrideTowerLoadoutLimit,
@@ -145,7 +144,6 @@ import { createSpireResourceState } from './state/spireResourceState.js';
 import { createPowderStateContext } from './powder/powderState.js';
 import { createSpireResourcePersistence } from './spireResourcePersistence.js';
 import { createLevelCombatController } from './levelCombatController.js';
-import { createSpireResourceBanks } from './spireResourceBanks.js';
 // Alpha tower sprite tint cache builder for palette-synced shot particles.
 import { refreshAlphaShotSpritePaletteCache } from '../scripts/features/towers/alphaTower.js';
 // Beta tower sprite tint cache builder for palette-synced shot particles.
@@ -167,15 +165,12 @@ import {
 // Shin UI components for fractal tab management and display.
 // Cardinal Warden reverse danmaku game for Shin Spire.
 // Shin Grapheme Codex UI for displaying grapheme information.
-// Shin Spire ambient substrate crystalline background effect.
-// Tsadi Spire ambient vermiculate worm-line background effect.
 // Shared color palette orchestration utilities.
 import {
   configureColorSchemeSystem,
   bindColorSchemeButton,
   initializeColorScheme,
   COLOR_SCHEME_STORAGE_KEY,
-  samplePaletteGradient,
 } from './colorSchemeUtils.js';
 import {
   configureAchievementsTab,
@@ -247,9 +242,7 @@ import {
   addGlyphCurrency,
   getGlyphCurrency,
   setBetGlyphCurrency,
-  addBetGlyphCurrency,
   getBetGlyphCurrency,
-  setTsadiGlyphCurrency,
   setTheroSymbol,
   setHideUpgradeMatrixCallback,
   setRenderUpgradeMatrixCallback,
@@ -284,7 +277,6 @@ import {
   getTowerUpgradeStateSnapshot,
   initializeT2Toggles,
   applyTowerUpgradeStateSnapshot,
-  calculateInvestedGlyphs,
   clearTowerUpgradeState,
   configureTowersTabCallbacks,
   refreshTowerIconPalettes,
@@ -406,7 +398,6 @@ import { clampNormalizedCoordinate } from './geometryHelpers.js';
 import { createIdleResourceBankController } from './idleResourceBankController.js';
 import { createPlayfieldLayoutController } from './playfieldLayoutController.js';
 import { createSpireCameraController } from './spireCameraController.js';
-import { createDeveloperSpamController } from './developerSpamController.js';
 
 (() => {
   'use strict';
@@ -441,14 +432,6 @@ import { createDeveloperSpamController } from './developerSpamController.js';
     tabMoteBadge: null,
     tabFluidBadge: null,
   };
-  let getTrackedLamedGlyphs = () => 0;
-  let setTrackedLamedGlyphs = () => {};
-  let getTrackedTsadiGlyphs = () => 0;
-  let setTrackedTsadiGlyphs = () => {};
-  let getTrackedShinGlyphs = () => 0;
-  let setTrackedShinGlyphs = () => {};
-  let getTrackedKufGlyphs = () => 0;
-  let setTrackedKufGlyphs = () => {};
 
   const THERO_SYMBOL = 'þ';
   const _COMMUNITY_DISCORD_INVITE = 'https://discord.gg/UzqhfsZQ8n'; // Reserved for future placement.
@@ -843,14 +826,26 @@ import { createDeveloperSpamController } from './developerSpamController.js';
 
   const spireResourceState = createSpireResourceState();
 
+  const {
+    getTowerUpgradeStateSnapshotWithAleph,
+    applyTowerUpgradeStateSnapshotWithAleph,
+    getSpireResourceStateSnapshot,
+    applySpireResourceStateSnapshot,
+  } = createSpireResourcePersistence({
+    spireResourceState,
+    moteGemState,
+    getTowerUpgradeStateSnapshot,
+    applyTowerUpgradeStateSnapshot,
+    getAlephChainUpgrades,
+    applyAlephChainUpgradeSnapshot,
+    getPlayfield: () => playfield,
+  });
+
   // Ensure compact autosave remains the active basin persistence strategy.
   document.addEventListener('DOMContentLoaded', () => {
     try {
       if (window.powderSimulation) {
         window.powderSimulation.useCompactAutosave = true;
-      }
-      if (window.fluidSimulationInstance) {
-        window.fluidSimulationInstance.useCompactAutosave = true;
       }
     } catch (_e) {
       // Ignore assignment failures caused by missing window globals during SSR/tests.
@@ -864,7 +859,6 @@ import { createDeveloperSpamController } from './developerSpamController.js';
     powderState,
     getSandSimulation: () => sandSimulation,
     getPowderSimulation: () => powderSimulation,
-    getFluidSimulation: () => fluidSimulationInstance,
     schedulePowderBasinSave,
     updateStatusDisplays,
   });
@@ -872,14 +866,7 @@ import { createDeveloperSpamController } from './developerSpamController.js';
   // Thin delegates so existing call sites continue to work unchanged.
   const getCurrentIdleMoteBank = idleBankCtrl.getCurrentIdleMoteBank;
   const getCurrentMoteDispenseRate = idleBankCtrl.getCurrentMoteDispenseRate;
-  const getCurrentFluidDropBank = idleBankCtrl.getCurrentFluidDropBank;
-  const spendFluidSerendipity = idleBankCtrl.spendFluidSerendipity;
-  const _getCurrentFluidDispenseRate = idleBankCtrl.getCurrentFluidDispenseRate;
   const addIdleMoteBank = idleBankCtrl.addIdleMoteBank;
-  const getLamedSparkBank = idleBankCtrl.getLamedSparkBank;
-  const setLamedSparkBank = idleBankCtrl.setLamedSparkBank;
-  const getTsadiParticleBank = idleBankCtrl.getTsadiParticleBank;
-  const setTsadiParticleBank = idleBankCtrl.setTsadiParticleBank;
   const flushPendingMoteDrops = idleBankCtrl.flushPendingMoteDrops;
 
   // Controller that wires the floating spire navigation UI and count displays.
@@ -887,16 +874,6 @@ import { createDeveloperSpamController } from './developerSpamController.js';
     formatGameNumber,
     formatWholeNumber,
     getCurrentIdleMoteBank,
-    getCurrentFluidDropBank,
-    getLamedSparkBank,
-    getTsadiParticleBank,
-    getShinGlyphs,
-    getKufGlyphs,
-    isFluidUnlocked: () => Boolean(spireResourceState.fluid?.unlocked || powderState.fluidUnlocked),
-    isLamedUnlocked: () => Boolean(spireResourceState.lamed?.unlocked),
-    isTsadiUnlocked: () => Boolean(spireResourceState.tsadi?.unlocked),
-    isShinUnlocked: () => Boolean(spireResourceState.shin?.unlocked),
-    isKufUnlocked: () => Boolean(spireResourceState.kuf?.unlocked),
     setActiveTab,
     playMenuSelectSfx: () => {
       if (audioManager) {
@@ -921,13 +898,8 @@ import { createDeveloperSpamController } from './developerSpamController.js';
     formatWholeNumber,
     getStartingTheroMultiplier,
     getGlyphCurrency,
-    getBetGlyphCurrency,
-    getShinGlyphs,
-    getKufGlyphs,
     getCurrentIdleMoteBank,
-    getCurrentFluidDropBank,
     powderState,
-    spireResourceState,
     spireMenuController,
   });
 
@@ -935,38 +907,13 @@ import { createDeveloperSpamController } from './developerSpamController.js';
   bindStatusElements = resourceHud.bindStatusElements;
   updateStatusDisplays = resourceHud.updateStatusDisplays;
   registerResourceHudRefreshCallback = resourceHud.registerStatusRefreshCallback;
-  getTrackedLamedGlyphs = resourceHud.getTrackedLamedGlyphs;
-  setTrackedLamedGlyphs = resourceHud.setTrackedLamedGlyphs;
-  getTrackedTsadiGlyphs = resourceHud.getTrackedTsadiGlyphs;
-  setTrackedTsadiGlyphs = resourceHud.setTrackedTsadiGlyphs;
-  getTrackedShinGlyphs = resourceHud.getTrackedShinGlyphs;
-  setTrackedShinGlyphs = resourceHud.setTrackedShinGlyphs;
-  getTrackedKufGlyphs = resourceHud.getTrackedKufGlyphs;
-  setTrackedKufGlyphs = resourceHud.setTrackedKufGlyphs;
-
-  setTrackedLamedGlyphs(spireResourceState.lamed?.stats?.starMilestoneReached || 0);
-  const trackedTsadiCount = Number.isFinite(spireResourceState.tsadi?.stats?.totalGlyphs)
-    ? spireResourceState.tsadi.stats.totalGlyphs
-    : spireResourceState.tsadi?.stats?.totalParticles || 0;
-  setTrackedTsadiGlyphs(trackedTsadiCount);
-  // Seed the tower-tab Tsadi glyph currency so Phase Coupling upgrades are spendable.
-  setTsadiGlyphCurrency(Math.max(0, trackedTsadiCount));
-  setTrackedShinGlyphs(getShinGlyphs());
-  setTrackedKufGlyphs(getKufGlyphs());
-
   const {
-    bindFluidControls,
-    bindAchievementsTerrariumControls,
     applyMindGatePaletteToDom,
     updateMoteGemInventoryDisplay: renderMoteGemInventoryDisplay,
     updatePowderGlyphColumns,
-    updateFluidGlyphColumns,
   } = createPowderUiDomHelpers({
     getPowderElements,
-    fluidElements,
-    achievementsTerrariumElements,
     powderGlyphColumns,
-    fluidGlyphColumns,
     moteGemState,
     formatWholeNumber,
     formatGameNumber,
@@ -1003,10 +950,8 @@ import { createDeveloperSpamController } from './developerSpamController.js';
     powderConfig,
     mergeMotePalette,
     applyMindGatePaletteToDom,
-    updateFluidTabAvailability,
     schedulePowderBasinSave,
     getPowderSimulation: () => powderSimulation,
-    getFluidSimulation: () => fluidSimulationInstance,
   });
   const getPowderBasinSnapshot = powderPersistence.getPowderBasinSnapshot;
   const applyPowderBasinSnapshot = (snapshot) => {
@@ -1018,25 +963,7 @@ import { createDeveloperSpamController } from './developerSpamController.js';
   // Declare simulation instances early to avoid Temporal Dead Zone errors when referenced in initialization functions.
   let sandSimulation = null;
   let powderSimulation = null;
-  let fluidSimulationInstance = null;
-  let lamedSimulationInstance = null;
-  let tsadiSimulationInstance = null;
   // ── Developer spam controller (extracted from main.js) ────────────────
-  const developerSpamCtrl = createDeveloperSpamController({
-    isDeveloperModeActive: () => developerModeActive,
-    getLamedSimulation: () => lamedSimulationInstance,
-    getTsadiSimulation: () => tsadiSimulationInstance,
-  });
-  const stopLamedDeveloperSpamLoop = developerSpamCtrl.stopLamedSpamLoop;
-  const attachLamedDeveloperSpamTarget = developerSpamCtrl.attachLamedSpamTarget;
-  const attachTsadiDeveloperSpamTarget = developerSpamCtrl.attachTsadiSpamTarget;
-  let tsadiOptionsBound = false;
-  let _shinSimulationInstance = null;
-  let tsadiBindingUiInitialized = false;
-  let kufUiInitialized = false;
-  let cardinalWardenInitialized = false;
-  let pendingSpireResizeFrame = null;
-  let previousTabId = getActiveTabId();
 
   // Surface the active powder simulation so Aleph visual preferences can reapply on swaps.
   setPowderSimulationGetter(() => powderSimulation);
@@ -1089,29 +1016,15 @@ import { createDeveloperSpamController } from './developerSpamController.js';
     getCurrentIdleMoteBank,
     getCurrentMoteDispenseRate,
     THERO_SYMBOL,
-    bindFluidControls,
-    updateFluidDisplay,
     updatePowderLogDisplay,
     updateMoteGemInventoryDisplay,
     SIGIL_LADDER_IS_STUB,
     getPowderSimulation: () => powderSimulation,
     spireResourceState,
     addIdleMoteBank,
-    getLamedSparkBank,
-    setLamedSparkBank,
-    getTsadiParticleBank,
-    setTsadiParticleBank,
-    getTsadiBindingAgents,
-    setTsadiBindingAgents,
-    addIterons,
-    updateShinDisplay,
     evaluateAchievements,
     spireMenuController,
     gameStats,
-    getIteronBank,
-    getKufGlyphs,
-    setKufGlyphs,
-    onTsadiBindingAgentsChange: syncTsadiBindingAgents,
   });
 
   setPowderElements(powderElements);
@@ -1124,7 +1037,6 @@ import { createDeveloperSpamController } from './developerSpamController.js';
 
   registerResourceHudRefreshCallback(updateMoteStatsDisplays);
   registerResourceHudRefreshCallback(updatePowderModeButton);
-  registerResourceHudRefreshCallback(updateFluidDisplay);
 
   // Provide the developer controls module with runtime state references once all powder helpers are wired.
   configureDeveloperControls({
@@ -1133,9 +1045,6 @@ import { createDeveloperSpamController } from './developerSpamController.js';
     setDeveloperInfiniteTheroEnabled,
     recordPowderEvent,
     getPowderSimulation: () => powderSimulation,
-    getFluidSimulation: () => fluidSimulationInstance,
-    getLamedSimulation: () => lamedSimulationInstance,
-    getTsadiSimulation: () => tsadiSimulationInstance,
     powderState,
     handlePowderIdleBankChange,
     schedulePowderBasinSave,
@@ -1154,23 +1063,8 @@ import { createDeveloperSpamController } from './developerSpamController.js';
     setBetGlyphCurrency,
     getBetGlyphCurrency,
     spireResourceState,
-    setTrackedLamedGlyphs,
-    setTrackedTsadiGlyphs,
-    setTrackedShinGlyphs,
-    setTrackedKufGlyphs,
-    updateSpireTabVisibility,
-    checkAndUnlockSpires,
-    getShinGlyphs,
-    setShinGlyphs,
-    getKufGlyphs,
-    setKufGlyphs,
     gameStats,
-    addIterons,
-    getIteronBank,
-    setIterationRate,
-    updateShinDisplay,
     updateDeveloperMapElementsVisibility,
-    updateBetSpireDebugControlsVisibility,
     updatePowderRenderSizeControlsVisibility,
     getCurrentIdleMoteBank,
     getCurrentMoteDispenseRate,
@@ -1206,7 +1100,6 @@ import { createDeveloperSpamController } from './developerSpamController.js';
 
   // Configure the boosts section with dependencies
   configureBoostsSection({
-    applyIdleTimeToSpire,
     grantRandomGems,
   });
 
@@ -1239,9 +1132,7 @@ import { createDeveloperSpamController } from './developerSpamController.js';
     initializePowderViewInteraction,
   } = createPowderViewportController({
     getActiveSimulation: () => powderSimulation,
-    getFluidSimulation: () => fluidSimulationInstance,
     getPowderElements: () => powderElements,
-    getFluidElements: () => fluidElements,
     powderState,
     powderConfig,
     schedulePowderBasinSave,
@@ -1252,10 +1143,7 @@ import { createDeveloperSpamController } from './developerSpamController.js';
   const cameraCtrl = createSpireCameraController({
     powderState,
     getPowderSimulation: () => powderSimulation,
-    getFluidSimulation: () => fluidSimulationInstance,
     getSandSimulation: () => sandSimulation,
-    getFluidElements: () => fluidElements,
-    getFluidTerrariumTrees: () => null,
     handlePowderViewTransformChange,
     handlePowderWallMetricsChange,
     schedulePowderBasinSave,
@@ -1264,10 +1152,6 @@ import { createDeveloperSpamController } from './developerSpamController.js';
   // Thin delegates so existing call sites continue to work unchanged.
   const _resetPowderCameraTransform = cameraCtrl.resetPowderCameraTransform;
   const setPowderCameraMode = cameraCtrl.setPowderCameraMode;
-  const _resetFluidCameraTransform = cameraCtrl.resetFluidCameraTransform;
-  const syncFluidCameraModeUi = cameraCtrl.syncFluidCameraModeUi;
-  const setFluidCameraMode = cameraCtrl.setFluidCameraMode;
-  const bindFluidCameraModeToggle = cameraCtrl.bindFluidCameraModeToggle;
   const refreshPowderWallDecorations = cameraCtrl.refreshPowderWallDecorations;
 
   // Hook the Well of Inspiration settings toggle into the camera control handler.
@@ -1376,12 +1260,8 @@ import { createDeveloperSpamController } from './developerSpamController.js';
   const { initializeManualDropHandlers } = createManualDropController({
     getActiveTabId,
     getSandSimulation: () => sandSimulation,
-    getFluidSimulation: () => fluidSimulationInstance,
-    getLamedSimulation: () => lamedSimulationInstance,
-    getTsadiSimulation: () => tsadiSimulationInstance,
     getSelectedGem: (spireId) => spireGemMenuController?.getSelection(spireId),
     consumeGem: consumeGemFromInventory,
-    addIterons,
   });
 
   const {
@@ -1398,7 +1278,6 @@ import { createDeveloperSpamController } from './developerSpamController.js';
     getPowderSimulation: () => powderSimulation,
     handlePowderViewTransformChange,
     getPowderElements,
-    getFluidElements: () => fluidElements,
   });
 
   const { bindDeveloperModeToggle, refreshDeveloperModeState } = createDeveloperModeManager({
@@ -1416,9 +1295,6 @@ import { createDeveloperSpamController } from './developerSpamController.js';
     setMergingLogicUnlocked,
     powderState,
     spireResourceState,
-    setKufTotalShards,
-    resetKufState,
-    setTrackedKufGlyphs,
     setDeveloperIteronBank,
     setDeveloperIterationRate,
     setDeveloperInfiniteTheroEnabled,
@@ -1430,13 +1306,6 @@ import { createDeveloperSpamController } from './developerSpamController.js';
     setSandSimulation: (value) => {
       sandSimulation = value;
     },
-    getFluidSimulation: () => fluidSimulationInstance,
-    setFluidSimulation: (value) => {
-      fluidSimulationInstance = value;
-    },
-    getLamedSimulation: () => lamedSimulationInstance,
-    getTsadiSimulation: () => tsadiSimulationInstance,
-    updateSpireTabVisibility,
     spireMenuController,
     unlockedLevels,
     interactiveLevelOrder,
@@ -1446,7 +1315,6 @@ import { createDeveloperSpamController } from './developerSpamController.js';
     getEnemyCodexEntries,
     codexState,
     renderEnemyCodex,
-    refreshEnemyAlmanac,
     updateLevelCards,
     updateActiveLevelBanner,
     updateTowerCardVisibility,
@@ -1461,19 +1329,10 @@ import { createDeveloperSpamController } from './developerSpamController.js';
     syncDeveloperControlValues,
     syncLevelEditorVisibility,
     updateDeveloperMapElementsVisibility,
-    updateBetSpireDebugControlsVisibility,
     getPlayfield: () => playfield,
     getPlayfieldMenuController: () => playfieldMenuController,
-    unlockAllFractals,
-    refreshFractalTabs,
-    addIterons,
-    resetShinState,
-    setShinGlyphs,
-    setTrackedShinGlyphs,
-    updateShinDisplay,
     refreshPowderWallDecorations,
     clearDeveloperTheroMultiplierOverride,
-    stopLamedDeveloperSpamLoop,
     deactivateDeveloperMapTools,
     setDeveloperMapPlacementMode,
     persistentStorageKeys: PERSISTENT_STORAGE_KEYS,
@@ -1494,9 +1353,7 @@ import { createDeveloperSpamController } from './developerSpamController.js';
     applyMindGatePaletteToDom,
     mergeMotePalette,
     defaultMotePalette: DEFAULT_MOTE_PALETTE,
-    updateFluidTabAvailability,
     resetAlephChainUpgrades,
-    reconcileGlyphCurrencyFromState,
     updatePowderWallGapFromGlyphs,
     moteGemState,
     clearTowerUpgradeState,
@@ -1580,230 +1437,71 @@ import { createDeveloperSpamController } from './developerSpamController.js';
   }
 
 
-  async function applyPowderSimulationMode(mode) {
-    if (mode !== 'sand' && mode !== 'fluid') {
-      return;
-    }
-    if (powderState.modeSwitchPending) {
-      return;
-    }
-    if (!FLUID_STUDY_ENABLED && mode === 'fluid') {
-      // Keep the retired fluid simulation dormant even if legacy saves request it.
-      powderState.simulationMode = 'sand';
-      updatePowderModeButton();
-      return;
-    }
-    if (mode === 'fluid' && !powderState.fluidUnlocked) {
-      updatePowderModeButton();
-      return;
-    }
-
+  async function applyPowderSimulationMode() {
+    if (powderState.modeSwitchPending) return;
     powderState.modeSwitchPending = true;
-    // Mode toggle button removed
-    // if (powderElements.modeToggle) {
-    //   powderElements.modeToggle.disabled = true;
-    // }
-
-    const previousMode = powderState.simulationMode;
     try {
-      if (mode === 'fluid') {
-        const profile = await loadFluidSimulationProfile();
-        if (!profile) {
-          throw new Error('Fluid simulation profile unavailable.');
-        }
-        powderState.fluidProfileLabel = profile.label || powderState.fluidProfileLabel;
-
-        if (!fluidSimulationInstance && fluidElements.canvas) {
-          const { left: leftInset, right: rightInset } = getSimulationWallInsets('fluid');
-          fluidSimulationInstance = new FluidSimulation({
-            canvas: fluidElements.canvas,
-            cellSize: POWDER_CELL_SIZE_PX,
-            scrollThreshold: 0.5,
-            wallInsetLeft: leftInset,
-            wallInsetRight: rightInset,
-            wallGapCells: powderConfig.wallBaseGapMotes,
-            gapWidthRatio: powderConfig.wallGapViewportRatio,
-            idleDrainRate: powderState.fluidIdleDrainRate || powderState.idleDrainRate,
-            motePalette: powderState.motePalette,
-            dropSizes: profile.dropSizes,
-            dropVolumeScale: profile.dropVolumeScale ?? undefined,
-            waveStiffness: profile.waveStiffness ?? undefined,
-            waveDamping: profile.waveDamping ?? undefined,
-            sideFlowRate: profile.sideFlowRate ?? undefined,
-            rippleFrequency: profile.rippleFrequency ?? undefined,
-            rippleAmplitude: profile.rippleAmplitude ?? undefined,
-            maxDuneGain: powderConfig.simulatedDuneGainMax,
-            onIdleBankChange: (value) => handlePowderIdleBankChange(value, 'fluid'),
-            onHeightChange: (info) => handlePowderHeightChange(info, 'fluid'),
-            onWallMetricsChange: (metrics) => handlePowderWallMetricsChange(metrics, 'fluid'),
-            onViewTransformChange: handlePowderViewTransformChange,
-          });
-        }
-
-        if (!fluidSimulationInstance) {
-          throw new Error('Fluid simulation could not be created.');
-        }
-
-        if (powderSimulation && powderSimulation !== fluidSimulationInstance) {
-          captureSimulationState(powderSimulation);
-          powderSimulation.stop();
-        }
-
-        powderSimulation = fluidSimulationInstance;
-        powderSimulation.applyProfile(profile);
-        if (Number.isFinite(profile.flowOffset) && typeof powderSimulation.setFlowOffset === 'function') {
-          powderSimulation.setFlowOffset(profile.flowOffset);
-        } else if (typeof powderSimulation.setFlowOffset === 'function') {
-          powderSimulation.setFlowOffset(powderState.sandOffset);
-        }
-        powderState.motePalette = powderSimulation.getEffectiveMotePalette();
-        // Update the Mind Gate UI badge so fluid-mode palettes propagate outside the canvas.
-        applyMindGatePaletteToDom(powderState.motePalette);
-        powderState.fluidIdleDrainRate = powderSimulation.idleDrainRate;
-        powderState.simulationMode = 'fluid';
-        setAlephTierTransitionVisualState('idle');
-        powderSimulation.setWallGapTarget(powderState.wallGapTarget || powderConfig.wallBaseGapMotes, {
-          skipRebuild: true,
+      if (!sandSimulation && powderSimulation instanceof PowderSimulation) sandSimulation = powderSimulation;
+      if (!sandSimulation && powderElements.simulationCanvas) {
+        const { left: leftInset, right: rightInset } = getSimulationWallInsets();
+        sandSimulation = new PowderSimulation({
+          canvas: powderElements.simulationCanvas,
+          cellSize: POWDER_CELL_SIZE_PX,
+          grainSizes: [1],
+          scrollThreshold: 0.75,
+          wallInsetLeft: leftInset,
+          wallInsetRight: rightInset,
+          wallGapCells: powderConfig.wallBaseGapMotes,
+          gapWidthRatio: powderConfig.wallGapViewportRatio,
+          maxDuneGain: powderConfig.simulatedDuneGainMax,
+          idleDrainRate: resolveAlephTierRate(
+            powderState.alephBaseIdleDrainRate ?? powderState.idleDrainRate,
+            powderState.alephWallTier,
+          ),
+          motePalette: resolveAlephTierStubPalette(powderState.alephWallTier),
+          onIdleBankChange: (value) => handlePowderIdleBankChange(value, 'sand'),
+          onHeightChange: (info) => handlePowderHeightChange(info, 'sand'),
+          onWallMetricsChange: (metrics) => handlePowderWallMetricsChange(metrics, 'sand'),
+          onViewTransformChange: handlePowderViewTransformChange,
         });
-        powderSimulation.handleResize();
-        applyLoadedPowderSimulationState(powderSimulation);
-        flushPendingMoteDrops();
-        powderSimulation.start();
-        applyPowderVisualSettings();
-        initializePowderViewInteraction();
-        handlePowderViewTransformChange(powderSimulation.getViewTransform());
-        syncFluidCameraModeUi();
-        if (previousMode !== powderState.simulationMode) {
-          recordPowderEvent('mode-switch', { mode: 'fluid', label: profile.label || 'Bet Spire' });
-        }
-      } else {
-        if (!sandSimulation && powderSimulation instanceof PowderSimulation) {
-          sandSimulation = powderSimulation;
-        }
-        if (!sandSimulation && powderElements.simulationCanvas) {
-          const { left: leftInset, right: rightInset } = getSimulationWallInsets('sand');
-          sandSimulation = new PowderSimulation({
-            canvas: powderElements.simulationCanvas,
-            cellSize: POWDER_CELL_SIZE_PX,
-            grainSizes: [1], // Keep the sandfall motes uniform while preserving external drop sizing.
-            scrollThreshold: 0.75,
-            wallInsetLeft: leftInset,
-            wallInsetRight: rightInset,
-            wallGapCells: powderConfig.wallBaseGapMotes,
-            gapWidthRatio: powderConfig.wallGapViewportRatio,
-            maxDuneGain: powderConfig.simulatedDuneGainMax,
-            idleDrainRate: resolveAlephTierRate(
-              powderState.alephBaseIdleDrainRate ?? powderState.idleDrainRate,
-              powderState.alephWallTier,
-            ),
-            motePalette: resolveAlephTierStubPalette(powderState.alephWallTier),
-            onIdleBankChange: (value) => handlePowderIdleBankChange(value, 'sand'),
-            onHeightChange: (info) => handlePowderHeightChange(info, 'sand'),
-            onWallMetricsChange: (metrics) => handlePowderWallMetricsChange(metrics, 'sand'),
-            onViewTransformChange: handlePowderViewTransformChange,
-          });
-        }
-
-        if (powderSimulation && powderSimulation !== sandSimulation) {
-          captureSimulationState(powderSimulation);
-          powderSimulation.stop();
-        }
-
-        if (!sandSimulation) {
-          throw new Error('Powder simulation unavailable.');
-        }
-
-        powderSimulation = sandSimulation;
-        const baseProfile = powderSimulation.getDefaultProfile();
-        powderSimulation.applyProfile(baseProfile || undefined);
-        syncAlephTierVisualProfile(resolveAlephTierProgress(powderState.wallGlyphsLit || 0));
-        powderSimulation.setFlowOffset(powderState.sandOffset);
-        powderState.motePalette = powderSimulation.getEffectiveMotePalette();
-        // Sync the emblem glow when returning to the sand simulation baseline palette.
-        applyMindGatePaletteToDom(powderState.motePalette);
-        powderState.idleDrainRate = powderSimulation.idleDrainRate;
-        powderState.simulationMode = 'sand';
-        if (powderState.alephTierTransition?.active) {
-          setAlephTierTransitionSpawnState({
-            spawnEnabled: false,
-            floorDrainEnabled: true,
-            clearPendingDrops: true,
-          });
-          setAlephTierTransitionVisualState(powderState.alephTierTransition.stage || 'walls-exiting');
-        } else {
-          setAlephTierTransitionSpawnState({
-            spawnEnabled: true,
-            floorDrainEnabled: false,
-            clearPendingDrops: false,
-          });
-          setAlephTierTransitionVisualState('idle');
-        }
-        powderSimulation.setWallGapTarget(powderState.wallGapTarget || powderConfig.wallBaseGapMotes, {
-          skipRebuild: true,
-        });
-        powderSimulation.handleResize();
-        applyLoadedPowderSimulationState(powderSimulation);
-        flushPendingMoteDrops();
-        powderSimulation.start();
-        applyPowderVisualSettings();
-        initializePowderViewInteraction();
-        handlePowderViewTransformChange(powderSimulation.getViewTransform());
-        syncFluidCameraModeUi();
-        if (previousMode !== powderState.simulationMode) {
-          recordPowderEvent('mode-switch', { mode: 'sand', label: 'Powderfall Study' });
-        }
       }
-
+      if (!sandSimulation) throw new Error('Well of Inspiration simulation unavailable.');
+      powderSimulation = sandSimulation;
+      powderSimulation.applyProfile(powderSimulation.getDefaultProfile() || undefined);
+      syncAlephTierVisualProfile(resolveAlephTierProgress(powderState.wallGlyphsLit || 0));
+      powderSimulation.setFlowOffset(powderState.sandOffset);
+      powderState.motePalette = powderSimulation.getEffectiveMotePalette();
+      applyMindGatePaletteToDom(powderState.motePalette);
+      powderState.idleDrainRate = powderSimulation.idleDrainRate;
+      powderState.simulationMode = 'sand';
+      if (powderState.alephTierTransition?.active) {
+        setAlephTierTransitionSpawnState({ spawnEnabled: false, floorDrainEnabled: true, clearPendingDrops: true });
+        setAlephTierTransitionVisualState(powderState.alephTierTransition.stage || 'walls-exiting');
+      } else {
+        setAlephTierTransitionSpawnState({ spawnEnabled: true, floorDrainEnabled: false, clearPendingDrops: false });
+        setAlephTierTransitionVisualState('idle');
+      }
+      powderSimulation.setWallGapTarget(powderState.wallGapTarget || powderConfig.wallBaseGapMotes, { skipRebuild: true });
+      powderSimulation.handleResize();
+      applyLoadedPowderSimulationState(powderSimulation);
+      flushPendingMoteDrops();
+      powderSimulation.start();
+      applyPowderVisualSettings();
+      initializePowderViewInteraction();
+      handlePowderViewTransformChange(powderSimulation.getViewTransform());
       refreshPowderWallDecorations();
-      handlePowderHeightChange(powderSimulation ? powderSimulation.getStatus() : undefined);
+      handlePowderHeightChange(powderSimulation.getStatus());
       const tierVisualGlyphs = getTierVisualGlyphCount(powderState.wallGlyphsLit || 0);
       updatePowderWallGapFromGlyphs(tierVisualGlyphs);
       syncAlephTierVisualProfile(resolveAlephTierProgress(tierVisualGlyphs));
       updateMoteStatsDisplays();
-      const fluidStatus =
-        fluidSimulationInstance && typeof fluidSimulationInstance.getStatus === 'function'
-          ? fluidSimulationInstance.getStatus()
-          : null;
-      updateFluidDisplay(fluidStatus);
-    } catch (error) {
-      console.error('Unable to switch simulation mode.', error);
     } finally {
       powderState.modeSwitchPending = false;
-      // Mode toggle button removed
-      // if (powderElements.modeToggle) {
-      //   powderElements.modeToggle.disabled = false;
-      // }
-      updatePowderModeButton();
       ensurePowderBasinResizeObserver();
       refreshPowderWallDecorations();
     }
   }
 
-  function _handlePowderModeToggle() {
-    if (!FLUID_STUDY_ENABLED) {
-      setActiveTab('powder');
-      updatePowderModeButton();
-      return;
-    }
-    if (!powderState.fluidUnlocked) {
-      const unlocked = attemptFluidUnlock();
-      if (unlocked) {
-        enterFluidStudy();
-      }
-      return;
-    }
-    if (getActiveTabId() === 'fluid') {
-      exitFluidStudy();
-    } else {
-      enterFluidStudy();
-    }
-  }
-
-  /**
-   * Check and automatically unlock spires based on glyph counts from previous spire.
-   * Each spire unlocks when the player has 10 glyphs from the previous spire.
-   * @returns {boolean} True if any spire was unlocked
-   */
   let resourceTicker = null;
   let lastResourceTick = 0;
 
@@ -1881,8 +1579,6 @@ import { createDeveloperSpamController } from './developerSpamController.js';
     applyPowderBasinSnapshot,
     getTowerUpgradeStateSnapshot: getTowerUpgradeStateSnapshotWithAleph,
     applyTowerUpgradeStateSnapshot: applyTowerUpgradeStateSnapshotWithAleph,
-    getShinStateSnapshot,
-    getKufStateSnapshot,
     getLevelProgressSnapshot,
     applyLevelProgressSnapshot,
     applyStoredAudioSettings,
@@ -1972,12 +1668,6 @@ import { createDeveloperSpamController } from './developerSpamController.js';
 
   // Track the animation frame id that advances idle simulations so we can pause the loop when idle.
 
-  // Extracted Tsadi UI helpers manage upgrade bindings via dependency injection.
-  const { bindTsadiUpgradeButtons, updateTsadiUpgradeUI } = createTsadiUpgradeUi({
-    getTsadiSimulation: () => tsadiSimulationInstance,
-    spireMenuController,
-  });
-
   /**
    * Resize active spire simulations so their canvases track the responsive layout.
    */
@@ -2030,75 +1720,17 @@ import { createDeveloperSpamController } from './developerSpamController.js';
     isLowGraphicsMode: () => isLowGraphicsModeActive(),
   });
 
-  function captureSimulationState(simulation) {
-    if (!simulation) {
-      return;
-    }
-    const isFluid = simulation === fluidSimulationInstance;
-    const stateKey = isFluid ? 'loadedFluidState' : 'loadedSimulationState';
-    const pendingKey = isFluid ? 'pendingFluidDrops' : 'pendingMoteDrops';
-    const bankKey = isFluid ? 'fluidIdleBank' : 'idleMoteBank';
-    const hydratedKey = isFluid ? 'fluidBankHydrated' : 'idleBankHydrated';
-    let snapshotCaptured = false;
-    if (typeof simulation.exportState === 'function') {
-      const snapshot = simulation.exportState();
-      if (snapshot && typeof snapshot === 'object') {
-        powderState[stateKey] = snapshot;
-        snapshotCaptured = true;
-        if (Array.isArray(powderState[pendingKey])) {
-          powderState[pendingKey].length = 0;
-        }
-      }
-    }
-    if (!snapshotCaptured && Array.isArray(simulation.pendingDrops) && simulation.pendingDrops.length) {
-      simulation.pendingDrops.forEach((drop) => {
-        const sizeValue = Number.isFinite(drop?.size) ? drop.size : drop;
-        if (!Number.isFinite(sizeValue)) {
-          return;
-        }
-        const size = Math.max(1, Math.round(sizeValue));
-        const pendingDrop = { size };
-        if (drop && typeof drop === 'object' && drop.color && typeof drop.color === 'object') {
-          pendingDrop.color = { ...drop.color };
-        }
-        powderState[pendingKey].push(pendingDrop);
-      });
-      simulation.pendingDrops.length = 0;
-    }
-    if (Number.isFinite(simulation.idleBank)) {
-      if (!isFluid) {
-        powderState[bankKey] = Math.max(0, simulation.idleBank);
-        powderState[hydratedKey] = false;
-      }
-    }
-    if (Number.isFinite(simulation.idleDrainRate)) {
-      if (isFluid) {
-        powderState.fluidIdleDrainRate = Math.max(0, simulation.idleDrainRate);
-      } else {
-        powderState.idleDrainRate = Math.max(0, simulation.idleDrainRate);
-      }
-    }
-    if (typeof simulation.getEffectiveMotePalette === 'function') {
-      powderState.motePalette = simulation.getEffectiveMotePalette();
-      // Preserve palette continuity when exporting the active basin state.
-      applyMindGatePaletteToDom(powderState.motePalette);
-    }
-    // Snapshotting occurs before mode swaps, so ensure the captured state persists immediately.
-    schedulePowderBasinSave();
-  }
-
   // Restore a serialized sand simulation once the canvas has been configured.
   function applyLoadedPowderSimulationState(simulation) {
     if (!simulation || typeof simulation.importState !== 'function') {
       return;
     }
-    const isFluid = simulation === fluidSimulationInstance;
-    const stateKey = isFluid ? 'loadedFluidState' : 'loadedSimulationState';
-    const pendingKey = isFluid ? 'pendingFluidDrops' : 'pendingMoteDrops';
-    const bankKey = isFluid ? 'fluidIdleBank' : 'idleMoteBank';
-    const hydratedKey = isFluid ? 'fluidBankHydrated' : 'idleBankHydrated';
-    const drainKey = isFluid ? 'fluidIdleDrainRate' : 'idleDrainRate';
-    const initialLoadKey = isFluid ? 'fluidInitialLoadRestored' : 'initialLoadRestored';
+    const stateKey = 'loadedSimulationState';
+    const pendingKey = 'pendingMoteDrops';
+    const bankKey = 'idleMoteBank';
+    const hydratedKey = 'idleBankHydrated';
+    const drainKey = 'idleDrainRate';
+    const initialLoadKey = 'initialLoadRestored';
     const snapshot = powderState[stateKey];
     if (!snapshot || typeof snapshot !== 'object') {
       return;
@@ -2118,13 +1750,11 @@ import { createDeveloperSpamController } from './developerSpamController.js';
       return;
     }
     powderState[stateKey] = null;
-    if (!isFluid) {
-      powderState[bankKey] = Math.max(
-        0,
-        Number.isFinite(snapshot.idleBank) ? snapshot.idleBank : simulation.idleBank || 0,
-      );
-      powderState[hydratedKey] = true;
-    }
+    powderState[bankKey] = Math.max(
+      0,
+      Number.isFinite(snapshot.idleBank) ? snapshot.idleBank : simulation.idleBank || 0,
+    );
+    powderState[hydratedKey] = true;
     powderState[drainKey] = simulation.idleDrainRate;
     powderState.motePalette = simulation.getEffectiveMotePalette();
     // Apply the restored palette so the Towers tab matches the revived basin state.
@@ -2142,8 +1772,8 @@ import { createDeveloperSpamController } from './developerSpamController.js';
     schedulePowderBasinSave();
   }
 
-  function getSimulationWallInsets(mode = powderSimulation === fluidSimulationInstance ? 'fluid' : 'sand') {
-    const elements = mode === 'fluid' ? fluidElements : powderElements;
+  function getSimulationWallInsets() {
+    const elements = powderElements;
     const fallback = 68;
     const left = elements.leftWall ? Math.max(fallback, elements.leftWall.offsetWidth || 0) : fallback;
     const right = elements.rightWall ? Math.max(fallback, elements.rightWall.offsetWidth || 0) : fallback;
@@ -2172,11 +1802,7 @@ import { createDeveloperSpamController } from './developerSpamController.js';
       schedulePowderBasinSave();
       return;
     }
-    const targetIsFluid =
-      powderSimulation === fluidSimulationInstance ||
-      (!powderSimulation && powderState.simulationMode === 'fluid');
-    const pendingList = targetIsFluid ? powderState.pendingFluidDrops : powderState.pendingMoteDrops;
-    pendingList.push(payload);
+    powderState.pendingMoteDrops.push(payload);
     // Persist pending drops so they spawn correctly after a reload.
     schedulePowderBasinSave();
   }
@@ -2223,40 +1849,6 @@ import { createDeveloperSpamController } from './developerSpamController.js';
       const scoreGain = resourceState.scoreRate * deltaSeconds;
       if (Number.isFinite(scoreGain) && scoreGain > 0) {
         resourceState.score += scoreGain;
-      }
-
-      // Generate iterons based on highest score reached in Cardinal Warden
-      // Iterons per hour = highest score / 10
-      try {
-        const highScore = getCardinalHighScore();
-        if (highScore > 0) {
-          // Convert per-hour rate to per-second, then multiply by elapsed time
-          const iteronsPerHour = highScore / 10;
-          const iteronsPerSecond = iteronsPerHour / 3600;
-          const iteronGain = iteronsPerSecond * deltaSeconds;
-          if (Number.isFinite(iteronGain) && iteronGain > 0) {
-            addIterons(iteronGain);
-          }
-        }
-      } catch {
-        // Expected: Cardinal Warden may not be initialized yet during early startup
-      }
-
-      // Update Shin Spire state (Iteron allocation)
-      try {
-        const deltaMs = deltaSeconds * 1000;
-        updateShinState(deltaMs);
-        updateShinDisplay();
-        updateFractalSimulation(); // Update fractal rendering based on new allocations
-        // Watch for new Shin glyphs so downstream spires unlock without delay.
-        const currentShinGlyphs = Math.max(0, Math.floor(getShinGlyphs()));
-        if (currentShinGlyphs !== getTrackedShinGlyphs()) {
-          setTrackedShinGlyphs(currentShinGlyphs);
-          spireMenuController.updateCounts();
-          checkAndUnlockSpires();
-        }
-      } catch (error) {
-        console.error('Error updating Shin state:', error);
       }
 
       updateStatusDisplays();
@@ -2319,12 +1911,6 @@ import { createDeveloperSpamController } from './developerSpamController.js';
     }
     const normalized = Math.max(0, Math.floor(count));
     gameStats.powderSigilsReached = Math.max(gameStats.powderSigilsReached, normalized);
-    const sigilThreshold = Number.isFinite(powderConfig.fluidUnlockSigils)
-      ? Math.max(0, powderConfig.fluidUnlockSigils)
-      : Infinity;
-    if (!powderState.fluidUnlocked && sigilThreshold > 0 && normalized >= sigilThreshold) {
-      unlockFluidStudy({ reason: 'sigil', threshold: sigilThreshold, glyphCost: 0 });
-    }
     if (moteGemState.autoCollectUnlocked) {
       autoCollectActiveMoteGems('glyph');
     }
@@ -2348,24 +1934,14 @@ import { createDeveloperSpamController } from './developerSpamController.js';
     evaluateAchievements();
   }
 
-  // Re-entrancy guard to prevent infinite recursion when awarding Bet glyphs
-  let isUpdatingFluidDisplay = false;
-
-  function handlePowderIdleBankChange(bankValue, source) {
+  function handlePowderIdleBankChange(bankValue, _source) {
     const normalized = Number.isFinite(bankValue) ? Math.max(0, bankValue) : 0;
-    const origin = source || (powderSimulation === fluidSimulationInstance ? 'fluid' : 'sand');
-    if (origin === 'fluid') {
-      // Fluid idle bank is no longer tracked
-      updateFluidDisplay();
-      return;
-    }
 
     const previous = Number.isFinite(powderState.idleMoteBank) ? powderState.idleMoteBank : 0;
     powderState.idleMoteBank = normalized;
     powderState.idleBankHydrated = powderSimulation === sandSimulation && !!sandSimulation;
 
     if (Math.abs(previous - normalized) < 0.0001) {
-      updateFluidDisplay();
       return;
     }
 
@@ -2382,20 +1958,13 @@ import { createDeveloperSpamController } from './developerSpamController.js';
       resourceElements.tabMoteBadge.setAttribute('aria-hidden', 'false');
     }
 
-    updateFluidDisplay();
   }
 
-  function handlePowderHeightChange(info, source) {
+  function handlePowderHeightChange(info, _source) {
     if (!info) {
       return;
     }
 
-    const origin = source || (powderSimulation === fluidSimulationInstance ? 'fluid' : 'sand');
-    if (origin === 'fluid') {
-      updateFluidDisplay(info);
-      schedulePowderBasinSave();
-      return;
-    }
 
     const previousGain = powderState.simulatedDuneGain;
     const normalizedHeight = Number.isFinite(info.normalizedHeight)
@@ -2500,8 +2069,6 @@ import { createDeveloperSpamController } from './developerSpamController.js';
         const newlyEarned = glyphsLit - previousAwarded;
         addGlyphCurrency(newlyEarned);
         powderState.glyphsAwarded = glyphsLit;
-        // Check if any spires should auto-unlock
-        checkAndUnlockSpires();
       } else if (!Number.isFinite(powderState.glyphsAwarded) || powderState.glyphsAwarded < glyphsLit) {
         powderState.glyphsAwarded = Math.max(previousAwarded, glyphsLit);
       }
@@ -2532,7 +2099,6 @@ import { createDeveloperSpamController } from './developerSpamController.js';
       refreshPowderSystems();
     }
 
-    updateFluidDisplay(info);
   }
 
   configureAchievementsTab({
@@ -2549,9 +2115,6 @@ import { createDeveloperSpamController } from './developerSpamController.js';
     spireResourceState,
     moteGemInventory: moteGemState.inventory,
     powderState,
-    unlockTerrariumCelestialBody,
-    addTerrariumCreature,
-    addTerrariumItem,
   });
 
   async function init() {
@@ -2697,64 +2260,12 @@ import { createDeveloperSpamController } from './developerSpamController.js';
       closeOnOutside: true,
     });
     bindSpireOptionsDropdown({
-      toggleId: 'fluid-options-toggle-button',
-      menuId: 'fluid-options-menu',
-      spireId: 'fluid',
-    });
-    bindSpireOptionsDropdown({
-      toggleId: 'bet-spire-options-toggle-button',
-      menuId: 'bet-spire-options-menu',
-      spireId: 'bet',
-      // Sync the bottom spire button with the cog trigger.
-      extraToggleIds: ['bet-spire-options-toggle-button-footer'],
-      // Close the Bet spire popover when clicking outside the menu.
-      closeOnOutside: true,
-    });
-    bindSpireOptionsDropdown({
-      toggleId: 'tsadi-spire-options-toggle-button',
-      menuId: 'tsadi-options-menu',
-      spireId: 'tsadi',
-      // Sync the footer spire button with the corner cog.
-      extraToggleIds: ['tsadi-options-toggle-button'],
-      // Close the Tsadi spire popover when clicking outside.
-      closeOnOutside: true,
-    });
-    bindSpireOptionsDropdown({
-      toggleId: 'shin-spire-options-toggle-button',
-      menuId: 'shin-options-menu',
-      spireId: 'shin',
-      // Sync the footer spire button with the corner cog.
-      extraToggleIds: ['shin-options-toggle-button'],
-      // Close the Shin spire popover when clicking outside.
-      closeOnOutside: true,
-    });
-    bindSpireOptionsDropdown({
-      toggleId: 'kuf-spire-options-toggle-button',
-      menuId: 'kuf-options-menu',
-      spireId: 'kuf',
-      // Sync the footer spire button with the corner cog.
-      extraToggleIds: ['kuf-options-toggle-button'],
-      // Close the Kuf spire popover when clicking outside.
-      closeOnOutside: true,
-    });
-    bindSpireOptionsDropdown({
       toggleId: 'cognitive-realm-options-toggle',
       menuId: 'cognitive-realm-options-menu',
       spireId: 'cognitive-realm',
     });
-    bindSpireOptionsDropdown({
-      toggleId: 'achievements-terrarium-options-toggle-button',
-      menuId: 'achievements-terrarium-options-menu',
-      spireId: 'achievements-terrarium',
-    });
     initializePowderSpirePreferences();
     bindPowderSpireOptions();
-    initializeFluidSpirePreferences();
-    bindFluidSpireOptions();
-    initializeBetSpireParticlePreferences();
-    bindBetSpireParticleOptions();
-    initializeAchievementsTerrariumPreferences();
-    bindAchievementsTerrariumOptions();
     initializeColorScheme();
     bindAudioControls();
 
@@ -2871,7 +2382,6 @@ import { createDeveloperSpamController } from './developerSpamController.js';
           notifyAchievementsTabVisibilityChange(tabId === 'achievements');
         }
 
-        previousTabId = tabId;
         notifyParticleScrollbarTabChanged();
       },
       onTowerTabActivated: () => {
@@ -2985,7 +2495,6 @@ import { createDeveloperSpamController } from './developerSpamController.js';
     }
     // Reapply developer mode boosts after progression restore so level unlocks stay in sync.
     refreshDeveloperModeState();
-    reconcileGlyphCurrencyFromState();
 
     bindStatusElements();
     bindPowderControls();
@@ -2993,7 +2502,7 @@ import { createDeveloperSpamController } from './developerSpamController.js';
     initializeSpireGemMenus();
     ensurePowderBasinResizeObserver();
     bindSpireClickIncome();
-    await applyPowderSimulationMode(powderState.simulationMode);
+    await applyPowderSimulationMode();
     initializeEquipmentState();
     initializeCraftingOverlay({
       revealOverlay,

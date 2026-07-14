@@ -81,8 +81,7 @@ export function updateTabLockStates(tutorialCompleted: boolean): void {
     });
   }
 
-  // Lock Aleph spire (powder tab) until tutorial is complete
-  // Other spires will be handled by spireTabVisibility based on their unlock status
+  // Lock the Well of Inspiration until the tutorial is complete.
   const powderTab = document.getElementById('tab-powder') as HTMLButtonElement | null;
   if (powderTab) {
     setTabButtonState(powderTab, {
@@ -91,20 +90,6 @@ export function updateTabLockStates(tutorialCompleted: boolean): void {
     });
   }
 
-  // Only lock other spire tabs at the tutorial level if tutorial not complete
-  // Otherwise let the spire system handle their individual locks
-  if (!tutorialCompleted) {
-    const spireTabs = ['fluid', 'lamed', 'tsadi', 'shin', 'kuf'];
-    spireTabs.forEach((spireId) => {
-      const tabButton = document.getElementById(`tab-${spireId}`) as HTMLButtonElement | null;
-      if (tabButton) {
-        setTabButtonState(tabButton, {
-          unlocked: false,
-          lockedLabel: 'Locked - Complete Tutorial',
-        });
-      }
-    });
-  }
 }
 
 /**
