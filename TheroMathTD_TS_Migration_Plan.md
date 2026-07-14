@@ -189,15 +189,28 @@ diff).
 `scripts/sync-ts-output.cjs` rewritten for recursive discovery) as a prerequisite, which was not
 anticipated in the original phase description but did not change the risk profile.
 
-### Phase 5 — Game State Containers
-**Scope:** `assets/state/cognitiveRealmState.js`, `assets/state/monetizationState.js`,
-`assets/state/resourceState.js`, `assets/state/spireResourceState.js`.
-**Why now:** Small, focused files; typing them turns `AutoSaveSnapshot`'s currently-opaque
-`Record<string, unknown>` fields into named types incrementally (still without committing to the
-"full save schema" project called out as Risk #6) and unblocks every consumer that reads/writes game
-state instead of just storage bytes.
-**Risk:** Medium — these are likely read by many playfield/tower/UI files; verify no wide blast radius
-via `grep -l` before starting, same discipline as prior phases.
+### Phase 5A — Game State Containers, small/medium modules (COMPLETE, 2026-07-13)
+**Scope executed:** `assets/state/resourceState.js`, `assets/state/spireResourceState.js`,
+`assets/state/monetizationState.js` → `.ts`. `assets/state/cognitiveRealmState.js` (622 lines) was
+split out as Phase 5B (deferred, not started) — see `JavaToTypeScriptConversionPlan.md`'s Phase 5
+section for the concrete split rationale (canonical-constant-derived unions, procedural generation,
+`Math.random()`-dependent conquest logic, and an extensive legacy-save fallback surface all warranting
+dedicated inspection rather than being rushed alongside the three simpler modules).
+**Outcome:** All three files migrated with explicit interfaces/discriminated unions; no importer
+required changes; 20 new unit tests added (58/58 total); no `AutoSaveSnapshot` narrowing performed
+(the spire-resource save schema is actually owned by the unmigrated `assets/spireResourcePersistence.js`,
+not `spireResourceState.ts`). See `JavaToTypeScriptConversionPlan.md`'s Phase 5 section for full detail.
+**Risk realized:** Low, as the blast-radius audit (fresh `grep -rl` per module) confirmed every
+consumer only reads/mutates plain fields via dependency injection with no serialization of its own
+(monetization state persists itself independently; spire-resource persistence is owned elsewhere).
+
+### Phase 5B — Cognitive Realm Territory State (DEFERRED, not started)
+**Scope:** `assets/state/cognitiveRealmState.js` only.
+**Why deferred:** See Phase 5A's split rationale above and `JavaToTypeScriptConversionPlan.md`'s
+"Next Suggested Step" for the full bounded specification (deterministic-`Math.random()` test
+requirements, legacy-save fallback inventory, archetype/emotion literal-union derivation).
+**Risk:** Medium-high — highest-risk file in `assets/state/`, per the standing task's own designation;
+requires exhaustive inspection of serialization/deserialization fallback branches before typing.
 
 ### Phase 6 — Tower Math & Equation Rendering
 **Scope:** `assets/towerEquations/**` (compute/render logic not already covered in Phase 4),

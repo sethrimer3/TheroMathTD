@@ -124,6 +124,8 @@ No TypeScript conversion phase is recorded as complete in this plan.
 | 3 | User Preferences Module (`assets/preferences.js`) | COMPLETE | Started 2026-07-13; see Phase 3 section below and Implementation Log entry 2026-07-13 (Phase 3 executed) |
 | Doc/tooling repair | Recalculate migration counts, fix stale tower-file count, reconcile Principle 9, make TS-source discovery scale via globs | COMPLETE | See "Documentation and Tooling Repair" section and Implementation Log entry below |
 | 4 | Static Tower Definition Data (`assets/data/towers/`) | COMPLETE | See Phase 4 section below and Implementation Log entry below |
+| 5A | Game State Containers — `resourceState.js`, `spireResourceState.js`, `monetizationState.js` | COMPLETE | See Phase 5 section below and Implementation Log entry below |
+| 5B | Cognitive Realm Territory State (`assets/state/cognitiveRealmState.js`) | DEFERRED (not started) | See Phase 5 section's "Scope decision and split rationale" |
 
 ---
 
@@ -360,6 +362,122 @@ Total suite: **38/38 passing** (29 pre-existing from Phases 2–3 + 9 new).
 
 ---
 
+## Phase 5 — Game State Containers (`assets/state/*.js`) (5A COMPLETE, 5B DEFERRED)
+
+**Status:** 5A COMPLETE, 5B DEFERRED (not started) (2026-07-13)
+**Implementation start date:** 2026-07-13
+**Migration type:** Behavior-preserving migration
+
+**Baseline recorded before implementation (this session):**
+- `git status --short`: clean.
+- `npm run typecheck`: clean (no errors) against the 43 pre-existing `.ts` files.
+- `npm run build`: succeeds; `dist/` regenerated with compiled `.js` only.
+- `npm run lint`: clean (exit 0).
+- `npm run test:unit`: 38/38 passing.
+- `npm test` (smoke test): fails with the same 4 pre-existing favicon errors as every prior phase's recorded baseline (`assets/favicon/favicon.ico`, `favicon-32x32.png`, `favicon-16x16.png`, `apple-touch-icon.png` missing) — re-confirmed, not newly introduced.
+
+**Re-inventory of `assets/state/` performed at the start of this session (live repository, not assumed from the plan note):** exactly 4 files present, matching the plan's candidate list: `resourceState.js` (38 lines), `spireResourceState.js` (86 lines), `monetizationState.js` (229 lines), `cognitiveRealmState.js` (622 lines).
+
+### Scope decision and split rationale
+
+Split into **Phase 5A** (this session, COMPLETE) covering `resourceState.js`, `spireResourceState.js`, `monetizationState.js`, and **Phase 5B** (deferred, not started) covering `cognitiveRealmState.js`.
+
+**Concrete reason for the split (not merely "the file is large"):** `cognitiveRealmState.js` is 622 lines and, unlike the other three files, combines: (a) large canonical constant tables (Jungian archetype pairs, emotion-pair definitions) that a type system should derive literal unions from rather than hand-duplicate; (b) a 9x9 procedural territory-generation routine with an archetype/emotion placement pattern; (c) probabilistic conquest/defeat logic that depends on `Math.random()`, which the task's own testing requirements say must be made deterministic via controlled `Math.random()` in tests rather than by injecting an RNG into production code — this requires materially more test-harness design than the pure-object-return functions in the other three files; (d) a legacy-save deserialization path with numerous documented fallback branches (unexpected ownership numbers, unexpected `nodeType` strings, missing archetype/emotion ids, malformed coordinates, old territory-array lengths, missing `locked`, missing/invalid `lastLevelCompleted`) that must be inspected exhaustively before typing to avoid accidentally tightening validation. Attempting all four in one sitting at the same depth of rigor applied to `spireResourceState.js`'s branch-merge semantics would have meant either rushing the archetype/emotion/serialization inventory (risking an undetected behavior change in the highest-risk module named explicitly in the task) or expanding this session significantly. Per the task's own instruction ("acceptable and preferred over forcing it badly to split"), the three small/medium modules were completed to full rigor and `cognitiveRealmState.js` was left untouched, still `.js`, with no partial/half-typed edits.
+
+**5A file scope executed:** `assets/state/resourceState.js` → `.ts`, `assets/state/spireResourceState.js` → `.ts`, `assets/state/monetizationState.js` → `.ts`. `assets/state/cognitiveRealmState.js` was not touched at all (still plain `.js`, byte-identical to before this session).
+
+### Blast-radius audit (performed before editing each module)
+
+- **`resourceState.js` importers** (via `grep -rl "resourceState" assets scripts index.html`): `assets/configuration.js` (no — false positive, does not actually import it), `assets/developerModeManager.js`, `assets/levelCombatController.js`, `assets/main.js`, `assets/powderDisplay.js`. All consumers only read/write plain numeric fields (`resourceState.score`, `.scoreRate`, `.energyRate`, `.fluxRate`, `.running`) and `baseResources`' fields directly by mutation (`resourceState.running = true`, `resourceState.score += ...`) — none serialize, clone, or type-check the object; `main.js` destructures `{ baseResources, resourceState }` once from the factory call and passes the same references to `developerModeManager.js`/`levelCombatController.js`/`powderDisplay.js` via dependency injection, confirming identity-stable-reference usage, which the factory's existing behavior (and the new types) preserve unchanged.
+- **`spireResourceState.js` importers:** `assets/achievementsTab.js`, `assets/developerControls.js`, `assets/developerModeManager.js`, `assets/main.js`, `assets/powderDisplay.js`, `assets/resourceHud.js`, `assets/spireIdleGeneration.js`, `assets/spireResourceBanks.js`, `assets/spireResourcePersistence.js`, `assets/spireStoryManager.js`, `assets/spireTabVisibility.ts`, `assets/tsadiBindingUi.js`. Only `main.js` actually calls `createSpireResourceState()` (once, with no overrides, at startup) — every other listed file receives the resulting `spireResourceState` object via dependency injection and reads/mutates its branch fields directly (e.g. `spireResourceBanks.js` does `if (!spireResourceState.lamed) { spireResourceState.lamed = {}; }` as a defensive guard, then reads/writes `lamed`/`tsadi`/`fluid` sub-fields). **Crucially, the actual save/load serialization of this state is owned by `assets/spireResourcePersistence.js`** (a large, unmigrated file that also folds in powder/moteGem/tower-upgrade/Aleph-chain state into the same save payload) — `spireResourceState.js` itself has no serialization logic; it is a pure in-memory factory. This confirms the type-design boundary: model the factory's returned shape precisely, but do not attempt to model `spireResourcePersistence.js`'s serialized envelope as part of this phase.
+- **`monetizationState.js` importers:** `assets/boostsSection.js`, `assets/main.js`. Both only call the module's exported functions (`loadMonetizationState`, `getMonetizationState`, `unlockPremium`, `triggerSpireBoost`, `triggerGemBoost`, `getBoostCooldown`, `addMonetizationListener`) — no direct field access on internal state, and the module already owns its own `localStorage` persistence (`MONETIZATION_STORAGE_KEY`) independently of `assets/autoSave.ts`.
+- **AutoSave/devtools/window-hook check:** grepped `assets/autoSave.ts` for hooks that might correspond to these three modules. Found `getSpireResourceStateSnapshot`/`applySpireResourceStateSnapshot` (and `getCognitiveRealmStateSnapshot`/`applyCognitiveRealmStateSnapshot`, relevant only to the deferred 5B), but their actual implementations live in `assets/spireResourcePersistence.js`, not `assets/state/spireResourceState.js` — confirmed via `grep -rln "getSpireResourceStateSnapshot\|applySpireResourceStateSnapshot" assets scripts`, which returned only `assets/autoSave.js`/`.ts`, `assets/main.js`, and `assets/spireResourcePersistence.js`. Because the snapshot schema is owned by the unmigrated `spireResourcePersistence.js` (which also mixes in unrelated subsystems' data into the same payload), **no `AutoSaveSnapshot` narrowing was performed in this phase** — narrowing those two hooks would require migrating `spireResourcePersistence.js` itself, which is out of scope. `resourceState.js` and `monetizationState.js` have no corresponding `autoSave.ts` hooks at all (resource state isn't separately persisted through autoSave.ts, and monetization state persists itself directly to its own `localStorage` key).
+- **Existing similarly-named types checked (no duplication introduced):** `GameNumberNotation` (formatting.ts) and preference literal unions (preferences.ts) were reviewed; none overlap with resource/spire/monetization state, so no reuse opportunity existed beyond what Phases 2–3 already established.
+
+### Types/interfaces introduced
+
+**`assets/state/resourceState.ts`:**
+- `ResourceStateContainerDependencies` (the factory's config/dependency argument, including the optional `calculateStartingThero` and `registerResourceContainers` callbacks).
+- `BaseResourceContainer`, `RuntimeResourceState` (the mutable, ticking HUD resource state, including `running: boolean`).
+- `ResourceStateContainerPair` (the `{ baseResources, resourceState }` shape returned by the factory and passed to the registration callback — used for both the return type and the callback's parameter type, which is how object-identity preservation is expressed at the type level).
+
+**`assets/state/spireResourceState.ts`:**
+- `GenericSpireBranchState` (shared shape for `powder`/`shin`/`kuf`, which have no fields beyond `unlocked`/`storySeen`).
+- `LamedUpgradeState`, `LamedStatsState`, `LamedSpireState` (including `simulationSnapshot: LamedSimulationSnapshot | null`).
+- `LamedSimulationSnapshot = unknown` — a named opaque boundary type (not a bare inline `unknown`) with a doc comment recording that the Lamed gravity-simulation subsystem owns this schema.
+- `TsadiStatsState`, `TsadiSpireState` (its `discoveredMolecules: unknown[]` and `simulationSnapshot: unknown` fields are also named-opaque per-field, with comments naming `tsadiMoleculeNameGenerator.js`/`spireResourcePersistence.js` as the schema owners — these two files do the actual normalization of molecule entries, confirmed by reading `spireResourcePersistence.js`'s `normalizePersistedMolecules`/`normalizeDiscoveredMolecules` helpers, which accept multiple historical shapes (string ids, partial objects) that this module was never responsible for validating).
+- `FluidGeneratorMap = Record<string, unknown>` (named opaque boundary, owned by `spireResourceBanks.js`/the Bet spire render instance) and `FluidSpireState`.
+- `SpireResourceState` (the complete returned container) and `SpireResourceStateOverrides` (the recursive partial-override input accepted by `createSpireResourceState`, modeled per-branch rather than as a single blanket `DeepPartial<SpireResourceState>` so each branch's actually-nested fields — `upgrades`/`stats` on Lamed, `stats` on Tsadi, no nesting on Fluid's `generators` — are represented precisely instead of assuming a uniform shape across branches).
+
+**`assets/state/monetizationState.ts`:**
+- `SpireId` — derived as `(typeof SPIRE_IDS)[number]` from the existing `SPIRE_IDS` `as const` array (not hand-listed), so it cannot drift from the canonical source list.
+- `BoostType = SpireId | 'gems'`, `BoostCooldownState = Record<BoostType, number>`.
+- `MonetizationState` / `MonetizationStateSnapshot` (identical shape; `MonetizationStateSnapshot` is the type alias used at the public API boundary since `getMonetizationState()` always returns a fresh clone, never the live `currentState` reference).
+- `MonetizationStateListener`, `UnsubscribeFn`.
+- `BoostCooldownResult`, `BoostCooldownErrorReason` (literal union of the 4 exact error strings the original code returns), `BoostErrorResult`, and discriminated unions `SpireBoostResult`/`GemBoostResult` (each a `{ success: true; ... }` variant unioned with `BoostErrorResult`) so callers must narrow on `success` before accessing `idleTimeSeconds`/`gemsGranted`.
+- `ApplyIdleTimeFn`, `GrantGemsFn` (nullable/undefined-tolerant function types matching the original's `typeof x === 'function'` guards).
+
+### Preserved behavior specifics (verified, not assumed)
+
+- **`resourceState.ts`:** fallback to `0` when `calculateStartingThero` is absent or not a function preserved exactly (`typeof calculateStartingThero === 'function' ? calculateStartingThero() : 0`); `registerResourceContainers` no-op when absent/non-function preserved; the object returned as `{ baseResources, resourceState }` is the exact same object passed to `registerResourceContainers` (no cloning introduced — verified by a new unit test asserting reference equality).
+- **`spireResourceState.ts`:** `mergeBranch`'s shallow-merge/precedence semantics were preserved byte-for-byte (override's top-level fields win via spread order; `upgrades`/`stats`/`generators` are separately shallow-merged so a partial override does not drop non-overridden nested fields). **A suspected pre-existing quirk was found and left unchanged, not fixed** — see Known Issues below: `mergeBranch`'s generic implementation unconditionally spreads a `generators` key onto every branch it's applied to (Lamed and Tsadi included), even though neither branch's default state nor its interface declares a `generators` field; the original JS code has this exact same behavior (the shared `mergeBranch` helper always writes `generators: {...}` onto its result), so the resulting runtime objects for `lamed`/`tsadi` gain an extra, undocumented `generators: {}` property that no consumer currently reads. This was preserved via a type-safe-at-the-boundary generic (`mergeBranch<T extends {...}>`, with an `as T` cast only at the final return, not on the input side) rather than either fixing the extra field or laundering it through a broad `Record<string, unknown>`.
+- **`monetizationState.ts`:** the 1-hour `AD_COOLDOWN_MS` cooldown, the 2-hour (`2 * 60 * 60` seconds) idle-boost duration, the 100-gem grant, the 1-second mock-ad `setTimeout` delay, immediate listener invocation on `addMonetizationListener` (including that a throwing listener is caught and logged via `console.warn` without breaking other listeners or the caller), the exact `localStorage` key (`glyph-defense-idle:monetization`) and its JSON shape, and the exact invalid-spire (`'Invalid spire ID'`)/cooldown (`'Boost on cooldown'`)/ad-failure (`'Ad watch failed'`)/missing-grant-function (`'Grant function not provided'`) error strings are all unchanged. `loadMonetizationState`'s permissive validation (`parsed && typeof parsed === 'object'`, then `Boolean(parsed.premiumUnlocked)` and an unchecked `Object.assign` of `parsed.boostCooldowns` into the live cooldown object) was typed by treating `JSON.parse`'s result as `unknown` and narrowing only as far as the original code actually validated (object-shaped, then coerced) — this is intentionally still permissive (e.g. a `boostCooldowns` object with extra/wrong-typed keys is still `Object.assign`-merged without per-key validation), matching the original's tolerance rather than tightening it.
+
+### Files receiving compatibility edits
+
+None. Every importer listed in the blast-radius audit above (`assets/configuration.js` false-positive aside) keeps its existing `./state/resourceState.js`, `./state/spireResourceState.js`, `./state/monetizationState.js` (or relative-path equivalent) specifiers unchanged; `tsc` + `scripts/sync-ts-output.cjs` regenerate the compiled `.js` at the same paths, so no call site needed editing.
+
+### Infrastructure changes
+
+None beyond `tsconfig.json`'s existing glob-based `include` (`assets/**/*.ts`), which auto-discovers the three new files with no edit required — this is the payoff of the Phase 4 tooling repair. `scripts/sync-ts-output.cjs` required no change.
+
+### Autosave type integration
+
+**No `AutoSaveSnapshot` narrowing was performed in Phase 5A.** Investigated per the task's instructions: the only `autoSave.ts` hooks that plausibly relate to this phase's modules are `getSpireResourceStateSnapshot`/`applySpireResourceStateSnapshot`, but their real implementations are defined in `assets/spireResourcePersistence.js` (unmigrated), which composes the saved payload out of `spireResourceState`, `powderState`, `moteGemState`, Tsadi binding-agent counts, tower-upgrade snapshots, and Aleph-chain upgrade snapshots all together — the schema is not owned solely (or even primarily) by `spireResourceState.ts`. Narrowing those two hooks now would mean either modeling only part of a payload whose real shape lives elsewhere (dishonest typing) or migrating `spireResourcePersistence.js` itself (out of this phase's scope). `resourceState.ts` and `monetizationState.ts` have no corresponding autoSave hooks at all. This decision will need to be revisited once/if `spireResourcePersistence.js` is migrated in a future phase.
+
+### Tests added
+
+Extended `scripts/unit-test-core.cjs`. Also fixed a latent bug in the test harness surfaced while writing these tests: the existing `test(name, fn)` helper did not `await` `fn()`, so any `async` test body's assertions ran after the suite had already reported its pass/fail summary, silently escaping as an unhandled promise rejection (crashing the process after printing a false "all passed" line). `test()` is now `async` and every call site is `await`ed — a pre-existing test-infrastructure gap, not a change to any migrated module's behavior, fixed because otherwise the new async monetization tests (which must `await triggerSpireBoost`/`triggerGemBoost`) could not be verified at all.
+
+- **`resourceState.js` (5 tests):** starting score from `calculateStartingThero`; fallback to 0 when the callback is absent or not a function; exact resource defaults (`baseResources` deep-equal to the four rates + starting score, `resourceState.running === false`); `registerResourceContainers` receives the exact same object references as the factory's return value (reference-equality assertions); missing registration callback does not throw.
+- **`spireResourceState.js` (5 tests):** complete default state (all six branches, including `simulationSnapshot: null` and empty `discoveredMolecules`); branch-specific top-level override merging with non-overridden sibling fields surviving; nested `stats`/`upgrades` merge precedence (override wins, base fills gaps); defaults are not mutated by a prior `createSpireResourceState(...)` call (two independent calls, the second with no overrides, must show untouched defaults); each call returns fresh, non-shared nested objects (mutating one call's result does not affect another's). The suspected `generators`-on-every-branch quirk described above was deliberately **not** encoded as an asserted invariant in these tests, per the instruction not to test a suspected bug as if it were desirable behavior.
+- **`monetizationState.js` (10 tests):** default snapshot (premium locked, all seven cooldowns at 0); `getMonetizationState()` returns a clone, not the live cooldown object (mutating the snapshot's `boostCooldowns` does not affect a subsequent snapshot); `unlockPremium()` sets the flag and persists it to the stubbed `localStorage`; `addMonetizationListener` fires immediately with current state and stops firing after calling the returned unsubscribe function; `triggerSpireBoost` rejects an invalid spire id without touching cooldowns; `getBoostCooldown` under a controlled `Date.now()`; a successful idle boost invokes `applyIdleTime(spireId, 7200)` and starts exactly a 1-hour cooldown (asserted via controlled `Date.now()`, not real time); a second boost attempt on the same spire while its cooldown is active is rejected with `'Boost on cooldown'` and a positive `remainingMs`; a successful gem boost invokes `grantGems(100)` and returns `{ success: true, gemsGranted }`; `loadMonetizationState()` does not throw when `window` is undefined (the existing environment guard). `setTimeout` is stubbed to invoke its callback synchronously (no real 1-second delay) for these tests, and `Date.now` is saved/restored via `try/finally` around each test that mocks it, matching the task's instruction to stub carefully and restore globals.
+
+Suite total: **58/58 passing** (38 pre-existing from Phases 2–4 + 20 new: 5 + 5 + 10).
+
+### Validation commands and results
+
+- `npm run typecheck` — clean, no errors, against all 46 `.ts` files (43 pre-existing + 3 new). No `any`, `@ts-ignore`, `@ts-nocheck`, unexplained non-null assertions, or unjustified `as unknown as` anywhere in the three new files (verified via `grep -n "\bany\b\|@ts-ignore\|@ts-nocheck\|as unknown as\|[a-zA-Z0-9_\]\)]!" assets/state/resourceState.ts assets/state/spireResourceState.ts assets/state/monetizationState.ts` — the only `!` matches are inside comments/prose, not code, and the only non-null-like assertions are the documented `as T`/`as SpireXState` casts inside `mergeBranch`, explained above).
+- `npm run build` — succeeds; all 46 compiled `.js` files sync back to their source directories; `dist/assets/state/` contains `cognitiveRealmState.js`, `monetizationState.js`, `resourceState.js`, `spireResourceState.js` — all compiled JS, no `.ts` copied in (confirmed via directory listing).
+- `npm run lint` — clean (exit 0); `.ts` files remain out of ESLint's scope (unchanged from prior phases).
+- `npm run test:unit` — 58/58 passing (see above).
+- `npm test` (smoke test) — fails with the same 4 pre-existing favicon errors as the Phase 4 baseline recorded above; no new failures.
+- `git status --short` (before finalizing docs) — shows `assets/state/resourceState.js`/`spireResourceState.js`/`monetizationState.js` deleted (replaced by build-generated siblings once `npm run build` regenerates them), new `assets/state/resourceState.ts`/`spireResourceState.ts`/`monetizationState.ts`, and modifications to `scripts/unit-test-core.cjs` and this plan document. No `dist_run*`/scratch/temp directories staged.
+- `git diff --check` — no whitespace-conflict markers reported.
+
+### Manual/browser verification
+
+**Not performed this session** — no browser-automation tool call was made. This phase's correctness relies instead on: `npm run typecheck` under `strict: true` with the `any`/`@ts-ignore`/assertion audit above; the unchanged import specifiers and return shapes for every listed consumer; and the 20 new unit tests exercising the actual compiled output (reference-identity checks for `resourceState.ts`, merge-precedence and non-mutation checks for `spireResourceState.ts`, and controlled-clock/controlled-`setTimeout` cooldown/boost-result checks for `monetizationState.ts`). This is recorded explicitly rather than claimed, matching Phase 4's precedent when no browser tool was available.
+
+**Behavior not verified:** whether the HUD (`powderDisplay.js`), the Boosts section UI (`boostsSection.js`), and the spire tabs (`achievementsTab.js`, `resourceHud.js`, etc.) render identically against the migrated modules in a live browser session — not verified visually, only structurally via the unit tests and the unchanged consumer call sites. Electron startup and mobile/touch input remain unverified, consistent with every prior phase's recorded caveats.
+
+### Known Issues / Deferred Findings specific to this phase
+
+- **`mergeBranch`'s unconditional `generators` field on every branch** (described above under "Preserved behavior specifics"): `lamed` and `tsadi` branch objects returned by `createSpireResourceState` gain an undocumented `generators: {}` property that is not part of either branch's nominal shape and is not read by any current consumer (confirmed via the blast-radius grep). This is a pre-existing artifact of the shared `mergeBranch` helper being reused across branches with different shapes; it was preserved exactly, not fixed, per the task's instructions.
+- **Phase 5B (`cognitiveRealmState.js`) remains fully unmigrated** — see "Next Suggested Step" below for its narrow, bounded specification.
+
+### Acceptance criteria (met, for 5A)
+
+- File scope re-derived by inspecting the live `assets/state/` directory (confirmed 4 files, matching the plan's candidate list) rather than assumed.
+- Migrated files compile under strict TypeScript with explicit interfaces/discriminated unions for each state shape; no `any`, no unexplained non-null assertions, no `@ts-ignore`/`@ts-nocheck`.
+- `npm run typecheck` and `npm run build` clean; `npm run lint`/`npm test` show no new failures versus the Phase 4 baseline (the same 4 favicon errors, not a regression).
+- Every existing importer of the three migrated modules requires no changes beyond `tsconfig.json`'s existing glob-based `include` (verified via `grep -rl` for each old `.js` import specifier, enumerated above).
+- `scripts/unit-test-core.cjs` gained 20 new tests covering non-trivial derived/computed/merge behavior in all three modules, not just static-data presence.
+- Manual/browser verification was not performed this session; recorded explicitly above rather than assumed.
+- This plan document was updated in the same session, including an Implementation Log entry that does not erase any prior entry.
+
+---
+
 ## Tentative Later Migration Areas
 
 These are not authorized active phases. Their order must be reevaluated after Phase 1.
@@ -419,23 +537,36 @@ Do not treat this list as a fixed roadmap. Each completed phase must recommend t
 - Pre-existing, unrelated to this migration: `npm test` (scripts/smoke-test.cjs) fails on a clean checkout because `assets/favicon/` does not exist in the working tree (referenced by `index.html`). Confirmed present before Phase 1 changes via `git stash`; not a regression.
 - `assets/preferences.ts` (Phase 3) mixes pure preference storage/normalization logic with ~25 `bind*` DOM-wiring functions, the same "mixed concerns migrated as one unit" pattern already accepted for `autoSave.ts` and `spireFloatingMenu.ts` in Phases 1–2, rather than being split into a pure-logic module plus a separate DOM-binding module. A future phase could split these if a pure-logic-only module becomes valuable for further testing, but doing so was out of scope here.
 - Two functions in `assets/preferences.ts` (`updateNotationPreviewDamage`'s `document.getElementById` call and `applySpireOptionsPlacementDom`'s `document.body` access) call the DOM directly without a `typeof document !== 'undefined'` guard, unlike most of the rest of the file. This is inherited unchanged from the original `.js` (not a defect introduced by the migration) but means these two paths would throw if ever invoked in a non-browser environment without a `document` global — the new unit tests work around this with a minimal `document` stub rather than fixing the underlying inconsistency, per the instruction to record rather than silently fix pre-existing quirks outside the phase's explicit scope.
+- (Phase 5A) `assets/state/spireResourceState.ts`'s `mergeBranch` helper unconditionally spreads a `generators: {}` field onto every branch it merges, including `lamed` and `tsadi`, whose nominal shape has no `generators` field at all. This is an artifact of the original JS reusing one shared merge helper across branches with different shapes; no current consumer reads the spurious field, so it was preserved unchanged rather than fixed. See the Phase 5 section above for detail.
+- (Phase 5A) The real serialization/deserialization schema for spire resource state is owned by `assets/spireResourcePersistence.js` (not `assets/state/spireResourceState.ts`), and that file also folds in powder/moteGem/tower-upgrade/Aleph-chain state into the same save payload. This is why `AutoSaveSnapshot`'s `getSpireResourceStateSnapshot`/`applySpireResourceStateSnapshot` hooks were **not** narrowed in Phase 5A — narrowing them honestly would require migrating `spireResourcePersistence.js` first. Flagged here so a future phase does not assume Phase 5A already covered autosave narrowing for the spire-resource save path.
+- (Phase 5A) `assets/state/cognitiveRealmState.js` (622 lines) remains fully unmigrated JavaScript — deliberately deferred as Phase 5B. See the Phase 5 section's "Scope decision and split rationale" and the "Next Suggested Step" below for its narrow specification.
 
 ---
 
 ## Next Suggested Step
 
-**Recommended Phase 5: Game State Containers (`assets/state/*.js`).**
+**Recommended Phase 5B: Cognitive Realm Territory State (`assets/state/cognitiveRealmState.js`).**
 
-With navigation (Phase 1), core formatting/persistence primitives (Phase 2), user preferences (Phase 3), and static tower-definition data (Phase 4, including the new `TowerDefinition`/`TowerId` contract) now typed, the next highest-leverage, lowest-risk slice is `assets/state/cognitiveRealmState.js`, `assets/state/monetizationState.js`, `assets/state/resourceState.js`, and `assets/state/spireResourceState.js` (re-verify this exact file list by inspecting `assets/state/` at the start of that phase — do not assume it is unchanged from this note). These are small, focused, declarative-plus-simple-accessor files; typing them turns `AutoSaveSnapshot`'s currently-opaque `Record<string, unknown>` fields (Phase 2) into named types incrementally, without committing to the full "save-schema project" that is explicitly out of scope for any single phase (see `TheroMathTD_TS_Migration_Plan.md` Risk #6).
+Phase 5A migrated the three smaller/medium `assets/state/*.js` files. The remaining file, `assets/state/cognitiveRealmState.js` (622 lines, unchanged), is the last file in that folder and was deliberately deferred — see the Phase 5 section's "Scope decision and split rationale" above for exactly why (large canonical constant tables that should drive derived literal unions, a 9x9 procedural generation routine, `Math.random()`-dependent conquest logic, and an extensive legacy-save deserialization fallback surface, all of which need dedicated inspection rigor rather than being folded into the same session as the three simpler modules).
 
-**Acceptance criteria for Phase 5:**
-- The phase's actual file scope is re-derived by reading this plan plus a fresh inspection of `assets/state/` (do not assume the file list is unchanged from this note).
-- Migrated file(s) compile under strict TypeScript with explicit interfaces for each state shape — no `any`, no unexplained non-null assertions, no `@ts-ignore`/`@ts-nocheck`.
-- `npm run typecheck` and `npm run build` clean; `npm run lint`/`npm test` show no new failures versus this document's Phase 4 baseline (the same 4 pre-existing favicon smoke-test errors are expected and not a regression).
-- Every existing importer of the migrated file(s) requires no changes beyond `tsconfig.json`'s glob-based `include` (verified via `grep -rl` for each migrated module's old `.js` import specifier) — confirm the blast radius first since Phase 3's rationale flagged this cluster as "likely read by many playfield/tower/UI files."
-- `scripts/unit-test-core.cjs` (or a clearly-related sibling script, still framework-free `node:assert/strict`) gains tests for any non-trivial derived/computed values in the migrated state modules, not just static data presence.
-- Manual/browser verification confirms no visible change in whatever UI reads the migrated state, if a headless/automatable browser is available in that session; if not, record explicitly (as this session did for Phase 4) that manual verification was not performed rather than assuming it.
-- The plan document is updated in the same session per the standing "After implementation" instructions, including an Implementation Log entry that does not erase this or any prior entry.
+**Scope:** `assets/state/cognitiveRealmState.js` → `assets/state/cognitiveRealmState.ts` only. Do not expand into any consumer file.
+
+**Required before writing types (do not skip):**
+1. Re-derive the actual importer list via `grep -rl "cognitiveRealmState" assets scripts index.html` (do not assume it is unchanged from any prior note) and record, per importer, which exports it uses and whether it mutates the returned state/territory arrays directly, serializes them, or treats them as identity-stable references.
+2. Read `assets/state/cognitiveRealmState.js` in full (not a sample) and enumerate: every archetype/emotion field actually present across all entries; the exact 9x9 generation and placement algorithm; every conquest/defeat probability calculation and where `Math.random()` is called; the full serialization key set; and every branch of the legacy-save deserialization fallback (unexpected ownership numbers, unexpected `nodeType` strings, missing archetype/emotion ids, malformed coordinates, old territory-array lengths, missing `locked`, missing/invalid `lastLevelCompleted`).
+3. Check whether `assets/autoSave.ts`'s `getCognitiveRealmStateSnapshot`/`applyCognitiveRealmStateSnapshot` hooks are actually implemented inside this file or (as turned out to be the case for the spire-resource hooks in Phase 5A) inside a separate, unmigrated persistence file — narrow `AutoSaveSnapshot` for these two hooks **only if** `cognitiveRealmState.ts` itself owns that schema; otherwise document why not, exactly as Phase 5A did for the spire hooks.
+
+**Hard constraints (restated from the standing task, still binding):** preserve exactly the 9x9 territory generation, archetype/emotion placement pattern, initial ownership, level-number extraction, territory-index calculation, conquest probabilities, callback timing, serialization keys, and every documented legacy-save fallback; do not inject an RNG into production code — make tests deterministic by mocking `Math.random()` instead; model any genuinely unresolved/foreign-owned schema as a named opaque `unknown` boundary (not a blanket `Record<string, unknown>`), with a comment naming the owning subsystem.
+
+**Acceptance criteria for Phase 5B:**
+- The importer list and per-importer usage are re-derived fresh (not copied from this note) and recorded in the plan update.
+- `cognitiveRealmState.ts` compiles under strict TypeScript with explicit interfaces/unions for archetype/emotion/territory/state/serialization shapes — no `any`, no unexplained non-null assertions, no `@ts-ignore`/`@ts-nocheck`.
+- `npm run typecheck` and `npm run build` clean; `npm run lint`/`npm test` show no new failures versus this document's Phase 5A baseline (the same 4 pre-existing favicon smoke-test errors are expected and not a regression).
+- Every existing importer requires no changes beyond `tsconfig.json`'s existing glob-based `include`.
+- `scripts/unit-test-core.cjs` (or a clearly-scoped sibling) gains deterministic tests (via controlled `Math.random()`, not real randomness) for: territory generation count/dimensions, archetype/emotion distribution, ownership/statistics, territory lookup, reset/explicit-mutation behavior, change-callback timing, victory/defeat updates, serialization round-trip, and each documented legacy-save fallback branch.
+- Any newly-discovered defect in the legacy-save fallback logic or conquest-probability math is recorded under Known Issues, not silently fixed.
+- Manual/browser verification is attempted if a headless/automatable browser is available in that session; if not, this is recorded explicitly rather than assumed.
+- The plan document is updated in the same session, including an Implementation Log entry that does not erase this or any prior entry, and the Migration Ledger's Phase 5B row is updated from DEFERRED to COMPLETE/PARTIAL/BLOCKED as appropriate.
 
 ---
 
@@ -557,3 +688,30 @@ A fresh session re-read every required doc (`AGENT_START_HERE.md`, `AGENTS.md`, 
 - Manual/browser verification was **not** performed this session (no browser-automation tool was invoked); this is recorded explicitly rather than assumed or claimed.
 
 **Next suggested step:** See the "Next Suggested Step" section below (recommending Phase 5: Game State Containers, `assets/state/*.js`).
+
+### 2026-07-13 — Phase 5A executed, Phase 5B deferred
+
+**Status:** 5A COMPLETE, 5B DEFERRED (not started)
+
+A fresh session read the required docs (`AGENT_START_HERE.md`, `AGENTS.md`, `docs/JAVASCRIPT_MODULE_SYSTEM.md`, both migration plan documents, `tsconfig.json`, `scripts/sync-ts-output.cjs`, `scripts/build-static.cjs`) and ran the baseline: `git status --short` clean; `npm run typecheck` clean (43 pre-existing `.ts` files); `npm run build` clean; `npm run lint` clean; `npm run test:unit` 38/38; `npm test` failing with the same 4 pre-existing favicon errors as every prior phase's baseline.
+
+Re-inventoried `assets/state/` directly (not assumed from the plan note): exactly 4 files — `resourceState.js` (38 lines), `spireResourceState.js` (86 lines), `monetizationState.js` (229 lines), `cognitiveRealmState.js` (622 lines) — matching the candidate list, with no extra or missing files.
+
+See the "Phase 5 — Game State Containers" section above for full detail. Summary:
+
+- **Migrated (Phase 5A):** `assets/state/resourceState.js` → `.ts`, `assets/state/spireResourceState.js` → `.ts`, `assets/state/monetizationState.js` → `.ts`. All three deleted as `.js` source files; compiled siblings regenerated by `npm run build`.
+- **Deferred (Phase 5B, not started):** `assets/state/cognitiveRealmState.js` — left completely untouched, still plain JS, for the concrete reasons recorded in the Phase 5 section's "Scope decision and split rationale" (canonical-constant-derived unions, procedural generation, `Math.random()`-dependent conquest logic, and an extensive legacy-save fallback surface that all warrant dedicated inspection rather than being rushed alongside the three simpler modules).
+- Performed a full blast-radius audit before editing each of the three modules (importers enumerated via fresh `grep -rl`, per-importer field usage and mutation/identity/serialization behavior recorded) — see the Phase 5 section for the complete list per module.
+- Introduced `ResourceStateContainerDependencies`/`BaseResourceContainer`/`RuntimeResourceState`/`ResourceStateContainerPair`; `GenericSpireBranchState`/`LamedSpireState`/`TsadiSpireState`/`FluidSpireState`/`SpireResourceState`/`SpireResourceStateOverrides` plus named-opaque boundary types `LamedSimulationSnapshot`/`FluidGeneratorMap` for subsystem-owned schemas; `SpireId` (derived from the existing `SPIRE_IDS` const array)/`BoostType`/`BoostCooldownState`/`MonetizationState`/`MonetizationStateSnapshot`/`MonetizationStateListener`/`UnsubscribeFn`/`BoostCooldownResult`/discriminated unions `SpireBoostResult`/`GemBoostResult`.
+- **No `AutoSaveSnapshot` narrowing performed** — investigated `getSpireResourceStateSnapshot`/`applySpireResourceStateSnapshot` and confirmed their real implementations live in the unmigrated `assets/spireResourcePersistence.js` (which mixes multiple subsystems' data into one payload), not in `spireResourceState.ts` itself, so narrowing now would be dishonest typing; recorded as a Known Issue for a future phase.
+- No importer required any compatibility edit; all existing `./state/*.js` import specifiers keep resolving via the existing glob-based `tsconfig.json` `include` and `sync-ts-output.cjs`.
+- Extended `scripts/unit-test-core.cjs` with 20 new tests (5 resourceState + 5 spireResourceState + 10 monetizationState). Also fixed a latent bug in the test harness itself: `test()` did not `await` its (possibly-async) test body, so async assertions ran after the suite had already printed its summary and could crash the process as an unhandled rejection without being counted as a failure — `test()` is now `async` and every call site `await`s it. This is a test-infrastructure fix, not a change to any migrated module.
+- Suite total: **58/58 passing** (38 pre-existing + 20 new).
+- `npm run typecheck`, `npm run build`, `npm run lint` all clean; `npm test` fails with the same 4 pre-existing favicon errors (no new failures); `npm run test:unit` 58/58.
+- Manual/browser verification was **not** performed this session (no browser-automation tool call was made); recorded explicitly rather than assumed.
+- Recalculated migration counts per the Phase 4 methodology: converted `.ts` modules 43 → **46** (+3: `resourceState.ts`, `spireResourceState.ts`, `monetizationState.ts`); total authored source modules unchanged at **359** (conversions, not new files); remaining unconverted `.js` 316 → **313**.
+- `assets/buildInfo.js#BUILD_NUMBER` was left unchanged in this pass; see the note under Documentation updates below regarding whether this session's convention required an increment.
+
+**Suspected pre-existing defects recorded, not fixed:** `spireResourceState.ts`'s inherited `mergeBranch` helper unconditionally adds a `generators: {}` field to the `lamed`/`tsadi` branches even though neither branch's shape declares one; no consumer currently reads it. See Known Issues above.
+
+**Next suggested step:** See the "Next Suggested Step" section above (recommending Phase 5B: Cognitive Realm Territory State, `assets/state/cognitiveRealmState.js`, with a narrow bounded spec).
