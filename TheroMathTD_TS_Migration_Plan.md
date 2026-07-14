@@ -289,7 +289,10 @@ Once file-by-file conversion is complete:
 
 **First (lowest risk, highest leverage, already largely done or next up):**
 navigation → core formatting/persistence → preferences → **tower data schemas
-(`assets/data/towers/*.ts`, COMPLETE)** → game-state containers (next) → tower equation math.
+(`assets/data/towers/*.ts`, COMPLETE)** → **game-state containers, small/medium modules
+(`resourceState.ts`/`spireResourceState.ts`/`monetizationState.ts`, Phase 5A, COMPLETE)** →
+cognitive realm territory state (`cognitiveRealmState.js`, Phase 5B, deferred/next up) → tower
+equation math.
 
 **Middle:** UI tab/menu/overlay controllers (parallelizable in small batches).
 
