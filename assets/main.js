@@ -292,8 +292,6 @@ import { createLevelPreviewRenderer, getPreviewPointsForLevel } from './levelPre
 import { createLevelOverlayController } from './levelOverlayController.js';
 import { createLevelGridController } from './levelGridController.js';
 import { createLevelStoryScreen } from './levelStoryScreen.js';
-import { createSpireFloatingMenuController } from './spireFloatingMenu.js';
-import { createSpireGemMenuController } from './spireGemMenu.js';
 import { createPlayfieldMenuController } from './playfieldMenu.js';
 import { createManualDropController } from './manualDropController.js';
 import { createSpireStoryManager } from './spireStoryManager.js';
@@ -323,7 +321,6 @@ import {
   setMoteGemAutoCollectUnlocked,
   getMoteGemColor,
   getGemSpriteAssetPath,
-  GEM_DEFINITIONS,
   rollGemDropDefinition,
 } from './enemies.js';
 import {
@@ -852,9 +849,6 @@ import { createSpireCameraController } from './spireCameraController.js';
     }
   });
 
-  let spireMenuController = null;
-  let spireGemMenuController = null;
-
   const idleBankCtrl = createIdleResourceBankController({
     powderState,
     getSandSimulation: () => sandSimulation,
@@ -869,30 +863,6 @@ import { createSpireCameraController } from './spireCameraController.js';
   const addIdleMoteBank = idleBankCtrl.addIdleMoteBank;
   const flushPendingMoteDrops = idleBankCtrl.flushPendingMoteDrops;
 
-  // Controller that wires the floating spire navigation UI and count displays.
-  spireMenuController = createSpireFloatingMenuController({
-    formatGameNumber,
-    formatWholeNumber,
-    getCurrentIdleMoteBank,
-    setActiveTab,
-    playMenuSelectSfx: () => {
-      if (audioManager) {
-        audioManager.playSfx('menuSelect');
-      }
-    },
-  });
-
-  // Shared gem selector that plugs into every spire render.
-  spireGemMenuController = createSpireGemMenuController({
-    documentRef: typeof document !== 'undefined' ? document : null,
-    moteGemInventory: moteGemState?.inventory,
-    gemDefinitions: GEM_DEFINITIONS,
-  });
-
-  // Quick lookup for gem definitions so gem consumption can reference mote size and palette data.
-  const gemDefinitionLookup = new Map((GEM_DEFINITIONS || []).map((gem) => [gem.id, gem]));
-
-
   const resourceHud = createResourceHud({
     formatGameNumber,
     formatWholeNumber,
@@ -900,7 +870,6 @@ import { createSpireCameraController } from './spireCameraController.js';
     getGlyphCurrency,
     getCurrentIdleMoteBank,
     powderState,
-    spireMenuController,
   });
 
   resourceElements = resourceHud.resourceElements;
@@ -923,27 +892,8 @@ import { createSpireCameraController } from './spireCameraController.js';
 
   const updateMoteGemInventoryDisplay = () => {
     renderMoteGemInventoryDisplay();
-    spireGemMenuController?.updateCounts();
   };
 
-  /**
-   * Decrement a gem from the shared inventory and return its definition so spire consumers can react.
-   * @param {string} gemId - Unique gem identifier.
-   * @returns {Object|null} Gem definition when successfully consumed.
-   */
-  function consumeGemFromInventory(gemId) {
-    if (!gemId) {
-      return null;
-    }
-    const record = moteGemState.inventory.get(gemId);
-    if (!record || !Number.isFinite(record.count) || record.count <= 0) {
-      return null;
-    }
-    const nextCount = Math.max(0, record.count - 1);
-    moteGemState.inventory.set(gemId, { ...record, count: nextCount });
-    updateMoteGemInventoryDisplay();
-    return gemDefinitionLookup.get(gemId) || null;
-  }
 
   const powderPersistence = createPowderPersistence({
     powderState,
@@ -1023,17 +973,10 @@ import { createSpireCameraController } from './spireCameraController.js';
     spireResourceState,
     addIdleMoteBank,
     evaluateAchievements,
-    spireMenuController,
     gameStats,
   });
 
   setPowderElements(powderElements);
-
-  function initializeSpireGemMenus() {
-    // Gem selectors have been removed from all spire renders per user request.
-    // This function is kept for backward compatibility but does not register any menus.
-    return;
-  }
 
   registerResourceHudRefreshCallback(updateMoteStatsDisplays);
   registerResourceHudRefreshCallback(updatePowderModeButton);
@@ -1260,8 +1203,6 @@ import { createSpireCameraController } from './spireCameraController.js';
   const { initializeManualDropHandlers } = createManualDropController({
     getActiveTabId,
     getSandSimulation: () => sandSimulation,
-    getSelectedGem: (spireId) => spireGemMenuController?.getSelection(spireId),
-    consumeGem: consumeGemFromInventory,
   });
 
   const {
@@ -1306,7 +1247,6 @@ import { createSpireCameraController } from './spireCameraController.js';
     setSandSimulation: (value) => {
       sandSimulation = value;
     },
-    spireMenuController,
     unlockedLevels,
     interactiveLevelOrder,
     levelState,
@@ -2499,7 +2439,6 @@ import { createSpireCameraController } from './spireCameraController.js';
     bindStatusElements();
     bindPowderControls();
     bindAlephTierTransitionControls();
-    initializeSpireGemMenus();
     ensurePowderBasinResizeObserver();
     bindSpireClickIncome();
     await applyPowderSimulationMode();
