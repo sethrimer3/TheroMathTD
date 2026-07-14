@@ -22,14 +22,15 @@
   `<script type="module">` imports and no dev server/bundler is required.
 - **`package.json`:** `devDependencies` has `typescript@^5.7.0`, `eslint@^10.2.0`, `electron@^42.2.0`.
   No `@types/*` packages installed. `npm run typecheck` (`tsc --noEmit`) and `npm run build` both exist.
-- **Files converted so far (46 `.ts` files, all under strict mode, zero `any`):**
+- **Files converted so far (47 `.ts` files, all under strict mode, zero `any`):**
   `assets/uiTabManager.ts`, `assets/spireFloatingMenu.ts`, `assets/tabLockManager.ts`,
   `assets/spireTabVisibility.ts`, `assets/autoSave.ts`, `assets/preferences.ts`,
   `scripts/core/formatting.ts`, `scripts/core/mathText.ts` (Phases 1–3), plus all 33 files under
   `assets/data/towers/` (32 tower-definition modules + `index.ts`) and the new
   `assets/data/towers/types.ts` (Phase 4), plus `assets/state/resourceState.ts`,
-  `assets/state/spireResourceState.ts`, `assets/state/monetizationState.ts` (Phase 5A).
-  `assets/state/cognitiveRealmState.js` remains unmigrated (Phase 5B, deferred).
+  `assets/state/spireResourceState.ts`, `assets/state/monetizationState.ts` (Phase 5A), and
+  `assets/state/cognitiveRealmState.ts` (Phase 5B, COMPLETE). All four files under `assets/state/`
+  are now migrated.
 - **Migration count methodology (see `JavaToTypeScriptConversionPlan.md`'s "Documentation and Tooling
   Repair" section for full detail):** a *converted* module is an authored `.ts` file excluding
   `.d.ts`; a *remaining* module is an authored `.js` file with no same-path `.ts` sibling; `dist/`,
@@ -38,19 +39,22 @@
   document reported "358 remaining `.js` files" / "~366 total," which conflated the raw on-disk `.js`
   count with the true remaining count — the 8 Phase 1–3 modules' compiled `.js` siblings were being
   counted twice. That has been corrected below.)
-- **Remaining plain JavaScript (corrected):** **313 `.js` files** with no `.ts` sibling, outside
+- **Remaining plain JavaScript (corrected):** **312 `.js` files** with no `.ts` sibling, outside
   `dist/`, `build/`, and `node_modules/` (dist is build output and mirrors source 1:1 — it should
   never be migrated directly, only regenerated).
 - **Everything currently compiles/lints clean**: `npm run typecheck`, `npm run build`, `npm run lint`
-  all pass. `npm test` (smoke test) fails on 4 pre-existing, unrelated missing-favicon errors (not a
-  migration blocker). `npm run test:unit` is 58/58.
+  all pass. `npm test` (smoke test) passes cleanly (the favicon-related failures noted in every prior
+  revision of this document were resolved by removing the stale favicon references, not a migration
+  change). `npm run test:unit` is 78/78.
 
-**Progress so far:** 46 of 359 total authored JS/TS source modules converted (~13%), concentrated in
+**Progress so far:** 47 of 359 total authored JS/TS source modules converted (~13%), concentrated in
 navigation, persistence primitives, user preferences (Phases 1–3), static tower-definition data
-(Phase 4), and the three smaller `assets/state/*.js` game-state containers (Phase 5A) — deliberately
-the lowest-risk, most widely-imported utility/config tier, per the existing plan's own stated
-strategy. `assets/state/cognitiveRealmState.js` (Phase 5B) remains the one deferred file in that
-folder.
+(Phase 4), and all four `assets/state/*.js` game-state containers (Phase 5A + 5B, both COMPLETE) —
+deliberately the lowest-risk, most widely-imported utility/config tier, per the existing plan's own
+stated strategy. The next recommended slice is `assets/spireResourcePersistence.js` (see
+`JavaToTypeScriptConversionPlan.md`'s "Next Suggested Step"), which owns the real spire-resource save
+schema and would let `assets/autoSave.ts`'s remaining spire-resource `AutoSaveSnapshot` hooks finally
+be narrowed the same way Phase 5B just narrowed the cognitive-realm hooks.
 
 ---
 
@@ -208,11 +212,26 @@ not `spireResourceState.ts`). See `JavaToTypeScriptConversionPlan.md`'s Phase 5 
 consumer only reads/mutates plain fields via dependency injection with no serialization of its own
 (monetization state persists itself independently; spire-resource persistence is owned elsewhere).
 
-### Phase 5B — Cognitive Realm Territory State (DEFERRED, not started)
-**Scope:** `assets/state/cognitiveRealmState.js` only.
-**Why deferred:** See Phase 5A's split rationale above and `JavaToTypeScriptConversionPlan.md`'s
-"Next Suggested Step" for the full bounded specification (deterministic-`Math.random()` test
-requirements, legacy-save fallback inventory, archetype/emotion literal-union derivation).
+### Phase 5B — Cognitive Realm Territory State (COMPLETE, 2026-07-13)
+**Scope executed:** `assets/state/cognitiveRealmState.js` (622 lines) → `.ts` only; no consumer file
+touched except a type-only narrowing edit to `assets/autoSave.ts` (see below).
+**Outcome:** Migrated with explicit interfaces/unions for every archetype/emotion/territory/state/
+serialization shape (`Archetype`/`ArchetypeId` derived from the canonical `ARCHETYPES` table via
+`as const satisfies`, `EmotionNode`, `TerritoryOwner`, `Territory`, `CognitiveRealmState`,
+`SerializedTerritory`, `CognitiveRealmStateSnapshot`, plus two named-opaque legacy-save types scoped
+to the deserialization fallback path). Unlike Phase 5A's spire-resource hooks, this module directly
+owns and implements `getCognitiveRealmStateSnapshot`/`applyCognitiveRealmStateSnapshot`'s real logic
+(`serializeCognitiveRealmState`/`deserializeCognitiveRealmState`), so those two `AutoSaveSnapshot`
+hooks in `assets/autoSave.ts` **were** narrowed to `CognitiveRealmStateSnapshot` in this phase. 20 new
+deterministic unit tests added (78/78 total), all conquest-probability randomness mocked via a
+`withMockedRandom` helper rather than relying on real `Math.random()`. No importer required any
+change beyond `tsconfig.json`'s existing glob-based `include`. See
+`JavaToTypeScriptConversionPlan.md`'s Phase 5B section for full detail, including two newly-recorded
+(not fixed) pre-existing defects in the legacy-save fallback's `owner`/`id` validation.
+**Risk realized:** Low. The dedicated full-file inspection (archetype/emotion field enumeration,
+exact 9x9 algorithm trace, every `Math.random()` call site, full serialization key set, all 6
+legacy-save fallback branches) proceeded without surfacing any behavior ambiguity requiring a design
+decision beyond what was already anticipated in the Phase 5A split rationale.
 **Risk:** Medium-high — highest-risk file in `assets/state/`, per the standing task's own designation;
 requires exhaustive inspection of serialization/deserialization fallback branches before typing.
 
@@ -289,10 +308,10 @@ Once file-by-file conversion is complete:
 
 **First (lowest risk, highest leverage, already largely done or next up):**
 navigation → core formatting/persistence → preferences → **tower data schemas
-(`assets/data/towers/*.ts`, COMPLETE)** → **game-state containers, small/medium modules
-(`resourceState.ts`/`spireResourceState.ts`/`monetizationState.ts`, Phase 5A, COMPLETE)** →
-cognitive realm territory state (`cognitiveRealmState.js`, Phase 5B, deferred/next up) → tower
-equation math.
+(`assets/data/towers/*.ts`, COMPLETE)** → **game-state containers
+(`resourceState.ts`/`spireResourceState.ts`/`monetizationState.ts`/`cognitiveRealmState.ts`, Phases
+5A + 5B, both COMPLETE — all four `assets/state/*.ts` files now migrated)** → spire/powder/tower-
+upgrade save persistence (`assets/spireResourcePersistence.js`, next up) → tower equation math.
 
 **Middle:** UI tab/menu/overlay controllers (parallelizable in small batches).
 
