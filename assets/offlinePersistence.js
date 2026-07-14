@@ -323,32 +323,16 @@ export function recordPowderEvent(type, context = {}) {
       const minutesLabel = dependencies.formatWholeNumber(minutes);
       const alephMultiplier = idleSummary?.aleph?.multiplier;
       const alephTotal = idleSummary?.aleph?.total;
-      const betUnlocked = Boolean(idleSummary?.bet?.unlocked);
-      const betMultiplier = idleSummary?.bet?.multiplier;
-      const betTotal = idleSummary?.bet?.total;
 
       const safeAlephMultiplier = Number.isFinite(alephMultiplier) ? Math.max(0, alephMultiplier) : 0;
       const safeAlephTotal = Number.isFinite(alephTotal) ? Math.max(0, alephTotal) : 0;
       const alephRateLabel = dependencies.formatGameNumber(safeAlephMultiplier);
       const alephGainLabel = dependencies.formatGameNumber(safeAlephTotal);
 
-      const betPieces = [];
-      if (betUnlocked) {
-        const safeBetMultiplier = Number.isFinite(betMultiplier) ? Math.max(0, betMultiplier) : 0;
-        const safeBetTotal = Number.isFinite(betTotal) ? Math.max(0, betTotal) : 0;
-        const betRateLabel = dependencies.formatGameNumber(safeBetMultiplier);
-        const betGainLabel = dependencies.formatGameNumber(safeBetTotal);
-        betPieces.push(`בּ × ${betRateLabel} = +${betGainLabel} Sand`);
-      }
-
-
       const powderLabel = dependencies.formatGameNumber(Math.max(0, powder));
       const fragments = [
         `ℵ × ${alephRateLabel} = +${alephGainLabel} Motes`,
       ];
-      if (betPieces.length) {
-        fragments.push(...betPieces);
-      }
       fragments.push(`${powderLabel} Powder recaptured`);
 
       entry = `While away ? ${minutesLabel}m · ${fragments.join(' ? ')}.`;
@@ -373,35 +357,7 @@ export function recordPowderEvent(type, context = {}) {
       break;
     }
     case 'mode-switch': {
-      const { mode = powderState.simulationMode, label } = context;
-      const normalizedMode = mode === 'fluid' ? 'fluid' : 'sand';
-      const modeLabel =
-        normalizedMode === 'fluid'
-          ? label || powderState.fluidProfileLabel || 'Bet Spire'
-          : 'Powderfall Study';
-      entry = `Simulation mode changed ? ${modeLabel} engaged.`;
-      break;
-    }
-    case 'fluid-unlocked': {
-      const reason = context && context.reason === 'sigil' ? 'sigil' : 'purchase';
-      const glyphCostSource =
-        context && Number.isFinite(context.glyphCost)
-          ? context.glyphCost
-          : dependencies.powderConfig?.fluidUnlockGlyphCost || 0;
-      const glyphCost = Math.max(0, Math.floor(Number(glyphCostSource) || 0));
-      if (reason === 'sigil') {
-        const thresholdSource =
-          context && Number.isFinite(context.threshold)
-            ? context.threshold
-            : dependencies.powderConfig?.fluidUnlockSigils || 0;
-        const threshold = Math.max(0, Math.floor(Number(thresholdSource) || 0));
-        const unitLabel = threshold === 1 ? 'Sigil' : 'Sigils';
-        entry = `Fluid resonance unlocked ? ${dependencies.formatWholeNumber(threshold)} ${unitLabel} ascended.`;
-      } else if (glyphCost > 0) {
-        entry = `Fluid resonance unlocked ? ℵ ${dependencies.formatWholeNumber(glyphCost)} tithed.`;
-      } else {
-        entry = 'Fluid resonance unlocked ? Aleph tithe waived.';
-      }
+      entry = 'Well of Inspiration simulation engaged.';
       break;
     }
     default:
@@ -450,12 +406,6 @@ export function checkOfflineRewards() {
     dependencies.notifyIdleTime(minutesAway * 60000) || {
       minutes: minutesAway,
       aleph: { multiplier: 0, total: 0, unlocked: true },
-      bet: { multiplier: 0, total: 0, unlocked: false },
-      lamed: { multiplier: 0, total: 0, unlocked: false },
-      tsadi: { multiplier: 0, total: 0, unlocked: false },
-      bindingAgents: { multiplier: 0, total: 0, unlocked: false },
-      shin: { multiplier: 0, total: 0, unlocked: false },
-      kuf: { multiplier: 0, total: 0, unlocked: false },
     };
   dependencies.applyPowderGain(powderEarned, {
     source: 'offline',
@@ -467,12 +417,6 @@ export function checkOfflineRewards() {
   showOfflineOverlay({
     minutes: minutesAway,
     aleph: idleSummary.aleph,
-    bet: idleSummary.bet,
-    lamed: idleSummary.lamed,
-    tsadi: idleSummary.tsadi,
-    bindingAgents: idleSummary.bindingAgents,
-    shin: idleSummary.shin,
-    kuf: idleSummary.kuf,
   });
 }
 

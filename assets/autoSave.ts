@@ -46,23 +46,17 @@ export const GAME_STATS_STORAGE_KEY = 'glyph-defense-idle:stats';
 export const POWDER_BASIN_STORAGE_KEY = 'glyph-defense-idle:powder-basin';
 // Storage key used to persist tower upgrade progress (glyph allocations).
 export const TOWER_UPGRADE_STORAGE_KEY = 'glyph-defense-idle:tower-upgrades';
-// Storage key used to persist Shin Spire state (iterons, fractals, glyphs).
+// Retired storage keys remain exported so old data can be identified or cleared safely.
 export const SHIN_STATE_STORAGE_KEY = 'glyph-defense-idle:shin-state';
-// Storage key used to persist Kuf Spire shard allocations and scores.
 export const KUF_STATE_STORAGE_KEY = 'glyph-defense-idle:kuf-state';
 // Storage key used to persist advanced spire resource banks (Tsadi binding agents, Lamed sparks, etc.).
 export const SPIRE_RESOURCE_STORAGE_KEY = 'glyph-defense-idle:spires';
 // Storage key used to persist interactive level completion and unlock progress.
 export const LEVEL_PROGRESS_STORAGE_KEY = 'glyph-defense-idle:level-progress';
-// Storage key used to persist Bet Spire terrarium visual preferences.
 export const FLUID_VISUAL_SETTINGS_STORAGE_KEY = 'glyph-defense-idle:fluid-visual-settings';
-// Storage key used to persist Lamed spire visual effect settings.
 export const LAMED_VISUAL_SETTINGS_STORAGE_KEY = 'glyph-defense-idle:lamed-visual-settings';
-// Storage key used to persist Kuf spire performance toggles.
 export const KUF_VISUAL_SETTINGS_STORAGE_KEY = 'glyph-defense-idle:kuf-visual-settings';
-// Storage key used to persist Tsadi spire fusion rendering preferences.
 export const TSADI_VISUAL_SETTINGS_STORAGE_KEY = 'glyph-defense-idle:tsadi-visual-settings';
-// Storage key used to persist Shin spire fractal rendering preferences.
 export const SHIN_VISUAL_SETTINGS_STORAGE_KEY = 'glyph-defense-idle:shin-visual-settings';
 // Storage key used to persist Aleph spire mote glow settings.
 export const POWDER_VISUAL_SETTINGS_STORAGE_KEY = 'glyph-defense-idle:powder-visual-settings';
@@ -154,8 +148,6 @@ export interface AutoSaveDependencies {
   applyPowderBasinSnapshot: ((snapshot: AutoSaveSnapshot) => void) | null;
   getTowerUpgradeStateSnapshot: (() => AutoSaveSnapshot) | null;
   applyTowerUpgradeStateSnapshot: ((snapshot: AutoSaveSnapshot) => void) | null;
-  getShinStateSnapshot: (() => AutoSaveSnapshot) | null;
-  getKufStateSnapshot: (() => AutoSaveSnapshot) | null;
   getSpireResourceStateSnapshot: (() => AutoSaveSnapshot) | null;
   applySpireResourceStateSnapshot: ((snapshot: AutoSaveSnapshot) => void) | null;
   getLevelProgressSnapshot: (() => AutoSaveSnapshot) | null;
@@ -198,8 +190,6 @@ const dependencies: AutoSaveDependencies = {
   applyPowderBasinSnapshot: null,
   getTowerUpgradeStateSnapshot: null,
   applyTowerUpgradeStateSnapshot: null,
-  getShinStateSnapshot: null,
-  getKufStateSnapshot: null,
   getSpireResourceStateSnapshot: null,
   applySpireResourceStateSnapshot: null,
   getLevelProgressSnapshot: null,
@@ -504,28 +494,6 @@ function persistTowerUpgrades(): void {
   writeStorageJson(TOWER_UPGRADE_STORAGE_KEY, snapshot);
 }
 
-function persistShinState(): void {
-  if (typeof dependencies.getShinStateSnapshot !== 'function') {
-    return;
-  }
-  const snapshot = dependencies.getShinStateSnapshot();
-  if (!snapshot || typeof snapshot !== 'object') {
-    return;
-  }
-  writeStorageJson(SHIN_STATE_STORAGE_KEY, snapshot);
-}
-
-function persistKufState(): void {
-  if (typeof dependencies.getKufStateSnapshot !== 'function') {
-    return;
-  }
-  const snapshot = dependencies.getKufStateSnapshot();
-  if (!snapshot || typeof snapshot !== 'object') {
-    return;
-  }
-  writeStorageJson(KUF_STATE_STORAGE_KEY, snapshot);
-}
-
 function persistSpireResourceState(): void {
   if (typeof dependencies.getSpireResourceStateSnapshot !== 'function') {
     return;
@@ -569,8 +537,6 @@ function performAutoSave(): void {
   persistGameStats();
   persistPreferences();
   persistTowerUpgrades();
-  persistShinState();
-  persistKufState();
   persistSpireResourceState();
   persistLevelProgress();
   persistCognitiveRealmState();

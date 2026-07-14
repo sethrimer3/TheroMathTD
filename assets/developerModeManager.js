@@ -22,23 +22,11 @@ export function createDeveloperModeManager(options = {}) {
     getTowerUnlockState,
     setMergingLogicUnlocked,
     powderState,
-    spireResourceState,
-    setKufTotalShards,
-    resetKufState,
-    setTrackedKufGlyphs,
-    setDeveloperIteronBank,
-    setDeveloperIterationRate,
     setDeveloperInfiniteTheroEnabled,
     getPowderSimulation,
     setPowderSimulation,
     getSandSimulation,
     setSandSimulation,
-    getFluidSimulation,
-    setFluidSimulation,
-    getLamedSimulation,
-    getTsadiSimulation,
-    updateSpireTabVisibility,
-    spireMenuController,
     unlockedLevels,
     interactiveLevelOrder,
     levelState,
@@ -62,19 +50,10 @@ export function createDeveloperModeManager(options = {}) {
     syncDeveloperControlValues,
     syncLevelEditorVisibility,
     updateDeveloperMapElementsVisibility,
-    updateBetSpireDebugControlsVisibility: _updateBetSpireDebugControlsVisibility,
     getPlayfield,
     getPlayfieldMenuController,
-    unlockAllFractals,
-    refreshFractalTabs,
-    addIterons,
-    resetShinState,
-    setShinGlyphs,
-    setTrackedShinGlyphs,
-    updateShinDisplay,
     refreshPowderWallDecorations,
     clearDeveloperTheroMultiplierOverride,
-    stopLamedDeveloperSpamLoop,
     deactivateDeveloperMapTools,
     setDeveloperMapPlacementMode,
     persistentStorageKeys = [],
@@ -95,7 +74,6 @@ export function createDeveloperModeManager(options = {}) {
     applyMindGatePaletteToDom,
     mergeMotePalette,
     defaultMotePalette,
-    updateFluidTabAvailability,
     resetAlephChainUpgrades,
     reconcileGlyphCurrencyFromState,
     updatePowderWallGapFromGlyphs,
@@ -167,33 +145,11 @@ export function createDeveloperModeManager(options = {}) {
     }
   }
 
-  function updateSpireSimulationBanks() {
+  function updateWellSimulationBank() {
     updateDeveloperBanksForSimulation(getSandSimulation?.(), {
       bank: DEVELOPER_RESOURCE_GRANT,
       rate: 0,
     });
-    updateDeveloperBanksForSimulation(getFluidSimulation?.(), {
-      bank: DEVELOPER_RESOURCE_GRANT,
-      rate: 0,
-    });
-    const lamedSimulation = typeof getLamedSimulation === 'function' ? getLamedSimulation() : null;
-    if (lamedSimulation) {
-      if (typeof lamedSimulation.sparkSpawnRate !== 'undefined') {
-        lamedSimulation.sparkSpawnRate = 0;
-      }
-    }
-    const tsadiSimulation = typeof getTsadiSimulation === 'function' ? getTsadiSimulation() : null;
-    if (tsadiSimulation) {
-      if (typeof tsadiSimulation.spawnRate !== 'undefined') {
-        tsadiSimulation.spawnRate = 0;
-      }
-      if (typeof tsadiSimulation.setAvailableBindingAgents === 'function') {
-        tsadiSimulation.setAvailableBindingAgents(DEVELOPER_RESOURCE_GRANT);
-      }
-    }
-    if (spireResourceState?.tsadi) {
-      spireResourceState.tsadi.bindingAgents = DEVELOPER_RESOURCE_GRANT;
-    }
   }
 
   function enableDeveloperMode() {
@@ -228,34 +184,13 @@ export function createDeveloperModeManager(options = {}) {
     pruneLockedTowersFromLoadout?.();
 
     if (powderState) {
-      powderState.fluidUnlocked = true;
       powderState.idleMoteBank = DEVELOPER_RESOURCE_GRANT;
       powderState.idleDrainRate = 0;
-      powderState.fluidIdleDrainRate = 0;
     }
-    if (spireResourceState?.lamed) {
-      spireResourceState.lamed.unlocked = true;
-    }
-    if (spireResourceState?.tsadi) {
-      spireResourceState.tsadi.unlocked = true;
-      spireResourceState.tsadi.bindingAgents = DEVELOPER_RESOURCE_GRANT;
-    }
-    if (spireResourceState?.shin) {
-      spireResourceState.shin.unlocked = true;
-    }
-    if (spireResourceState?.kuf) {
-      spireResourceState.kuf.unlocked = true;
-    }
-    setKufTotalShards?.(DEVELOPER_RESOURCE_GRANT);
-    setDeveloperIteronBank?.(DEVELOPER_RESOURCE_GRANT);
-    setDeveloperIterationRate?.(0);
     if (!developerModeWasActive) {
       setDeveloperInfiniteTheroEnabled?.(true);
     }
-    updateSpireSimulationBanks();
-
-    updateSpireTabVisibility?.();
-    spireMenuController?.updateCounts?.();
+    updateWellSimulationBank();
 
     if (unlockedLevels?.clear) {
       unlockedLevels.clear();
@@ -311,10 +246,6 @@ export function createDeveloperModeManager(options = {}) {
         'Developer lattice engaged—every tower, level, and codex entry is unlocked.';
     }
 
-    unlockAllFractals?.();
-    refreshFractalTabs?.();
-    addIterons?.(DEVELOPER_RESOURCE_GRANT);
-    updateShinDisplay?.();
     refreshPowderWallDecorations?.();
 
     // Unlock the cognitive realm map so it is visible in developer mode.
@@ -342,7 +273,6 @@ export function createDeveloperModeManager(options = {}) {
       ? isTutorialCompleted()
       : false;
     updateTabLockStates?.(tutorialComplete);
-    stopLamedDeveloperSpamLoop?.();
     persistDeveloperModeState(false);
 
     deactivateDeveloperMapTools?.({ force: true, silent: true });
@@ -482,18 +412,8 @@ export function createDeveloperModeManager(options = {}) {
         console.warn('Failed to stop powder simulation while resetting player data.', error);
       }
     }
-    const fluidSimulation = typeof getFluidSimulation === 'function' ? getFluidSimulation() : null;
-    if (fluidSimulation?.stop) {
-      try {
-        fluidSimulation.stop();
-      } catch (error) {
-        console.warn('Failed to stop fluid simulation while resetting player data.', error);
-      }
-    }
-
     setPowderSimulation?.(null);
     setSandSimulation?.(null);
-    setFluidSimulation?.(null);
 
     const observer = typeof getPowderBasinObserver === 'function' ? getPowderBasinObserver() : null;
     if (observer?.disconnect) {
@@ -533,9 +453,6 @@ export function createDeveloperModeManager(options = {}) {
       powderState.idleDrainRate = 0;
       powderState.pendingMoteDrops = [];
       powderState.idleBankHydrated = false;
-      powderState.fluidIdleDrainRate = 0;
-      powderState.pendingFluidDrops = [];
-      powderState.fluidBankHydrated = false;
       powderState.motePalette = typeof mergeMotePalette === 'function'
         ? mergeMotePalette(defaultMotePalette)
         : defaultMotePalette;
@@ -543,71 +460,14 @@ export function createDeveloperModeManager(options = {}) {
       powderState.simulationMode = 'sand';
       powderState.wallGapTarget = powderConfig.wallBaseGapMotes;
       powderState.modeSwitchPending = false;
-      powderState.fluidProfileLabel = 'Bet Spire';
-      powderState.fluidUnlocked = false;
-      // Reset Bet glyph milestones so higher-tier spires do not auto-unlock after a wipe.
-      powderState.fluidGlyphsAwarded = 0;
       powderState.viewTransform = null;
       powderState.loadedSimulationState = null;
-      powderState.loadedFluidState = null;
     }
 
-    if (spireResourceState) {
-      // Reinitialize advanced spire branches so the tab stack hides any spires that should be locked.
-      if (spireResourceState.lamed) {
-        spireResourceState.lamed.unlocked = false;
-        spireResourceState.lamed.dragLevel = 0;
-        spireResourceState.lamed.starMass = 10;
-        spireResourceState.lamed.upgrades = { starMass: 0 };
-        spireResourceState.lamed.stats = { totalAbsorptions: 0, totalMassGained: 0, starMilestoneReached: 0 };
-        spireResourceState.lamed.simulationSnapshot = null;
-      }
-      if (spireResourceState.tsadi) {
-        spireResourceState.tsadi.unlocked = false;
-        spireResourceState.tsadi.bindingAgents = 0;
-        spireResourceState.tsadi.discoveredMolecules = [];
-        spireResourceState.tsadi.stats = { totalParticles: 0, totalGlyphs: 0, highestTier: 0 };
-        spireResourceState.tsadi.simulationSnapshot = null;
-      }
-      if (spireResourceState.shin) {
-        spireResourceState.shin.unlocked = false;
-      }
-      if (spireResourceState.kuf) {
-        spireResourceState.kuf.unlocked = false;
-      }
-    }
-    // Clear Kuf Spire progress so glyphs, scores, and HUD trackers wipe alongside other systems.
-    if (typeof resetKufState === 'function') {
-      try {
-        resetKufState();
-        setTrackedKufGlyphs?.(0);
-      } catch (error) {
-        console.warn('Failed to reset Kuf Spire state while deleting player data.', error);
-      }
-    }
-    // Clear Kuf shard totals so the navigation menu and unlock checks reflect a fresh state.
-    setKufTotalShards?.(0);
-
-    updateFluidTabAvailability?.();
     resetPowderUiState?.();
     clearTowerUpgradeState?.();
     resetAlephChainUpgrades?.({ playfield: getPlayfield?.() });
     reconcileGlyphCurrencyFromState?.();
-
-    // Clear Shin Spire allocations so save wipes fully reset iterons and glyphs.
-    if (typeof resetShinState === 'function') {
-      try {
-        resetShinState();
-        setShinGlyphs?.(0);
-        setTrackedShinGlyphs?.(0);
-        if (spireResourceState?.shin) {
-          spireResourceState.shin.unlocked = false;
-        }
-        updateShinDisplay?.();
-      } catch (error) {
-        console.warn('Failed to reset Shin Spire state while deleting player data.', error);
-      }
-    }
 
     resetActiveMoteGems?.();
     if (moteGemState) {
@@ -624,9 +484,6 @@ export function createDeveloperModeManager(options = {}) {
     updatePowderWallGapFromGlyphs?.(0);
     refreshPowderWallDecorations?.();
     refreshPowderSystems?.();
-    // Sync the spire UI immediately so hidden spires disappear before the reload kicks in.
-    updateSpireTabVisibility?.();
-    spireMenuController?.updateCounts?.();
     updatePowderModeButton?.();
     updateStatusDisplays?.();
     updatePowderLogDisplay?.();
