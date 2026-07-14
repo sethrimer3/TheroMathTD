@@ -126,10 +126,6 @@ if (!/<script\b[^>]*type=["']module["'][^>]*src=["']\.\/assets\/main\.js["'][^>]
 
 const startupReferences = [
   './assets/styles.css',
-  './assets/favicon/favicon.ico',
-  './assets/favicon/favicon-32x32.png',
-  './assets/favicon/favicon-16x16.png',
-  './assets/favicon/apple-touch-icon.png',
   './assets/sprites/logo/gravy_thyme_logo.webp',
   './assets/animations/menuBackground_animation.webp',
 ];
