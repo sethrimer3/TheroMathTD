@@ -1,5 +1,7 @@
 # Thero Idle – Progression Notes
 
+> Current product note (2026-07-13): Bet, Lamed, Tsadi, Shin, and Kuf Spires are retired. Aleph is presented as the **Well of Inspiration**. Achievements remains active, while the Achievements Terrarium is disabled legacy JavaScript. Older sections below describe historical designs and are not active progression. The Cognitive Realm is unchanged.
+
 ## Level Structure
 - The game now features **30 total levels** grouped into six five-level sets.
 - Sets unlock in reverse proof order: Hypothesis (0, tutorial level), Conjecture (1–5), Corollary (6–10), Lemma (11–15), Proof (16–20), Theorem (21–25), and Axiom (26–30).

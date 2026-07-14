@@ -180,39 +180,9 @@
     ]
   },
   "spire-powder": {
-    "title": "Aleph Spire",
+    "title": "Well of Inspiration",
     "sections": [
-      "[Story for aleph spire goes here]"
-    ]
-  },
-  "spire-fluid": {
-    "title": "Bet Spire",
-    "sections": [
-      "[Story for bet spire goes here]"
-    ]
-  },
-  "spire-lamed": {
-    "title": "Lamed Spire",
-    "sections": [
-      "[Story for lamed spire goes here]"
-    ]
-  },
-  "spire-tsadi": {
-    "title": "Tsadi Spire",
-    "sections": [
-      "[Story for tsadi spire goes here]"
-    ]
-  },
-  "spire-shin": {
-    "title": "Shin Spire",
-    "sections": [
-      "[Story for shin spire goes here]"
-    ]
-  },
-  "spire-kuf": {
-    "title": "Kuf Spire",
-    "sections": [
-      "[Story for kuf spire goes here]"
+      "[Story for the Well of Inspiration goes here]"
     ]
   },
   "Prologue - Story": {

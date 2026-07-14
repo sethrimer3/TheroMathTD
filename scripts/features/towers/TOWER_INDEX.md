@@ -29,16 +29,15 @@ Quick lookup table for all implemented towers in Thero Idle.
 | Ω | Omega | `omegaTower.js` | Golden orbital particles slice percentage of enemy max HP after charging period |
 | ∞ | Infinity | `infinityTower.js` | Aura tower that exponentially boosts all towers in range based on total tower count |
 
-## Spires (Idle Games)
+## Active Spire Experience
 
-Spires are self-contained idle games — not towers. Each provides glyphs that alter tower equations.
+The Well of Inspiration is the only active Spire experience. Its internal `powder` and Aleph names remain for save compatibility.
 
 | Name | File | Description |
 |------|------|-------------|
-| Powder Spire | `powderTower.js` | Falling-sand idle game producing Aleph glyphs (ℵ) |
-| Fluid Spire (Bet) | `fluidTower.js` | Shallow-water idle game producing Bet glyphs (ב) |
-| Lamed Spire (ל) | `lamedTower.js` | Gravity simulation idle game producing Lamed glyphs (ל) |
-| Tsadi Spire (צ) | `tsadiTower.js` | Particle fusion idle game producing Tsadi glyphs (צ) |
+| Well of Inspiration | `powderTower.js` | Falling-mote idle game producing Well glyphs (ℵ) |
+
+Bet, Lamed, Tsadi, Shin, and Kuf Spires are retired. The Achievements Terrarium is disabled legacy JavaScript; see `../../../assets/legacy/achievementsTerrarium/README.md`.
 
 ## Math Modules
 
@@ -71,13 +70,13 @@ The Pi Tower (π) is a beam-based tower that locks onto enemies and deals increa
 
 **Key Features:**
 - **Range**: 4m (fixed)
-- **Max Lasers**: 2 + Lamed₁ (number of simultaneous enemy lock-ons)
+- **Max Lasers**: 2 + the retained internal Lamed₁ variable (number of simultaneous enemy lock-ons; purchased with Well glyphs)
 - **Damage Scaling**: Damage increases exponentially based on rotation degrees
 - **Visual Feedback**: Beam color and intensity scale with rotation
 
 **Sub-Equations:**
-- **Atk**: `atk = omicron^(|degrees|/(100-Bet₁))` - Damage per beam based on rotation
-- **numLaser**: `numLaser = 2 + Lamed₁` - Maximum simultaneous beams
+- **Atk**: `atk = omicron^(|degrees|/(100-Bet₁))` - Damage per beam; Bet₁ remains an internal equation-variable name purchased with Well glyphs
+- **numLaser**: `numLaser = 2 + Lamed₁` - Maximum simultaneous beams; Lamed₁ remains an internal equation-variable name purchased with Well glyphs
 - **Bet₁**: Reduces divisor, making damage scale faster with rotation (max 50)
 - **Lamed₁**: Increases max laser count (max 10)
 

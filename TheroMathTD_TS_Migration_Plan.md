@@ -16,12 +16,13 @@
 ## 1. Current State
 
 > **2026-07-13 retirement update:** The obsolete-Spire feature removal deleted active Bet, Lamed,
-> Tsadi, Shin, and Kuf modules and added `assets/saveCompatibility.ts`. Current inventory is 48
-> authored `.ts` modules and 265 authored `.js` modules without a `.ts` sibling. Eighteen of those
+> Tsadi, Shin, and Kuf modules and added `assets/saveCompatibility.ts`. Current inventory is 46
+> authored `.ts` modules and 263 authored `.js` modules without a `.ts` sibling. Nineteen of those
 > JavaScript modules form the disabled legacy Achievements Terrarium/Bet Terrarium stack documented
 > at `assets/legacy/achievementsTerrarium/README.md`; they are preserved JavaScript, excluded from
 > the active application graph, and are not an active migration target. The active remaining backlog
-> is therefore 247 JavaScript modules. The surviving Aleph system is presented as the Well of
+> is therefore 244 JavaScript modules. The obsolete typed `spireFloatingMenu` and
+> `spireTabVisibility` managers were removed with the multi-Spire navigation. The surviving Aleph system is presented as the Well of
 > Inspiration, while compatibility-sensitive internal names remain unchanged. The Cognitive Realm
 > is outside this product change.
 
@@ -32,9 +33,8 @@
   `<script type="module">` imports and no dev server/bundler is required.
 - **`package.json`:** `devDependencies` has `typescript@^5.7.0`, `eslint@^10.2.0`, `electron@^42.2.0`.
   No `@types/*` packages installed. `npm run typecheck` (`tsc --noEmit`) and `npm run build` both exist.
-- **Files converted or authored so far (48 `.ts` files, all under strict mode, zero `any`):**
-  `assets/uiTabManager.ts`, `assets/spireFloatingMenu.ts`, `assets/tabLockManager.ts`,
-  `assets/spireTabVisibility.ts`, `assets/autoSave.ts`, `assets/preferences.ts`,
+- **Files converted or authored so far (46 `.ts` files, all under strict mode, zero `any`):**
+  `assets/uiTabManager.ts`, `assets/tabLockManager.ts`, `assets/autoSave.ts`, `assets/preferences.ts`,
   `scripts/core/formatting.ts`, `scripts/core/mathText.ts` (Phases 1–3), plus all 33 files under
   `assets/data/towers/` (32 tower-definition modules + `index.ts`) and the new
   `assets/data/towers/types.ts` (Phase 4), plus `assets/state/resourceState.ts`,
@@ -49,15 +49,15 @@
   document reported "358 remaining `.js` files" / "~366 total," which conflated the raw on-disk `.js`
   count with the true remaining count — the 8 Phase 1–3 modules' compiled `.js` siblings were being
   counted twice. That has been corrected below.)
-- **Remaining plain JavaScript:** **265 `.js` files** with no `.ts` sibling, outside `dist/`, `build/`,
-  and `node_modules/`. This includes 18 explicitly disabled legacy Terrarium modules; the active
-  migration backlog is **247**. Dist is build output and should only be regenerated.
+- **Remaining plain JavaScript:** **263 `.js` files** with no `.ts` sibling, outside `dist/`, `build/`,
+  and `node_modules/`. This includes 19 explicitly disabled legacy Terrarium modules; the active
+  migration backlog is **244**. Dist is build output and should only be regenerated.
 - **Everything currently compiles/lints clean**: `npm run typecheck`, `npm run build`, `npm run lint`
   all pass. `npm test` (smoke test) passes cleanly (the favicon-related failures noted in every prior
   revision of this document were resolved by removing the stale favicon references, not a migration
   change). `npm run test:unit` is 78/78.
 
-**Progress so far:** 48 typed modules among 295 active authored JS/TS source modules (~16%), plus 18
+**Progress so far:** 46 typed modules among 290 active authored JS/TS source modules (~16%), plus 19
 disabled legacy Terrarium modules that are intentionally not migration targets. Typed work remains concentrated in
 navigation, persistence primitives, user preferences (Phases 1–3), static tower-definition data
 (Phase 4), and all four `assets/state/*.js` game-state containers (Phase 5A + 5B, both COMPLETE) —
