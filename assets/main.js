@@ -137,28 +137,15 @@ import { createPowderResizeObserver } from './powderResizeObserver.js';
 // DOM helpers extracted from main.js to hydrate powder and fluid overlays.
 import { createPowderUiDomHelpers } from './powderUiDomHelpers.js';
 // Bet Spire Terrarium lifecycle: slimes, birds, trees, shrooms, sky cycle, celestial bodies.
-import { createBetTerrariumController } from './betTerrariumController.js';
 // Aleph tier-transition animation: wall-exit, golden glyph collection, wall-enter, palette scaling.
 import { createAlephTierTransitionController } from './alephTierTransitionController.js';
 import { createResourceHud } from './resourceHud.js';
-import { initBetSpireRender, stopBetSpireRender, resumeBetSpireRender, getBetSpireRenderInstance } from './betSpireRender.js';
-import { initParticleInventoryDisplay } from './betParticleInventory.js';
-import { createBetSpireUpgradeMenu } from './betSpireUpgradeMenu.js';
-import { createTsadiUpgradeUi } from './tsadiUpgradeUi.js';
-import { createTsadiBindingUi } from './tsadiBindingUi.js';
-import { createSpireTabVisibilityManager } from './spireTabVisibility.js';
 import { createIdleLevelRunManager } from './idleLevelRunManager.js';
 import { createSpireResourceState } from './state/spireResourceState.js';
 import { createPowderStateContext } from './powder/powderState.js';
-import { createTsadiMoleculeNameGenerator, TSADI_MOLECULE_LEXICON } from './tsadiMoleculeNameGenerator.js';
 import { createSpireResourcePersistence } from './spireResourcePersistence.js';
 import { createLevelCombatController } from './levelCombatController.js';
 import { createSpireResourceBanks } from './spireResourceBanks.js';
-import {
-  applyBetIdleParticles,
-  applyLamedIdleStars,
-  applyTsadiIdleParticles,
-} from './spireIdleApplication.js';
 // Alpha tower sprite tint cache builder for palette-synced shot particles.
 import { refreshAlphaShotSpritePaletteCache } from '../scripts/features/towers/alphaTower.js';
 // Beta tower sprite tint cache builder for palette-synced shot particles.
@@ -174,71 +161,14 @@ import {
   mergeMotePalette,
 } from '../scripts/features/towers/powderTower.js';
 // Fluid Spire (Bet) shallow-water simulation (idle game producing Bet glyphs).
-import { FluidSimulation } from '../scripts/features/towers/fluidTower.js';
 // Lamed Spire gravity simulation for orbital mechanics with sparks (idle game producing Lamed glyphs).
-import { GravitySimulation } from '../scripts/features/towers/lamedTower.js';
 // Tsadi Spire particle fusion simulation with tier-based merging (idle game producing Tsadi glyphs).
-import {
-  ParticleFusionSimulation,
-  getGreekTierInfo,
-  ADVANCED_MOLECULE_UNLOCK_TIER,
-} from '../scripts/features/towers/tsadiTower.js';
 // Shin state management for Iteron allocation and fractal terrarium progression.
-import {
-  initializeShinState,
-  loadFractalDefinitions,
-  getShinStateSnapshot,
-  updateShinState,
-  addIterons,
-  getIteronBank,
-  getShinGlyphs,
-  resetShinState,
-  setIterationRate,
-  setShinGlyphs,
-  unlockAllFractals,
-} from './shinState.js';
 // Shin UI components for fractal tab management and display.
-import {
-  updateShinDisplay,
-  refreshFractalTabs,
-  setShinUIUpdateCallback,
-  updateFractalSimulation,
-  resizeShinFractalCanvases,
-  refreshEnemyAlmanac,
-} from './shinUI.js';
 // Cardinal Warden reverse danmaku game for Shin Spire.
-import {
-  initializeCardinalWardenUI,
-  resizeCardinalCanvas,
-  stopCardinalSimulation,
-  startCardinalSimulation,
-  getCardinalSimulation,
-  getCardinalHighScore,
-} from './cardinalWardenUI.js';
 // Shin Grapheme Codex UI for displaying grapheme information.
-import { initializeShinGraphemeCodex } from './shinGraphemeCodexUI.js';
 // Shin Spire ambient substrate crystalline background effect.
-import {
-  startShinShapeBackground,
-  stopShinShapeBackground,
-  resizeShinShapeBackground,
-} from './shinShapeBackground.js';
 // Tsadi Spire ambient vermiculate worm-line background effect.
-import {
-  startTsadiVermiculateBackground,
-  stopTsadiVermiculateBackground,
-  resizeTsadiVermiculateBackground,
-} from './tsadiVermiculateBackground.js';
-import {
-  initializeKufState,
-  getKufStateSnapshot,
-  getKufGlyphs,
-  onKufStateChange,
-  setKufTotalShards,
-  resetKufState,
-  setKufGlyphs,
-} from './kufState.js';
-import { initializeKufUI, updateKufDisplay, stopKufSimulation, resumeKufSimulation } from './kufUI.js';
 // Shared color palette orchestration utilities.
 import {
   configureColorSchemeSystem,
@@ -381,24 +311,6 @@ import { createVariableLibraryController } from './variableLibraryController.js'
 import { createUpgradeMatrixOverlay } from './upgradeMatrixOverlay.js';
 import { createLevelSummaryHelpers } from './levelSummary.js';
 import { initializePlayfieldBackgroundVideo } from './playfieldBackgroundVideo.js';
-import { createLamedSpireUi } from './lamedSpireUi.js';
-import {
-  bindLamedSpireOptions,
-  setLamedSimulationGetter,
-  initializeLamedSpirePreferences,
-} from './lamedSpirePreferences.js';
-import {
-  applyFluidVisualSettings,
-  bindFluidSpireOptions,
-  initializeFluidSpirePreferences,
-  setFluidTerrariumGetters,
-} from './fluidSpirePreferences.js';
-import {
-  bindBetSpireParticleOptions,
-  initializeBetSpireParticlePreferences,
-  setBetSpireRenderGetter,
-  updateBetSpireDebugControlsVisibility,
-} from './betSpireParticlePreferences.js';
 import {
   applyPowderVisualSettings,
   bindPowderSpireOptions,
@@ -407,18 +319,7 @@ import {
   setPowderSimulationGetter,
   updatePowderRenderSizeControlsVisibility,
 } from './powderSpirePreferences.js';
-import {
-  bindAchievementsTerrariumOptions,
-  initializeAchievementsTerrariumPreferences,
-} from './achievementsTerrariumPreferences.js';
-import {
-  bindTsadiSpireOptions,
-  initializeTsadiSpirePreferences,
-  setTsadiSimulationGetter,
-} from './tsadiSpirePreferences.js';
 import { bindSpireOptionsDropdown, closeAllSpireDropdowns } from './spireOptionsDropdowns.js';
-import { bindKufSpireOptions, initializeKufSpirePreferences } from './kufSpirePreferences.js';
-import { bindShinSpireOptions, initializeShinSpirePreferences, setShinSimulationGetter } from './shinSpirePreferences.js';
 import { bindCognitiveRealmOptions, initializeCognitiveRealmPreferences } from './cognitiveRealmPreferences.js';
 import { bindPlayfieldOptions, initializePlayfieldPreferences } from './playfield/playfieldPreferences.js';
 import { createDeveloperModeManager } from './developerModeManager.js';
@@ -872,16 +773,6 @@ import { createDeveloperSpamController } from './developerSpamController.js';
    * and unlocked at the same height thresholds as Aleph glyphs but tracked independently.
    * @param {number} count - Number of Bet glyphs to award
    */
-  function _awardBetGlyphs(count) {
-    if (!Number.isFinite(count) || count <= 0) {
-      return;
-    }
-    // Award Bet glyph currency to the player
-    addBetGlyphCurrency(count);
-    console.log(`Awarded ${count} Bet glyph${count !== 1 ? 's' : ''} (בּ)`);
-    recordPowderEvent('bet-glyph-award', { count });
-  }
-
   const gameStats = {
     manualVictories: 0,
     idleVictories: 0,
@@ -942,76 +833,15 @@ import { createDeveloperSpamController } from './developerSpamController.js';
     registerResourceContainers,
   });
 
-  // Fluid simulation has been disabled to prevent creation errors
-  const FLUID_STUDY_ENABLED = false;
-
-  const _FLUID_UNLOCK_BASE_RESERVOIR_DROPS = 100; // Seed the Bet Spire Terrarium with a base reservoir of Scintillae upon unlock.
-
   const {
     powderConfig,
     powderState,
-    fluidElements,
-    achievementsTerrariumElements,
     powderGlyphColumns,
-    fluidGlyphColumns,
     getPowderElements,
     setPowderElements,
   } = createPowderStateContext();
 
-  // Track idle reserves for advanced spires so their banks persist outside of active simulations.
   const spireResourceState = createSpireResourceState();
-  // Randomized, non-repeating Tsadi molecule name generator seeded per session.
-  const tsadiMoleculeNameGenerator = createTsadiMoleculeNameGenerator('tsadi-codex', TSADI_MOLECULE_LEXICON);
-
-  // Spawn zones derived from the solid color block markers inside Cave-4.png and Cave-5.png so Deltas appear inside those caverns.
-  const BET_CAVE_SPAWN_ZONES = [
-    { x: 225 / 1024, y: 1076 / 1536, width: 240 / 1024, height: 198 / 1536 },
-    { x: 540 / 1024, y: 1064 / 1536, width: 310 / 1024, height: 205 / 1536 },
-  ];
-
-  const { updateFluidTabAvailability, updateSpireTabVisibility } = createSpireTabVisibilityManager({
-    fluidElements,
-    getResourceElements: () => resourceElements,
-    spireResourceState,
-    powderState,
-  });
-
-  // ── Bet Spire Terrarium controller (extracted from main.js) ──────────
-  const betTerrariumCtrl = createBetTerrariumController({
-    FLUID_STUDY_ENABLED,
-    powderState,
-    fluidElements,
-    achievementsTerrariumElements,
-    BET_CAVE_SPAWN_ZONES,
-    schedulePowderBasinSave,
-    getSetFluidCameraMode: () => setFluidCameraMode,
-    getActiveTabId,
-    setActiveTab,
-    updateFluidTabAvailability,
-    updateSpireTabVisibility,
-    getUpdatePowderDisplay: () => updatePowderDisplay,
-    getSpendFluidSerendipity: () => spendFluidSerendipity,
-    getGetCurrentFluidDropBank: () => getCurrentFluidDropBank,
-    setFluidTerrariumGetters,
-  });
-
-  // Thin delegates so existing call sites in main.js continue to work unchanged.
-  const enforceFluidStudyDisabledState = betTerrariumCtrl.enforceFluidStudyDisabledState;
-  const ensureTerrariumSurfacesReady = betTerrariumCtrl.ensureTerrariumSurfacesReady;
-  const ensureFluidTerrariumCreatures = betTerrariumCtrl.ensureFluidTerrariumCreatures;
-  const ensureFluidTerrariumBirds = betTerrariumCtrl.ensureFluidTerrariumBirds;
-  const ensureFluidTerrariumGrass = betTerrariumCtrl.ensureFluidTerrariumGrass;
-  const ensureFluidTerrariumWater = betTerrariumCtrl.ensureFluidTerrariumWater;
-  const ensureFluidTerrariumCrystal = betTerrariumCtrl.ensureFluidTerrariumCrystal;
-  const ensureFluidTerrariumTrees = betTerrariumCtrl.ensureFluidTerrariumTrees;
-  const ensureFluidTerrariumSkyCycle = betTerrariumCtrl.ensureFluidTerrariumSkyCycle;
-  const ensureFluidTerrariumCelestialBodies = betTerrariumCtrl.ensureFluidTerrariumCelestialBodies;
-  const ensureFluidTerrariumShrooms = betTerrariumCtrl.ensureFluidTerrariumShrooms;
-  const ensureFluidTerrariumItemsDropdown = betTerrariumCtrl.ensureFluidTerrariumItemsDropdown;
-  const unlockTerrariumCelestialBody = betTerrariumCtrl.unlockTerrariumCelestialBody;
-  const addTerrariumCreature = betTerrariumCtrl.addTerrariumCreature;
-  const addTerrariumItem = betTerrariumCtrl.addTerrariumItem;
-  const _getBetTerrariumCreatureCount = betTerrariumCtrl.getBetTerrariumCreatureCount;
 
   // Ensure compact autosave remains the active basin persistence strategy.
   document.addEventListener('DOMContentLoaded', () => {
@@ -1030,21 +860,6 @@ import { createDeveloperSpamController } from './developerSpamController.js';
   let spireMenuController = null;
   let spireGemMenuController = null;
 
-  const {
-    ensureLamedBankSeeded,
-    getTsadiBindingAgents,
-    setTsadiBindingAgents,
-    ensureTsadiBankSeeded,
-    reconcileGlyphCurrencyFromState,
-  } = createSpireResourceBanks({
-    spireResourceState,
-    getSpireMenuController: () => spireMenuController,
-    powderState,
-    calculateInvestedGlyphs,
-    setGlyphCurrency,
-  });
-
-  // ── Idle resource bank controller (extracted from main.js) ────────────
   const idleBankCtrl = createIdleResourceBankController({
     powderState,
     getSandSimulation: () => sandSimulation,
@@ -1100,10 +915,6 @@ import { createDeveloperSpamController } from './developerSpamController.js';
   // Quick lookup for gem definitions so gem consumption can reference mote size and palette data.
   const gemDefinitionLookup = new Map((GEM_DEFINITIONS || []).map((gem) => [gem.id, gem]));
 
-  const lamedSpireUi = createLamedSpireUi({
-    formatWholeNumber,
-    formatGameNumber,
-  });
 
   const resourceHud = createResourceHud({
     formatGameNumber,
@@ -1230,90 +1041,8 @@ import { createDeveloperSpamController } from './developerSpamController.js';
   // Surface the active powder simulation so Aleph visual preferences can reapply on swaps.
   setPowderSimulationGetter(() => powderSimulation);
 
-  // Track Tsadi status messaging so advanced molecule unlocks surface clearly in the UI.
-  const tsadiStatusNoteElement = document.getElementById('tsadi-status-note');
-  const TSADI_STATUS_BASE_MESSAGE = (tsadiStatusNoteElement?.textContent || '').trim()
-    || 'Particles bounce and collide. When two particles of the same tier collide, they fuse into a higher tier. Each new tier reached earns a Tsadi glyph. Calm particles (with zero or negative repelling force) can be tied together with binding agents to form molecules for bonus effects.';
-
-  /**
-   * Render the Tsadi status note, appending the advanced particle unlock detail when applicable.
-   * @param {number} highestTier - Current highest particle tier reached.
-   */
-  function updateTsadiStatusNote(highestTier = 0) {
-    if (!tsadiStatusNoteElement) {
-      return;
-    }
-    const advancedUnlocked = (tsadiSimulationInstance?.areAdvancedMoleculesUnlocked?.() ?? false)
-      || highestTier >= ADVANCED_MOLECULE_UNLOCK_TIER;
-    const advancedSentence = advancedUnlocked
-      ? ' Advanced Particles Unlocked — duplicate-tier molecules can combine through chained Waals anchors.'
-      : '';
-    tsadiStatusNoteElement.textContent = `${TSADI_STATUS_BASE_MESSAGE}${advancedSentence ? ` ${advancedSentence}` : ''}`;
-  }
-
-  // Seed the Tsadi status note with the latest saved tier progress before the simulation spins up.
-  updateTsadiStatusNote(Math.max(0, Math.floor(Number(spireResourceState.tsadi?.stats?.highestTier) || 0)));
-
   // Initialize the Towers tab emblem to the default mote palette before any theme swaps occur.
   applyMindGatePaletteToDom(powderState.motePalette);
-
-  const { initializeTsadiBindingUi, updateBindingAgentDisplay, refreshCodexList } = createTsadiBindingUi({
-    getTsadiSimulation: () => tsadiSimulationInstance,
-    getBindingAgentBank: () => getTsadiBindingAgents(),
-    setBindingAgentBank: (value) => setTsadiBindingAgents(value),
-    spireResourceState,
-  });
-
-  function syncTsadiBindingAgents(nextValue) {
-    const normalized = setTsadiBindingAgents(nextValue);
-    if (tsadiSimulationInstance?.setAvailableBindingAgents) {
-      tsadiSimulationInstance.setAvailableBindingAgents(normalized);
-    }
-    if (spireResourceState.tsadi) {
-      spireResourceState.tsadi.bindingAgents = normalized;
-    }
-    updateBindingAgentDisplay();
-  }
-
-  // ── Spire resource persistence (extracted from main.js) ───────────────
-  const spireResourcePersistence = createSpireResourcePersistence({
-    spireResourceState,
-    powderState,
-    moteGemState,
-    getTsadiBindingAgents,
-    syncTsadiBindingAgents,
-    updateBindingAgentDisplay,
-    getBetSpireRenderInstance,
-    tsadiMoleculeNameGenerator,
-    getTowerUpgradeStateSnapshot,
-    applyTowerUpgradeStateSnapshot,
-    getAlephChainUpgrades,
-    applyAlephChainUpgradeSnapshot,
-    getPlayfield: () => playfield,
-  });
-
-  const {
-    normalizeDiscoveredMolecules,
-    getTowerUpgradeStateSnapshotWithAleph,
-    applyTowerUpgradeStateSnapshotWithAleph,
-    getSpireResourceStateSnapshot,
-    applySpireResourceStateSnapshot,
-  } = spireResourcePersistence;
-
-  function handleMoleculeDiscovery(recipe) {
-    if (!recipe) {
-      return;
-    }
-    if (!spireResourceState.tsadi) {
-      spireResourceState.tsadi = {};
-    }
-    const existing = Array.isArray(spireResourceState.tsadi.discoveredMolecules)
-      ? spireResourceState.tsadi.discoveredMolecules
-      : [];
-    const preserved = existing.filter((entry) => entry && entry.id !== recipe.id);
-    spireResourceState.tsadi.discoveredMolecules = normalizeDiscoveredMolecules([...preserved, recipe]);
-    refreshCodexList();
-  }
 
   const {
     powderElements,
@@ -1451,20 +1180,6 @@ import { createDeveloperSpamController } from './developerSpamController.js';
   configureEnemyHandlers({ queueMoteDrop, recordPowderEvent });
 
   // Helper function to apply idle time for a specific spire (for ad boosts)
-  function applyIdleTimeToSpire(spireId, idleTimeSeconds) {
-    const idleTimeMs = idleTimeSeconds * 1000;
-    // Call notifyIdleTime which will distribute resources to all unlocked spires
-    notifyIdleTime(idleTimeMs);
-    // Record the boost event
-    recordPowderEvent('boost-applied', {
-      spireId,
-      idleTimeSeconds,
-    });
-    // Update displays
-    updateResourceRates();
-    updatePowderDisplay();
-  }
-
   // Helper function to grant random gems (for ad boosts)
   function grantRandomGems(count) {
     let gemsGranted = 0;
@@ -1555,7 +1270,7 @@ import { createDeveloperSpamController } from './developerSpamController.js';
   const bindFluidCameraModeToggle = cameraCtrl.bindFluidCameraModeToggle;
   const refreshPowderWallDecorations = cameraCtrl.refreshPowderWallDecorations;
 
-  // Hook the Aleph spire settings toggle into the camera control handler.
+  // Hook the Well of Inspiration settings toggle into the camera control handler.
   setPowderCameraModeHandler((enabled) => {
     setPowderCameraMode(enabled);
   });
@@ -1851,61 +1566,13 @@ import { createDeveloperSpamController } from './developerSpamController.js';
   function updateActiveLevelBanner() { levelGridCtrl.updateActiveLevelBanner(); }
   function _updateLevelSetLocks() { levelGridCtrl.updateLevelSetLocks(); }
 
-  function updateLamedStatistics() {
-    lamedSpireUi.updateStatistics(lamedSimulationInstance);
-  }
-
   /**
    * Preserve the active Lamed gravity simulation state so tab switches or reloads can resume seamlessly.
    */
-  function captureLamedSimulationSnapshot() {
-    if (!lamedSimulationInstance || typeof lamedSimulationInstance.exportSnapshot !== 'function') {
-      return;
-    }
-    const snapshot = lamedSimulationInstance.exportSnapshot();
-    if (!snapshot || typeof snapshot !== 'object') {
-      return;
-    }
-    spireResourceState.lamed.simulationSnapshot = snapshot;
-    if (snapshot.stats) {
-      spireResourceState.lamed.stats = snapshot.stats;
-    }
-    if (snapshot.upgrades) {
-      spireResourceState.lamed.upgrades = snapshot.upgrades;
-    }
-    if (Number.isFinite(snapshot.starMass)) {
-      spireResourceState.lamed.starMass = snapshot.starMass;
-    }
-    if (Number.isFinite(snapshot.dragLevel)) {
-      spireResourceState.lamed.dragLevel = snapshot.dragLevel;
-    }
-  }
-
   /**
    * Capture Tsadi particle sandbox state for autosave hydration and tab resume.
    */
-  function captureTsadiSimulationSnapshot() {
-    if (!tsadiSimulationInstance || typeof tsadiSimulationInstance.exportSnapshot !== 'function') {
-      return;
-    }
-    const snapshot = tsadiSimulationInstance.exportSnapshot();
-    if (!snapshot || typeof snapshot !== 'object') {
-      return;
-    }
-    spireResourceState.tsadi.simulationSnapshot = snapshot;
-    if (Number.isFinite(snapshot.bindingAgentBank)) {
-      syncTsadiBindingAgents(snapshot.bindingAgentBank);
-    }
-  }
-
   // Normalize the aleph glyph tithe before using it for unlock checks or logs.
-  function getFluidUnlockGlyphCost() {
-    const rawCost = Number.isFinite(powderConfig.fluidUnlockGlyphCost)
-      ? powderConfig.fluidUnlockGlyphCost
-      : 0;
-    return Math.max(0, Math.floor(rawCost));
-  }
-
   function updatePowderModeButton() {
     // Mode toggle button removed - spires unlock automatically based on glyphs
     // Keeping this function as a no-op to avoid breaking existing call sites
@@ -2112,80 +1779,6 @@ import { createDeveloperSpamController } from './developerSpamController.js';
     }
   }
 
-  function unlockFluidStudy({ reason = 'purchase', threshold = null, glyphCost = null } = {}) {
-    if (!FLUID_STUDY_ENABLED) {
-      return false;
-    }
-    if (powderState.fluidUnlocked) {
-      return false;
-    }
-    powderState.fluidUnlocked = true;
-    spireResourceState.fluid = {
-      ...(spireResourceState.fluid || {}),
-      unlocked: true,
-    };
-    updateFluidTabAvailability();
-    updatePowderModeButton();
-    const normalizedCost = Number.isFinite(glyphCost) ? Math.max(0, Math.floor(glyphCost)) : getFluidUnlockGlyphCost();
-    const normalizedThreshold = Number.isFinite(threshold) ? Math.max(0, threshold) : undefined;
-    const context = {
-      reason,
-      glyphCost: normalizedCost,
-    };
-    if (typeof normalizedThreshold !== 'undefined') {
-      context.threshold = normalizedThreshold;
-    }
-    recordPowderEvent('fluid-unlocked', context);
-    schedulePowderSave();
-    return true;
-  }
-
-  function attemptFluidUnlock() {
-    if (!FLUID_STUDY_ENABLED) {
-      return false;
-    }
-    const glyphCost = getFluidUnlockGlyphCost();
-    const availableGlyphs = Math.max(0, Math.floor(getGlyphCurrency()));
-    if (availableGlyphs < glyphCost) {
-      updatePowderModeButton();
-      return false;
-    }
-    if (glyphCost > 0) {
-      addGlyphCurrency(-glyphCost);
-    }
-    const unlocked = unlockFluidStudy({ reason: 'purchase', glyphCost });
-    updateStatusDisplays();
-    return unlocked;
-  }
-
-  function enterFluidStudy() {
-    if (!FLUID_STUDY_ENABLED) {
-      return;
-    }
-    if (powderState.modeSwitchPending) {
-      return;
-    }
-    if (!powderState.fluidUnlocked) {
-      updatePowderModeButton();
-      return;
-    }
-    if (getActiveTabId() === 'fluid') {
-      return;
-    }
-    updateFluidTabAvailability();
-    setActiveTab('fluid');
-  }
-
-  function exitFluidStudy() {
-    if (powderState.modeSwitchPending) {
-      return;
-    }
-    if (getActiveTabId() === 'powder') {
-      return;
-    }
-    setActiveTab('powder');
-  }
-
   function _handlePowderModeToggle() {
     if (!FLUID_STUDY_ENABLED) {
       setActiveTab('powder');
@@ -2211,74 +1804,6 @@ import { createDeveloperSpamController } from './developerSpamController.js';
    * Each spire unlocks when the player has 10 glyphs from the previous spire.
    * @returns {boolean} True if any spire was unlocked
    */
-  function checkAndUnlockSpires() {
-    let anyUnlocked = false;
-
-    // Get glyph counts for each spire
-    const alephGlyphs = Math.max(0, Math.floor(powderState.glyphsAwarded || 0));
-    const betGlyphs = Math.max(0, Math.floor(powderState.fluidGlyphsAwarded || 0));
-    
-    // Bet Spire: Unlocks when player has 10 Aleph glyphs
-    if (FLUID_STUDY_ENABLED && !powderState.fluidUnlocked && alephGlyphs >= 10) {
-      unlockFluidStudy({ reason: 'auto-unlock', threshold: 10, glyphCost: 0 });
-      updateSpireTabVisibility();
-      spireMenuController.updateCounts();
-      anyUnlocked = true;
-    }
-
-    // Lamed Spire: Unlocks when player has 10 Bet glyphs
-    if (!spireResourceState.lamed.unlocked && betGlyphs >= 10) {
-      ensureLamedBankSeeded();
-      updateSpireTabVisibility();
-      spireMenuController.updateCounts();
-      anyUnlocked = true;
-    }
-
-    // Tsadi Spire: Unlocks when player has 10 Lamed glyphs (sparks)
-    // Use the tracked Lamed glyph counter to gate Tsadi so early spark absorptions do not prematurely unlock it.
-    const lamedUnlocked = Boolean(spireResourceState.lamed?.unlocked);
-    const lamedGlyphs = lamedUnlocked ? Math.max(0, Math.floor(getTrackedLamedGlyphs?.() || 0)) : 0;
-    if (!spireResourceState.tsadi.unlocked && lamedUnlocked && lamedGlyphs >= 10) {
-      ensureTsadiBankSeeded();
-      updateSpireTabVisibility();
-      spireMenuController.updateCounts();
-      anyUnlocked = true;
-    }
-
-    // Shin Spire: Unlocks when player has 10 Tsadi glyphs
-    const tsadiGlyphs = Math.max(
-      0,
-      Math.floor(
-        Number.isFinite(spireResourceState.tsadi?.stats?.totalGlyphs)
-          ? spireResourceState.tsadi.stats.totalGlyphs
-          : spireResourceState.tsadi?.stats?.totalParticles || 0,
-      ),
-    );
-    if (!spireResourceState.shin?.unlocked && tsadiGlyphs >= 10) {
-      if (!spireResourceState.shin) {
-        spireResourceState.shin = { unlocked: false };
-      }
-      spireResourceState.shin.unlocked = true;
-      updateSpireTabVisibility();
-      spireMenuController.updateCounts();
-      anyUnlocked = true;
-    }
-
-    // Kuf Spire: Unlocks when player has 10 Shin glyphs
-    const shinGlyphs = Math.max(0, Math.floor(getShinGlyphs()));
-    if (!spireResourceState.kuf?.unlocked && shinGlyphs >= 10) {
-      if (!spireResourceState.kuf) {
-        spireResourceState.kuf = { unlocked: false };
-      }
-      spireResourceState.kuf.unlocked = true;
-      updateSpireTabVisibility();
-      spireMenuController.updateCounts();
-      anyUnlocked = true;
-    }
-
-    return anyUnlocked;
-  }
-
   let resourceTicker = null;
   let lastResourceTick = 0;
 
@@ -2456,25 +1981,6 @@ import { createDeveloperSpamController } from './developerSpamController.js';
   /**
    * Resize active spire simulations so their canvases track the responsive layout.
    */
-  function scheduleSpireResize() {
-    if (pendingSpireResizeFrame !== null) {
-      return;
-    }
-
-    pendingSpireResizeFrame = requestAnimationFrame(() => {
-      pendingSpireResizeFrame = null;
-      if (lamedSimulationInstance && typeof lamedSimulationInstance.resize === 'function') {
-        lamedSimulationInstance.resize();
-      }
-      if (tsadiSimulationInstance && typeof tsadiSimulationInstance.resize === 'function') {
-        tsadiSimulationInstance.resize();
-      }
-      resizeShinFractalCanvases();
-      resizeShinShapeBackground();
-      resizeTsadiVermiculateBackground();
-    });
-  }
-
   setGraphicsModeContext({
     getPowderSimulation: () => powderSimulation,
     getPlayfield: () => playfield,
@@ -2845,162 +2351,6 @@ import { createDeveloperSpamController } from './developerSpamController.js';
   // Re-entrancy guard to prevent infinite recursion when awarding Bet glyphs
   let isUpdatingFluidDisplay = false;
 
-  function updateFluidDisplay(status) {
-    // Prevent re-entrant calls that cause infinite recursion
-    if (isUpdatingFluidDisplay) {
-      return;
-    }
-    isUpdatingFluidDisplay = true;
-
-    try {
-      // If the Bet Spire is locked or has been deleted, freeze the readouts and halt any
-      // lingering fluid simulation so the reservoir numbers stay static instead of drifting.
-      if (!powderState.fluidUnlocked) {
-      if (fluidSimulationInstance && typeof fluidSimulationInstance.stop === 'function') {
-        fluidSimulationInstance.stop();
-      }
-
-      if (fluidElements.reservoirValue) {
-        fluidElements.reservoirValue.textContent = '0 Scintillae';
-      }
-      if (fluidElements.dripRateValue) {
-        fluidElements.dripRateValue.textContent = '0 Scintillae/sec';
-      }
-      if (fluidElements.stateLabel) {
-        fluidElements.stateLabel.textContent = 'Dormant';
-        fluidElements.stateLabel.classList.remove('fluid-state-label--ready');
-        fluidElements.stateLabel.classList.remove('fluid-state-label--forming');
-      }
-      if (fluidElements.statusNote) {
-        fluidElements.statusNote.textContent = 'The Bet reservoir is sealed until the spire returns.';
-      }
-      return;
-    }
-
-    const activeSimulation =
-      fluidSimulationInstance && typeof fluidSimulationInstance.getStatus === 'function'
-        ? fluidSimulationInstance
-        : null;
-    let info = null;
-    if (powderSimulation === fluidSimulationInstance && status) {
-      info = status;
-    } else if (activeSimulation) {
-      info = activeSimulation.getStatus();
-    }
-
-    const normalizedHeight = Number.isFinite(info?.normalizedHeight)
-      ? Math.max(0, Math.min(1, info.normalizedHeight))
-      : 0;
-    // Highest crest accounts for hidden overflow so the readout mirrors the tallest wave peak, not a fill gauge.
-    const crestNormalized = Number.isFinite(info?.highestNormalized)
-      ? Math.max(0, Math.min(2, info.highestNormalized))
-      : normalizedHeight;
-    const scrollOffset = Number.isFinite(info?.scrollOffset) ? Math.max(0, info.scrollOffset) : 0;
-    const totalNormalized = Number.isFinite(info?.totalNormalized)
-      ? Math.max(0, info.totalNormalized)
-      : normalizedHeight;
-    const cellSize = Number.isFinite(info?.cellSize)
-      ? Math.max(1, info.cellSize)
-      : POWDER_CELL_SIZE_PX;
-    const rows = Number.isFinite(info?.rows) ? Math.max(1, info.rows) : 1;
-    const highestNormalizedRaw = Number.isFinite(info?.highestNormalized)
-      ? Math.max(0, info.highestNormalized)
-      : totalNormalized;
-
-    // Update glyph columns and track Bet glyph awards
-    const glyphMetrics = updateFluidGlyphColumns({
-      scrollOffset,
-      rows,
-      cellSize,
-      highestNormalized: highestNormalizedRaw,
-      totalNormalized,
-    });
-
-    if (glyphMetrics) {
-      const { glyphsLit } = glyphMetrics;
-
-      // The wall gap (visual effect showing basin capacity) scales with glyphsLit (water height thresholds).
-      const normalizedGlyphs = Number.isFinite(glyphsLit) ? Math.max(0, glyphsLit) : 0;
-      const previousWallTarget = Number.isFinite(powderState.wallGapTarget)
-        ? powderState.wallGapTarget
-        : powderConfig.wallBaseGapMotes;
-      const rawNextWallTarget = powderConfig.wallBaseGapMotes + normalizedGlyphs * powderConfig.wallGapPerGlyph;
-      const nextWallTarget = Math.min(rawNextWallTarget, powderConfig.wallMaxGapMotes);
-
-      if (nextWallTarget !== previousWallTarget) {
-        powderState.wallGapTarget = nextWallTarget;
-        const targetSimulation =
-          fluidSimulationInstance && typeof fluidSimulationInstance.setWallGapTarget === 'function'
-            ? fluidSimulationInstance
-            : null;
-        if (targetSimulation) {
-          const fluidIsActive = powderSimulation === targetSimulation;
-          const setOptions = fluidIsActive ? undefined : { skipRebuild: true };
-          targetSimulation.setWallGapTarget(nextWallTarget, setOptions);
-          const metrics = targetSimulation.getWallMetrics();
-          handlePowderWallMetricsChange(metrics, 'fluid');
-        } else {
-          schedulePowderBasinSave();
-        }
-      }
-
-      if (glyphsLit !== powderState.fluidGlyphsLit) {
-        powderState.fluidGlyphsLit = glyphsLit;
-        schedulePowderBasinSave();
-      }
-    }
-
-    // Apply wall offset for scrolling texture
-    const wallShiftPx = scrollOffset * cellSize;
-    const textureRepeat = resolveWallTextureRepeatPx(fluidElements.leftWall || fluidElements.rightWall);
-    const rawTextureOffset =
-      Number.isFinite(textureRepeat) && textureRepeat > 0 ? wallShiftPx % textureRepeat : wallShiftPx;
-    const wallTextureOffset = Number.isFinite(rawTextureOffset) ? rawTextureOffset : 0;
-    const wallOffsetValue = `${wallTextureOffset.toFixed(1)}px`;
-
-    if (fluidElements.leftWall) {
-      fluidElements.leftWall.style.transform = '';
-      fluidElements.leftWall.style.setProperty('--powder-wall-shift', wallOffsetValue);
-    }
-    if (fluidElements.rightWall) {
-      fluidElements.rightWall.style.transform = '';
-      fluidElements.rightWall.style.setProperty(
-        '--powder-right-wall-sprite-offset-x',
-        `${ALEPH_RIGHT_WALL_SPRITE_OFFSET_PX}px`,
-      );
-      fluidElements.rightWall.style.setProperty('--powder-wall-shift', wallOffsetValue);
-    }
-
-    const idleBank = 0;
-    if (fluidElements.reservoirValue) {
-      fluidElements.reservoirValue.textContent = `${formatGameNumber(idleBank)} Scintillae`;
-    }
-
-    const drainRate = Number.isFinite(powderState.fluidIdleDrainRate)
-      ? Math.max(0, powderState.fluidIdleDrainRate)
-      : 0;
-    if (fluidElements.dripRateValue) {
-      fluidElements.dripRateValue.textContent = `${formatDecimal(drainRate, 2)} Scintillae/sec`;
-    }
-
-    if (fluidElements.statusNote) {
-      let message;
-      const crestPercent = formatDecimal(crestNormalized * 100, 1);
-      if (crestNormalized >= 1.2) {
-        message = `Crest is ${crestPercent}% of the viewport—overflow is cycling while idle Scintillae condenses.`;
-      } else if (crestNormalized >= 0.75) {
-        message = `Surface oscillates near the ridge (${crestPercent}%). This gauge tracks wave height, not stored Scintillae.`;
-      } else {
-        message = `Terrarium surface is calm (${crestPercent}%). Wave height is separate from the Scintillae reserve total.`;
-      }
-      fluidElements.statusNote.textContent = message;
-    }
-
-    } finally {
-      isUpdatingFluidDisplay = false;
-    }
-  }
-
   function handlePowderIdleBankChange(bankValue, source) {
     const normalized = Number.isFinite(bankValue) ? Math.max(0, bankValue) : 0;
     const origin = source || (powderSimulation === fluidSimulationInstance ? 'fluid' : 'sand');
@@ -3343,7 +2693,7 @@ import { createDeveloperSpamController } from './developerSpamController.js';
       spireId: 'powder',
       // Sync the footer spire button with the corner cog.
       extraToggleIds: ['powder-options-toggle-button'],
-      // Close the Aleph spire popover when clicking outside.
+      // Close the Well of Inspiration popover when clicking outside.
       closeOnOutside: true,
     });
     bindSpireOptionsDropdown({
@@ -3475,63 +2825,6 @@ import { createDeveloperSpamController } from './developerSpamController.js';
 
     bindTowerUpgradeOverlay();
 
-    /**
-     * Stop all Fluid/Bet terrarium animations to conserve resources.
-     * Called when leaving the Fluid tab.
-     */
-    function stopTerrariumAnimations() {
-      const terrariumSystems = [
-        betTerrariumCtrl.getCreatures(),
-        betTerrariumCtrl.getGrass(),
-        betTerrariumCtrl.getSkyCycle(),
-        betTerrariumCtrl.getShrooms(),
-      ];
-      terrariumSystems.forEach((system) => {
-        if (system && typeof system.stop === 'function') {
-          system.stop();
-        }
-      });
-    }
-
-    /**
-     * Restart all Fluid/Bet terrarium animations.
-     * Called when entering the Fluid tab.
-     */
-    function startTerrariumAnimations() {
-      const terrariumSystems = [
-        betTerrariumCtrl.getCreatures(),
-        betTerrariumCtrl.getGrass(),
-        betTerrariumCtrl.getSkyCycle(),
-        betTerrariumCtrl.getShrooms(),
-      ];
-      terrariumSystems.forEach((system) => {
-        if (system && typeof system.start === 'function') {
-          system.start();
-        }
-      });
-    }
-
-    function stopFluidSimulationLoop() {
-      if (powderState.simulationMode !== 'fluid') {
-        return;
-      }
-      if (fluidSimulationInstance && typeof fluidSimulationInstance.stop === 'function') {
-        fluidSimulationInstance.stop();
-      }
-    }
-
-    function resumeFluidSimulationLoop() {
-      if (powderState.simulationMode !== 'fluid') {
-        return;
-      }
-      if (fluidSimulationInstance && typeof fluidSimulationInstance.start === 'function') {
-        fluidSimulationInstance.start();
-        if (typeof fluidSimulationInstance.handleResize === 'function') {
-          fluidSimulationInstance.handleResize();
-        }
-      }
-    }
-
     // Synchronize tab interactions with overlay state, audio cues, and banner refreshes.
     configureTabManager({
       getOverlayActiveState: () => Boolean(levelOverlayController?.isOverlayActive()),
@@ -3546,434 +2839,16 @@ import { createDeveloperSpamController } from './developerSpamController.js';
         if (tabId !== 'tower' && typeof closeLoadoutWheel === 'function') {
           closeLoadoutWheel();
         }
-        if (previousTabId === 'tsadi' && tabId !== 'tsadi') {
-          captureTsadiSimulationSnapshot();
-          stopTsadiVermiculateBackground();
-        }
-
-        // -------------------------------------------------------------------
-        // Freeze spire simulations when leaving their tabs to reduce resource
-        // usage. Exceptions: Aleph (powder) spire always runs, and the main
-        // playfield continues when an interactive level is active.
-        // -------------------------------------------------------------------
-
-        // Stop Lamed simulation when leaving the Lamed tab
-        if (previousTabId === 'lamed' && tabId !== 'lamed') {
-          captureLamedSimulationSnapshot();
-          if (lamedSimulationInstance && typeof lamedSimulationInstance.stop === 'function') {
-            lamedSimulationInstance.stop();
-          }
-        }
-
-        // Stop Tsadi simulation when leaving the Tsadi tab
-        if (previousTabId === 'tsadi' && tabId !== 'tsadi') {
-          captureTsadiSimulationSnapshot();
-          if (tsadiSimulationInstance && typeof tsadiSimulationInstance.stop === 'function') {
-            tsadiSimulationInstance.stop();
-          }
-        }
-
-        // Stop Shin (Cardinal Warden) simulation when leaving the Shin tab
-        if (previousTabId === 'shin' && tabId !== 'shin') {
-          stopCardinalSimulation();
-          stopShinShapeBackground();
-        }
-
-        // Stop Kuf battlefield simulation when leaving the Kuf tab
-        if (previousTabId === 'kuf' && tabId !== 'kuf') {
-          stopKufSimulation();
-        }
-
-        // Stop Fluid/Bet terrarium animations when leaving the Fluid tab
-        // (Fluid simulation itself is stopped via applyPowderSimulationMode when switching modes)
-        if (previousTabId === 'fluid' && tabId !== 'fluid') {
-          stopTerrariumAnimations();
-          stopFluidSimulationLoop();
-        }
-
-        // Surface spire briefings the first time each tab opens.
-        spireStoryManager.maybeShowSpireStory(tabId);
-
         refreshTabMusic();
-        if (audioManager) {
-          if (tabId === 'lamed') {
-            // Ensure the gravity well emits its low rumble whenever the Lamed tab is visible.
-            audioManager.playSfx('lamedRumble', { loop: true, restart: false });
-          } else {
-            audioManager.stopSfx('lamedRumble', { reset: false });
-          }
-        }
-        // Compact spire tabs no longer need stack state synchronization
         if (tabId === 'towers') {
-          // Refresh visibility state first (fast, no rendering work).
           updateTowerCardVisibility();
           refreshTowerCardBackgroundAnimations();
-          // Stagger the card entrance so the browser renders them incrementally
-          // rather than painting all cards synchronously in one frame.
-          requestAnimationFrame(() => {
-            stageTowerCardEntrance({ delayBetweenMs: 40 });
-          });
-        } else if (tabId === 'fluid') {
-          updateFluidTabAvailability();
-          if (powderState.simulationMode !== 'fluid') {
-            applyPowderSimulationMode('fluid');
-          } else {
-            if (fluidSimulationInstance && typeof fluidSimulationInstance.handleResize === 'function') {
-              fluidSimulationInstance.handleResize();
-            }
-            initializePowderViewInteraction();
-            const fluidStatus =
-              fluidSimulationInstance && typeof fluidSimulationInstance.getStatus === 'function'
-                ? fluidSimulationInstance.getStatus()
-                : null;
-            updateFluidDisplay(fluidStatus);
-          }
-          resumeFluidSimulationLoop();
-          // Restart terrarium animations when returning to the Fluid/Bet tab
-          startTerrariumAnimations();
+          requestAnimationFrame(() => stageTowerCardEntrance({ delayBetweenMs: 40 }));
         } else if (tabId === 'powder') {
-          if (powderState.simulationMode !== 'sand') {
-            applyPowderSimulationMode('sand');
-          } else {
-            if (sandSimulation && typeof sandSimulation.handleResize === 'function') {
-              sandSimulation.handleResize();
-            }
-            initializePowderViewInteraction();
+          if (sandSimulation && typeof sandSimulation.handleResize === 'function') {
+            sandSimulation.handleResize();
           }
-        } else if (tabId === 'lamed') {
-          // Initialize and start Lamed gravity simulation
-          if (!lamedSimulationInstance) {
-            const lamedCanvas = document.getElementById('lamed-canvas');
-            if (lamedCanvas) {
-              attachLamedDeveloperSpamTarget(lamedCanvas);
-              ensureLamedBankSeeded();
-              lamedSimulationInstance = new GravitySimulation({
-                canvas: lamedCanvas,
-                isLowGraphicsMode: () => isLowGraphicsModeActive(),
-                onStarMassChange: (value) => {
-                  // Update state persistence
-                  spireResourceState.lamed.starMass = value;
-                  updateLamedStatistics();
-                },
-              });
-
-              const lamedSnapshot = spireResourceState.lamed.simulationSnapshot || {
-                starMass: spireResourceState.lamed.starMass || 10,
-                dragLevel: spireResourceState.lamed.dragLevel || 0,
-                upgrades: {
-                  starMass: spireResourceState.lamed.upgrades?.starMass || 0,
-                },
-                stats: spireResourceState.lamed.stats || { totalAbsorptions: 0, totalMassGained: 0 },
-              };
-
-              if (typeof lamedSimulationInstance.importSnapshot === 'function') {
-                lamedSimulationInstance.importSnapshot(lamedSnapshot);
-              } else {
-                lamedSimulationInstance.setState(lamedSnapshot);
-              }
-
-              lamedSimulationInstance.resize();
-              
-              // Apply idle stars from bank if any
-              const idleStars = getLamedSparkBank();
-              if (idleStars > 0) {
-                applyLamedIdleStars(lamedSimulationInstance, idleStars);
-                setLamedSparkBank(0); // Clear the bank after applying
-              }
-              
-              const growthRateEl = document.getElementById('lamed-growth-rate');
-              if (growthRateEl) {
-                growthRateEl.textContent = `${lamedSimulationInstance.sparkSpawnRate.toFixed(2)} sparks/sec`;
-              }
-              
-              // Hook up drag upgrade button
-              lamedSpireUi.bindUpgradeButtons({
-                onDragUpgrade: () => {
-                  if (!lamedSimulationInstance || !lamedSimulationInstance.upgradeDrag()) {
-                    return;
-                  }
-                  const state = lamedSimulationInstance.getState();
-                  spireResourceState.lamed.dragLevel = state.dragLevel;
-                  spireResourceState.lamed.starMass = state.starMass;
-                  spireResourceState.lamed.upgrades = state.upgrades;
-                  spireResourceState.lamed.stats = state.stats;
-
-                  updateLamedStatistics();
-                  spireMenuController.updateCounts();
-                },
-                onStarMassUpgrade: () => {
-                  if (!lamedSimulationInstance || !lamedSimulationInstance.upgradeStarMass()) {
-                    return;
-                  }
-                  const state = lamedSimulationInstance.getState();
-                  spireResourceState.lamed.dragLevel = state.dragLevel;
-                  spireResourceState.lamed.starMass = state.starMass;
-                  spireResourceState.lamed.upgrades = state.upgrades;
-                  spireResourceState.lamed.stats = state.stats;
-
-                  updateLamedStatistics();
-                  spireMenuController.updateCounts();
-                },
-              });
-
-              spireMenuController.updateCounts();
-              updateLamedStatistics();
-              // Connect Lamed visual preferences to the simulation instance.
-              setLamedSimulationGetter(() => lamedSimulationInstance);
-              initializeLamedSpirePreferences();
-              bindLamedSpireOptions();
-              lamedSimulationInstance.start();
-              // Ensure the gravity viewport adopts the new responsive dimensions.
-              scheduleSpireResize();
-
-              // Update statistics periodically and sync state
-              setInterval(() => {
-                if (lamedSimulationInstance && lamedSimulationInstance.running) {
-                  updateLamedStatistics();
-
-                  // Sync state back to persistence every second
-                  const state = lamedSimulationInstance.getState();
-                  spireResourceState.lamed.starMass = state.starMass;
-                  spireResourceState.lamed.dragLevel = state.dragLevel;
-                  // Copy upgrade tiers so offline banking tracks new power.
-                  spireResourceState.lamed.upgrades = state.upgrades;
-                  spireResourceState.lamed.stats = state.stats;
-                  // Detect star milestones reached - 1 glyph per milestone
-                  const currentLamedGlyphs = Math.max(
-                    0,
-                    Math.floor(state.stats?.starMilestoneReached || 0),
-                  );
-                  if (currentLamedGlyphs !== getTrackedLamedGlyphs()) {
-                    setTrackedLamedGlyphs(currentLamedGlyphs);
-                    spireMenuController.updateCounts();
-                    updateStatusDisplays();
-                    checkAndUnlockSpires();
-                  }
-                }
-              }, 1000); // Update every second
-            }
-          } else {
-            lamedSimulationInstance.resize();
-            if (!lamedSimulationInstance.running) {
-              lamedSimulationInstance.start();
-            }
-            updateLamedStatistics();
-            scheduleSpireResize();
-          }
-        } else if (tabId === 'tsadi') {
-          // Initialize and start Tsadi particle fusion simulation
-          if (!tsadiSimulationInstance) {
-            const tsadiCanvas = document.getElementById('tsadi-canvas');
-            if (tsadiCanvas) {
-              attachTsadiDeveloperSpamTarget(tsadiCanvas);
-              ensureTsadiBankSeeded();
-              tsadiSimulationInstance = new ParticleFusionSimulation({
-                canvas: tsadiCanvas,
-                initialBindingAgents: getTsadiBindingAgents(),
-                initialDiscoveredMolecules: spireResourceState.tsadi?.discoveredMolecules || [],
-                assignMoleculeName: (recipe) => tsadiMoleculeNameGenerator.assignName(recipe),
-                samplePaletteGradient: samplePaletteGradient,
-                onBindingAgentStockChange: (value) => {
-                  syncTsadiBindingAgents(value);
-                },
-                onTierChange: (tierInfo) => {
-                  const resolvedTier =
-                    typeof tierInfo === 'object' && tierInfo !== null
-                      ? tierInfo.tier ?? 0
-                      : Number.isFinite(Number(tierInfo))
-                        ? Number(tierInfo)
-                        : 0;
-                  const tierEl = document.getElementById('tsadi-highest-tier');
-                  if (tierEl) {
-                    // Present both the Greek tier name and glyph for clarity in the UI.
-                    const tierMetadata =
-                      typeof tierInfo === 'object' && tierInfo !== null
-                        ? tierInfo
-                        : getGreekTierInfo(resolvedTier);
-                    const fallbackTier = Number.isFinite(tierMetadata.displayTier)
-                      ? tierMetadata.displayTier
-                      : resolvedTier + 1;
-                    const tierLabel = tierMetadata.displayName
-                      || `${tierMetadata.name} (${tierMetadata.letter}) – Tier ${fallbackTier}`;
-                    tierEl.textContent = tierLabel;
-                  }
-                  const previousHighest = Math.max(
-                    0,
-                    Math.floor(Number(spireResourceState.tsadi?.stats?.highestTier) || 0),
-                  );
-                  const nextHighest = Math.max(previousHighest, resolvedTier);
-                  // Refresh the particle metrics note whenever the best tier advances.
-                  updateTsadiStatusNote(nextHighest);
-                  if (!spireResourceState.tsadi) {
-                    spireResourceState.tsadi = {};
-                  }
-                  if (!spireResourceState.tsadi.stats) {
-                    spireResourceState.tsadi.stats = {};
-                  }
-                  if (
-                    !Number.isFinite(spireResourceState.tsadi.stats.highestTier) ||
-                    nextHighest !== previousHighest
-                  ) {
-                    spireResourceState.tsadi.stats = {
-                      ...(spireResourceState.tsadi.stats || {}),
-                      highestTier: nextHighest,
-                    };
-                    updateBindingAgentDisplay();
-                  }
-                },
-                onParticleCountChange: (count) => {
-                  const countEl = document.getElementById('tsadi-particle-count');
-                  if (countEl) {
-                    countEl.textContent = `${count} atoms`;
-                  }
-                },
-                onGlyphChange: (glyphCount) => {
-                  const normalizedGlyphs = Math.max(0, Math.floor(glyphCount || 0));
-                  const glyphEl = document.getElementById('tsadi-reservoir');
-                  if (glyphEl) {
-                    glyphEl.textContent = `${normalizedGlyphs} Tsadi Glyphs`;
-                  }
-                  // Persist Tsadi glyph totals so unlock checks can react immediately.
-                  const previousGlyphs = getTrackedTsadiGlyphs();
-                  setTrackedTsadiGlyphs(normalizedGlyphs);
-                  // Keep the tower-tab Tsadi currency in sync with earned glyphs.
-                  setTsadiGlyphCurrency(Math.max(0, normalizedGlyphs));
-                  spireResourceState.tsadi.stats = {
-                    ...(spireResourceState.tsadi.stats || {}),
-                    totalParticles: normalizedGlyphs,
-                    totalGlyphs: normalizedGlyphs,
-                  };
-                  spireMenuController.updateCounts();
-                  if (normalizedGlyphs !== previousGlyphs) {
-                    updateStatusDisplays();
-                    checkAndUnlockSpires();
-                  }
-                  refreshCodexList();
-                },
-                onReset: () => {
-                  console.log('Tsadi simulation reset after aleph explosion');
-                },
-                onMoleculeDiscovered: handleMoleculeDiscovery,
-              });
-              const tsadiSnapshot = {
-                bindingAgentBank: getTsadiBindingAgents(),
-                discoveredMolecules: spireResourceState.tsadi?.discoveredMolecules || [],
-                highestTierReached: spireResourceState.tsadi?.stats?.highestTier,
-                glyphCount: spireResourceState.tsadi?.stats?.totalGlyphs,
-                ...(spireResourceState.tsadi?.simulationSnapshot || {}),
-              };
-              setTsadiSimulationGetter(() => tsadiSimulationInstance);
-              initializeTsadiSpirePreferences();
-              if (!tsadiOptionsBound) {
-                bindTsadiSpireOptions();
-                tsadiOptionsBound = true;
-              }
-              tsadiSimulationInstance.resize();
-              if (typeof tsadiSimulationInstance.importSnapshot === 'function') {
-                tsadiSimulationInstance.importSnapshot(tsadiSnapshot);
-              } else {
-                tsadiSimulationInstance.importState(tsadiSnapshot, { preserveLayout: true });
-              }
-              tsadiSimulationInstance.setAvailableBindingAgents(getTsadiBindingAgents());
-              
-              // Apply idle particles from bank if any
-              const idleParticles = getTsadiParticleBank();
-              if (idleParticles > 0) {
-                applyTsadiIdleParticles(tsadiSimulationInstance, idleParticles);
-                setTsadiParticleBank(0); // Clear the bank after applying
-              }
-              
-              const generationRateEl = document.getElementById('tsadi-generation-rate');
-              if (generationRateEl) {
-                generationRateEl.textContent = `${tsadiSimulationInstance.spawnRate.toFixed(2)} atoms/sec`;
-              }
-              spireMenuController.updateCounts();
-              tsadiSimulationInstance.start();
-              // Match the particle fusion canvas to the responsive layout constraints.
-              scheduleSpireResize();
-
-              if (!tsadiBindingUiInitialized) {
-                initializeTsadiBindingUi();
-                tsadiBindingUiInitialized = true;
-              }
-              updateBindingAgentDisplay();
-              refreshCodexList();
-
-              // Bind upgrade buttons
-              bindTsadiUpgradeButtons();
-            }
-          } else {
-            tsadiSimulationInstance.resize();
-            if (!tsadiSimulationInstance.running) {
-              tsadiSimulationInstance.start();
-            }
-            scheduleSpireResize();
-            updateBindingAgentDisplay();
-            refreshCodexList();
-          }
-
-          // Update upgrade UI every time the tab is shown
-          updateTsadiUpgradeUI();
-          // Start the ambient vermiculate background effect for the Tsadi Spire.
-          startTsadiVermiculateBackground();
-        } else if (tabId === 'shin') {
-          // Initialize Cardinal Warden reverse danmaku game when tab is first opened
-          if (!cardinalWardenInitialized) {
-            try {
-              initializeCardinalWardenUI();
-              // Connect shin visual preferences to the Cardinal simulation instance.
-              setShinSimulationGetter(getCardinalSimulation);
-              initializeShinSpirePreferences();
-              bindShinSpireOptions();
-              // Initialize the grapheme codex UI
-              initializeShinGraphemeCodex();
-              cardinalWardenInitialized = true;
-            } catch (error) {
-              console.error('Failed to initialize Cardinal Warden UI:', error);
-            }
-          } else {
-            // Restart the simulation if it was stopped when leaving the tab
-            startCardinalSimulation();
-          }
-          // Resize the Cardinal canvas when tab is shown
-          resizeCardinalCanvas();
-          // Start the ambient shape background effect for the Shin Spire.
-          startShinShapeBackground();
-          // Update display with current state
-          updateShinDisplay();
-          scheduleSpireResize();
-        } else if (tabId === 'kuf') {
-          if (!kufUiInitialized) {
-            try {
-              initializeKufUI({
-                onRunComplete: () => {
-                  spireMenuController.updateCounts();
-                },
-                // Keep the Kuf almanac in sync with the global developer mode toggle.
-                getDeveloperModeActive: () => developerModeActive,
-              });
-              initializeKufSpirePreferences();
-              bindKufSpireOptions();
-              kufUiInitialized = true;
-              updateKufDisplay();
-            } catch (error) {
-              console.error('Failed to initialize Kuf Spire UI:', error);
-            }
-          } else {
-            // Resume any paused battle when returning to the Kuf tab
-            resumeKufSimulation();
-            updateKufDisplay();
-          }
-        }
-
-        if (tabId === 'powder' || tabId === 'fluid') {
-          // Realign the basin after the tab becomes visible so layout metrics refresh.
-          requestAnimationFrame(() => {
-            if (powderSimulation && typeof powderSimulation.handleResize === 'function') {
-              powderSimulation.handleResize();
-              handlePowderViewTransformChange(powderSimulation.getViewTransform());
-            }
-          });
+          initializePowderViewInteraction();
         }
 
         // Update cognitive realm map visibility based on tab and level state
@@ -4010,12 +2885,6 @@ import { createDeveloperSpamController } from './developerSpamController.js';
     });
 
     initializeTabs();
-    // Keep the responsive spire canvases aligned with viewport changes.
-    window.addEventListener('resize', scheduleSpireResize);
-    scheduleSpireResize();
-    // Initialize the floating spire menu navigation
-    spireMenuController.initialize();
-    updateSpireTabVisibility();
     await initializeFieldNotesOverlay();
     bindCodexControls({
       setActiveTab,
@@ -4046,53 +2915,6 @@ import { createDeveloperSpamController } from './developerSpamController.js';
     setMergingLogicUnlocked(getMergeProgressState().mergingLogicUnlocked);
 
     initializeLoadoutSlotPreference({ defaultSlots: getTowerLoadoutLimit() });
-
-    const savedKufState = readStorageJson(KUF_STATE_STORAGE_KEY);
-    initializeKufState(savedKufState || {});
-    setTrackedKufGlyphs(Math.max(0, Math.floor(getKufGlyphs())));
-    spireMenuController.updateCounts();
-    onKufStateChange((event) => {
-      if (event && event.type === 'result') {
-        spireMenuController.updateCounts();
-        // Keep Kuf unlock progression synchronized with fresh glyph payouts.
-        const currentKufGlyphs = Math.max(0, Math.floor(getKufGlyphs()));
-        if (currentKufGlyphs !== getTrackedKufGlyphs()) {
-          setTrackedKufGlyphs(currentKufGlyphs);
-          updateStatusDisplays();
-          checkAndUnlockSpires();
-        }
-        commitAutoSave();
-      }
-    });
-
-    // Initialize Shin Spire fractal system
-    try {
-      await loadFractalDefinitions();
-      // Load saved state from storage
-      const savedShinState = readStorageJson(SHIN_STATE_STORAGE_KEY);
-      initializeShinState(savedShinState || {});
-      setTrackedShinGlyphs(Math.max(0, Math.floor(getShinGlyphs())));
-      setShinUIUpdateCallback(() => {
-        updateShinDisplay();
-        // React to manual Iteron allocations that push Shin glyph totals forward.
-        const currentShinGlyphs = Math.max(0, Math.floor(getShinGlyphs()));
-        if (currentShinGlyphs !== getTrackedShinGlyphs()) {
-          setTrackedShinGlyphs(currentShinGlyphs);
-          spireMenuController.updateCounts();
-          updateStatusDisplays();
-          checkAndUnlockSpires();
-        } else {
-          spireMenuController.updateCounts();
-        }
-        commitAutoSave();
-      });
-    } catch (error) {
-      console.error('Failed to initialize Shin Spire system:', error);
-    }
-
-    updateSpireTabVisibility();
-    checkAndUnlockSpires();
-    spireMenuController.updateCounts();
 
     enemyCodexElements.list = document.getElementById('enemy-codex-list');
     enemyCodexElements.empty = document.getElementById('enemy-codex-empty');
@@ -4161,7 +2983,6 @@ import { createDeveloperSpamController } from './developerSpamController.js';
     if (isAchievementsUnlocked()) {
       unlockAchievementsTab();
     }
-    enforceFluidStudyDisabledState();
     // Reapply developer mode boosts after progression restore so level unlocks stay in sync.
     refreshDeveloperModeState();
     reconcileGlyphCurrencyFromState();
@@ -4169,210 +2990,7 @@ import { createDeveloperSpamController } from './developerSpamController.js';
     bindStatusElements();
     bindPowderControls();
     bindAlephTierTransitionControls();
-    bindFluidControls();
-    bindAchievementsTerrariumControls(); // Bind achievements terrarium elements
-    
-    // Initialize basic pan/zoom for achievements terrarium viewport
-    if (achievementsTerrariumElements.viewport && achievementsTerrariumElements.terrariumLayer) {
-      const viewport = achievementsTerrariumElements.viewport;
-      const layer = achievementsTerrariumElements.terrariumLayer;
-      let scale = 1;
-      let translateX = 0;
-      let translateY = 0;
-      let isDragging = false;
-      let startX = 0;
-      let startY = 0;
-      let startTranslateX = 0;
-      let startTranslateY = 0;
-      
-      // Anchor transforms from the top-left so clamping math stays predictable across zoom levels.
-      layer.style.transformOrigin = '0 0';
-
-      // Clamp the terrarium translation so the viewport never exposes empty space beyond the edges.
-      const clampTerrariumTranslation = () => {
-        const viewportWidth = viewport.clientWidth;
-        const viewportHeight = viewport.clientHeight;
-        const contentWidth = layer.offsetWidth;
-        const contentHeight = layer.offsetHeight;
-        if (!viewportWidth || !viewportHeight || !contentWidth || !contentHeight) {
-          return;
-        }
-        const _scaledWidth = contentWidth * scale;
-        const _scaledHeight = contentHeight * scale;
-        
-        // Prevent zooming out past the terrarium bounds
-        // Calculate minimum scale to ensure content fills the viewport
-        const minScaleX = viewportWidth / contentWidth;
-        const minScaleY = viewportHeight / contentHeight;
-        const minScale = Math.max(minScaleX, minScaleY, 0.5); // Use 0.5 as absolute minimum
-        
-        // Clamp scale to prevent zooming out too far
-        if (scale < minScale) {
-          scale = minScale;
-        }
-        
-        // Recalculate scaled dimensions with clamped scale
-        const clampedScaledWidth = contentWidth * scale;
-        const clampedScaledHeight = contentHeight * scale;
-        
-        const maxTranslateX = 0;
-        const maxTranslateY = 0;
-        const minTranslateX = viewportWidth - clampedScaledWidth;
-        const minTranslateY = viewportHeight - clampedScaledHeight;
-        const resolveTranslation = (current, min, max, viewportSize, scaledSize) => {
-          if (min > max) {
-            return (viewportSize - scaledSize) / 2;
-          }
-          return Math.min(max, Math.max(min, current));
-        };
-        translateX = resolveTranslation(translateX, minTranslateX, maxTranslateX, viewportWidth, clampedScaledWidth);
-        translateY = resolveTranslation(translateY, minTranslateY, maxTranslateY, viewportHeight, clampedScaledHeight);
-      };
-
-      const updateTransform = () => {
-        clampTerrariumTranslation();
-        layer.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
-      };
-      
-      // Mouse wheel zoom
-      viewport.addEventListener('wheel', (e) => {
-        e.preventDefault();
-        const zoomSpeed = 0.001;
-        const delta = -e.deltaY * zoomSpeed;
-        const newScale = Math.max(0.5, Math.min(3, scale * (1 + delta)));
-        
-        if (newScale !== scale) {
-          // Zoom towards mouse position
-          const rect = viewport.getBoundingClientRect();
-          const mouseX = e.clientX - rect.left;
-          const mouseY = e.clientY - rect.top;
-          
-          // Calculate point in content space before zoom
-          const contentX = (mouseX - translateX) / scale;
-          const contentY = (mouseY - translateY) / scale;
-          
-          // Update scale
-          scale = newScale;
-          
-          // Calculate new translation to keep the content point under the mouse
-          translateX = mouseX - contentX * scale;
-          translateY = mouseY - contentY * scale;
-          
-          updateTransform();
-        }
-      }, { passive: false });
-      
-      // Mouse drag pan
-      viewport.addEventListener('mousedown', (e) => {
-        if (e.button === 0) { // Left mouse button
-          isDragging = true;
-          startX = e.clientX;
-          startY = e.clientY;
-          startTranslateX = translateX;
-          startTranslateY = translateY;
-          viewport.style.cursor = 'grabbing';
-        }
-      });
-      
-      viewport.addEventListener('mousemove', (e) => {
-        if (isDragging) {
-          translateX = startTranslateX + (e.clientX - startX);
-          translateY = startTranslateY + (e.clientY - startY);
-          updateTransform();
-        }
-      });
-      
-      const stopDrag = () => {
-        if (isDragging) {
-          isDragging = false;
-          viewport.style.cursor = 'grab';
-        }
-      };
-      
-      viewport.addEventListener('mouseup', stopDrag);
-      viewport.addEventListener('mouseleave', stopDrag);
-      viewport.style.cursor = 'grab';
-      
-      // Touch support for mobile
-      let touchStartDist = 0;
-      let touchStartScale = 1;
-      let pinchCenterX = 0;
-      let pinchCenterY = 0;
-      
-      viewport.addEventListener('touchstart', (e) => {
-        if (e.touches.length === 1) {
-          // Single touch - pan
-          isDragging = true;
-          startX = e.touches[0].clientX;
-          startY = e.touches[0].clientY;
-          startTranslateX = translateX;
-          startTranslateY = translateY;
-        } else if (e.touches.length === 2) {
-          // Two finger pinch - zoom
-          isDragging = false; // Cancel panning when pinch starts
-          const dx = e.touches[1].clientX - e.touches[0].clientX;
-          const dy = e.touches[1].clientY - e.touches[0].clientY;
-          touchStartDist = Math.sqrt(dx * dx + dy * dy);
-          touchStartScale = scale;
-          
-          // Calculate pinch center in viewport coordinates
-          const rect = viewport.getBoundingClientRect();
-          pinchCenterX = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
-          pinchCenterY = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
-        }
-      }, { passive: true });
-      
-      viewport.addEventListener('touchmove', (e) => {
-        if (e.touches.length === 1 && isDragging) {
-          e.preventDefault();
-          translateX = startTranslateX + (e.touches[0].clientX - startX);
-          translateY = startTranslateY + (e.touches[0].clientY - startY);
-          updateTransform();
-        } else if (e.touches.length === 2) {
-          e.preventDefault();
-          const dx = e.touches[1].clientX - e.touches[0].clientX;
-          const dy = e.touches[1].clientY - e.touches[0].clientY;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          const newScale = Math.max(0.5, Math.min(3, touchStartScale * (dist / touchStartDist)));
-          
-          if (newScale !== scale) {
-            // Calculate point in content space before zoom
-            const contentX = (pinchCenterX - translateX) / scale;
-            const contentY = (pinchCenterY - translateY) / scale;
-            
-            // Update scale
-            scale = newScale;
-            
-            // Calculate new translation to keep the content point under the pinch center
-            translateX = pinchCenterX - contentX * scale;
-            translateY = pinchCenterY - contentY * scale;
-            
-            updateTransform();
-          }
-        }
-      }, { passive: false });
-      
-      viewport.addEventListener('touchend', () => {
-        isDragging = false;
-        touchStartDist = 0;
-      }, { passive: true });
-    }
-    
     initializeSpireGemMenus();
-    bindFluidCameraModeToggle();
-    syncFluidCameraModeUi();
-    await ensureTerrariumSurfacesReady();
-    ensureFluidTerrariumWater();
-    ensureFluidTerrariumCreatures();
-    ensureFluidTerrariumBirds();
-    ensureFluidTerrariumGrass();
-    ensureFluidTerrariumCrystal();
-    ensureFluidTerrariumTrees();
-    ensureFluidTerrariumSkyCycle();
-    ensureFluidTerrariumCelestialBodies();
-    ensureFluidTerrariumShrooms();
-    ensureFluidTerrariumItemsDropdown();
-    applyFluidVisualSettings();
     ensurePowderBasinResizeObserver();
     bindSpireClickIncome();
     await applyPowderSimulationMode(powderState.simulationMode);
@@ -4437,52 +3055,6 @@ import { createDeveloperSpamController } from './developerSpamController.js';
     bindLeaveLevelButton();
     initializeManualDropHandlers();
     
-    // Initialize Bet Spire particle physics render and inventory display
-    initBetSpireRender(spireResourceState.fluid);
-    setBetSpireRenderGetter(getBetSpireRenderInstance);
-    
-    // Apply idle particles from bank if any (bet spire is always running)
-    const betIdleParticles = getCurrentFluidDropBank(); // Using the idle bank for bet
-    if (betIdleParticles > 0) {
-      const betInstance = getBetSpireRenderInstance();
-      if (betInstance) {
-        applyBetIdleParticles(betInstance, betIdleParticles);
-        // Bank will be cleared by the bet spire's internal logic
-      }
-    }
-    
-    initParticleInventoryDisplay();
-    
-    // Initialize BET spire upgrade menu
-    const betUpgradeMenu = createBetSpireUpgradeMenu({
-      formatWholeNumber,
-      formatGameNumber,
-      formatDecimal,
-      state: spireResourceState.fluid,
-    });
-    
-    betUpgradeMenu.bindPurchaseButtons();
-    betUpgradeMenu.startGenerationLoop();
-    
-    // Update the upgrade menu display every second
-    setInterval(() => {
-      betUpgradeMenu.updateDisplay();
-    }, 1000);
-    
-    // Listen for BET glyph awards
-    const betCanvas = document.getElementById('bet-spire-canvas');
-    if (betCanvas) {
-      betCanvas.addEventListener('betGlyphsAwarded', (event) => {
-        const count = event.detail?.count || 0;
-        if (count > 0) {
-          // Award BET glyphs to the player
-          setBetGlyphCurrency(getBetGlyphCurrency() + count);
-          recordPowderEvent('bet-glyph-award', { count });
-          // Trigger autosave to persist the milestone achievement
-          schedulePowderSave();
-        }
-      });
-    }
   }
 
   if (document.readyState === 'loading') {
@@ -4499,8 +3071,6 @@ import { createDeveloperSpamController } from './developerSpamController.js';
     refreshTabMusic,
     checkOfflineRewards,
     audioManager,
-    stopBetSpireRender,
-    resumeBetSpireRender,
   });
 
   document.addEventListener('keydown', (event) => {
