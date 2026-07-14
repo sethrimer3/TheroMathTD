@@ -748,7 +748,7 @@ export const eta = {
       baseValue: 0,
       step: 1,
       upgradable: true,
-      glyphCurrency: 'bet',
+      glyphCurrency: 'aleph',
       maxLevel: 3,
       format: (value) => formatWholeNumber(Math.max(0, value)),
       cost(level) {
@@ -1410,7 +1410,7 @@ export const iota = {
       symbol: 'φ_c',
       equationSymbol: 'φ_c',
       glyphLabel: 'צ',
-      glyphCurrency: 'tsadi',
+      glyphCurrency: 'aleph',
       name: 'Phase Coupling',
       description: 'Complex-plane projection strength. Damage and status effects applied to one enemy inside the Iota field are multiplied by this coupling factor and projected onto every other enemy in the same field.',
       baseValue: 0,

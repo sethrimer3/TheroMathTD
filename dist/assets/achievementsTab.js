@@ -578,7 +578,7 @@ function generateStoryAchievements() {
   const { isLevelCompleted } = getContext();
   const achievements = [];
   
-  // Prologue chapter completion achievement - unlocks the moon in achievements terrarium
+  // Prologue chapter completion remains an ordinary achievement; the legacy Terrarium is disabled.
   achievements.push({
     id: PROLOGUE_CHAPTER_ACHIEVEMENT_ID,
     categoryId: 'campaign-story',

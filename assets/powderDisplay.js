@@ -106,7 +106,6 @@ export function createPowderDisplaySystem({
     if (powderElements.nextGlyphProgress) {
       powderElements.nextGlyphProgress.textContent = '—';
     }
-    setAltRenderVisibility(false);
   }
 
   function calculatePowderBonuses() {

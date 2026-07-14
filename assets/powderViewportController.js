@@ -83,12 +83,12 @@ export function createPowderViewportController({
     return Number.isFinite(powderState.alephWallTier) ? Math.max(1, Math.floor(powderState.alephWallTier)) : 1;
   }
 
-  function getElementsForSimulation(simulation) {
+  function getElementsForSimulation() {
     return typeof getPowderElements === 'function' ? getPowderElements() : null;
   }
 
-  function applyPowderViewportTransform(transform, simulation = (typeof getActiveSimulation === 'function' ? getActiveSimulation() : null)) {
-    const elements = getElementsForSimulation(simulation);
+  function applyPowderViewportTransform(transform) {
+    const elements = getElementsForSimulation();
     const viewport = elements?.viewport;
     const transformTarget = viewport;
     if (!transformTarget) {
@@ -141,7 +141,7 @@ export function createPowderViewportController({
     const rightWidth = Number.isFinite(rightPixels) ? Math.max(0, rightPixels) : Math.max(0, rightCells * cellSize);
     const gapWidth = Number.isFinite(gapPixels) ? Math.max(0, gapPixels) : Math.max(0, gapCells * cellSize);
 
-    const activeElements = getElementsForSimulation(activeSimulation);
+    const activeElements = getElementsForSimulation();
 
     const resolveContentWidth = (element, targetWidth) => {
       if (!element || !Number.isFinite(targetWidth)) {
@@ -198,7 +198,7 @@ export function createPowderViewportController({
     const activeSimulation = typeof getActiveSimulation === 'function' ? getActiveSimulation() : null;
     const metrics = powderWallMetrics || (activeSimulation?.getWallMetrics?.() ?? null);
     const showHitboxes = getDeveloperModeActive() && metrics;
-    const activeElements = getElementsForSimulation(activeSimulation);
+    const activeElements = getElementsForSimulation();
 
     if (activeElements?.leftHitbox) {
       activeElements.leftHitbox.classList.toggle(

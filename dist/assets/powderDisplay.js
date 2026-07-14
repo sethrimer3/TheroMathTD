@@ -21,28 +21,13 @@ export function createPowderDisplaySystem({
   getCurrentIdleMoteBank,
   getCurrentMoteDispenseRate,
   THERO_SYMBOL,
-  bindFluidControls,
-  updateFluidDisplay,
   updatePowderLogDisplay,
   updateMoteGemInventoryDisplay,
   SIGIL_LADDER_IS_STUB,
   getPowderSimulation,
-  spireResourceState,
   addIdleMoteBank,
-  getLamedSparkBank,
-  setLamedSparkBank,
-  getTsadiParticleBank,
-  setTsadiParticleBank,
-  getTsadiBindingAgents,
-  setTsadiBindingAgents,
-  addIterons,
-  getKufGlyphs,
-  setKufGlyphs,
-  updateShinDisplay,
   evaluateAchievements,
-  spireMenuController,
   gameStats,
-  onTsadiBindingAgentsChange,
 }) {
   let powderCurrency = 0;
   let powderBasinPulseTimer = null;
@@ -90,21 +75,8 @@ export function createPowderDisplaySystem({
     rightHitbox: null,
     modeToggle: null,
     stage: null,
-    altRenderToggle: null,
-    altRender: null,
     tierGoldenAleph: null,
   };
-
-  function setAltRenderVisibility(isVisible) {
-    if (powderElements.altRender) {
-      powderElements.altRender.hidden = !isVisible;
-      powderElements.altRender.setAttribute('aria-hidden', isVisible ? 'false' : 'true');
-    }
-    if (powderElements.altRenderToggle) {
-      powderElements.altRenderToggle.setAttribute('aria-pressed', isVisible ? 'true' : 'false');
-      powderElements.altRenderToggle.textContent = isVisible ? 'Hide Bet Wall Render' : 'Show Bet Wall Render';
-    }
-  }
 
   function setPowderCurrency(value) {
     const normalized = Number.isFinite(value) ? Math.max(0, value) : 0;
@@ -134,7 +106,6 @@ export function createPowderDisplaySystem({
     if (powderElements.nextGlyphProgress) {
       powderElements.nextGlyphProgress.textContent = '—';
     }
-    setAltRenderVisibility(false);
   }
 
   function calculatePowderBonuses() {
@@ -247,8 +218,6 @@ export function createPowderDisplaySystem({
     powderElements.crystalFormula = document.getElementById('powder-crystal-formula');
     powderElements.crystalNote = document.getElementById('powder-crystal-note');
     powderElements.crystalButton = document.getElementById('powder-crystal-button');
-    powderElements.altRenderToggle = document.getElementById('powder-alt-render-toggle');
-    powderElements.altRender = document.getElementById('powder-alt-render');
     powderElements.tierGoldenAleph = document.getElementById('powder-tier-golden-aleph');
 
     const glyphColumnNodes = document.querySelectorAll('[data-powder-glyph-column]');
@@ -281,19 +250,6 @@ export function createPowderDisplaySystem({
         chargeCrystalMatrix();
       });
     }
-
-    if (powderElements.altRender && powderElements.altRenderToggle) {
-      powderElements.altRender.setAttribute('aria-hidden', 'true');
-      setAltRenderVisibility(false);
-      powderElements.altRenderToggle.addEventListener('click', (event) => {
-        event.preventDefault();
-        const shouldShow = Boolean(powderElements.altRender.hidden);
-        setAltRenderVisibility(shouldShow);
-      });
-    }
-
-    bindFluidControls();
-    updateFluidDisplay();
 
     updateMoteGemInventoryDisplay();
     updatePowderLogDisplay();
@@ -509,24 +465,10 @@ export function createPowderDisplaySystem({
     updatePowderStockpileDisplay();
   }
 
-  const WAALS_UNLOCK_TIER = 5;
-
   function createIdleSummaryDefaults() {
     return {
       minutes: 0,
       aleph: { multiplier: 0, total: 0, unlocked: true },
-      bet: { multiplier: 0, total: 0, unlocked: Boolean(powderState.fluidUnlocked) },
-      lamed: { multiplier: 0, total: 0, unlocked: Boolean(spireResourceState.lamed?.unlocked) },
-      tsadi: { multiplier: 0, total: 0, unlocked: Boolean(spireResourceState.tsadi?.unlocked) },
-      bindingAgents: {
-        multiplier: 0,
-        total: 0,
-        unlocked:
-          Boolean(spireResourceState.tsadi?.unlocked) &&
-          Number(spireResourceState.tsadi?.stats?.highestTier) >= WAALS_UNLOCK_TIER,
-      },
-      shin: { multiplier: 0, total: 0, unlocked: false },
-      kuf: { multiplier: 0, total: 0, unlocked: false },
     };
   }
 
@@ -544,63 +486,12 @@ export function createPowderDisplaySystem({
       ? Math.max(0, getAchievementPowderRate())
       : 2 ** achievementsUnlocked;
     const alephTotal = minutes * alephRatePerMinute;
-    const betUnlocked = Boolean(powderState.fluidUnlocked);
-    // Every downstream spire inherits 1/100 of the prior spire's idle rate.
-    const betRatePerMinute = alephRatePerMinute / 100;
-    const betTotal = betUnlocked ? minutes * betRatePerMinute : 0;
-
-    const lamedUnlocked = Boolean(spireResourceState.lamed?.unlocked);
-    // Lamed receives 1/100 of Bet's idle income.
-    const lamedRatePerMinute = betRatePerMinute / 100;
-    const lamedTotal = lamedUnlocked ? minutes * lamedRatePerMinute : 0;
-
-    const tsadiUnlocked = Boolean(spireResourceState.tsadi?.unlocked);
-    // Tsadi receives 1/100 of Lamed's idle income.
-    const tsadiRatePerMinute = lamedRatePerMinute / 100;
-    const tsadiTotal = tsadiUnlocked ? minutes * tsadiRatePerMinute : 0;
-
-    // Shin receives 1/100 of Tsadi's idle income.
-    const shinUnlocked = Boolean(spireResourceState.shin?.unlocked);
-    const shinRatePerMinute = tsadiRatePerMinute / 100;
-    const shinTotal = shinUnlocked ? minutes * shinRatePerMinute : 0;
-
-    // Kuf receives 1/100 of Shin's idle income.
-    const kufUnlocked = Boolean(spireResourceState.kuf?.unlocked);
-    const kufRatePerMinute = shinRatePerMinute / 100;
-    const kufTotal = kufUnlocked ? minutes * kufRatePerMinute : 0;
-
     summary.minutes = minutes;
     summary.aleph = {
       multiplier: alephRatePerMinute,
       total: alephTotal,
       unlocked: true,
     };
-    summary.bet = {
-      multiplier: betUnlocked ? betRatePerMinute : 0,
-      total: betTotal,
-      unlocked: betUnlocked,
-    };
-    summary.lamed = {
-      multiplier: lamedUnlocked ? lamedRatePerMinute : 0,
-      total: lamedTotal,
-      unlocked: lamedUnlocked,
-    };
-    summary.tsadi = {
-      multiplier: tsadiUnlocked ? tsadiRatePerMinute : 0,
-      total: tsadiTotal,
-      unlocked: tsadiUnlocked,
-    };
-    summary.shin = {
-      multiplier: shinUnlocked ? shinRatePerMinute : 0,
-      total: shinTotal,
-      unlocked: shinUnlocked,
-    };
-    summary.kuf = {
-      multiplier: kufUnlocked ? kufRatePerMinute : 0,
-      total: kufTotal,
-      unlocked: kufUnlocked,
-    };
-
     return summary;
   }
 
@@ -616,104 +507,24 @@ export function createPowderDisplaySystem({
     if (summary.aleph.total > 0) {
       addIdleMoteBank(summary.aleph.total, { target: 'aleph' });
     }
-    if (summary.bet.unlocked && summary.bet.total > 0) {
-      addIdleMoteBank(summary.bet.total, { target: 'bet' });
-    }
-    if (summary.lamed.unlocked && summary.lamed.total > 0) {
-      setLamedSparkBank(getLamedSparkBank() + summary.lamed.total);
-    }
-    if (summary.tsadi.unlocked && summary.tsadi.total > 0) {
-      setTsadiParticleBank(getTsadiParticleBank() + summary.tsadi.total);
-    }
-    if (summary.shin.unlocked && summary.shin.total > 0 && typeof addIterons === 'function') {
-      addIterons(summary.shin.total);
-    }
-    // Route Kuf idle gains through the glyph state so downstream unlock checks stay consistent.
-    if (summary.kuf.unlocked && summary.kuf.total > 0 && typeof setKufGlyphs === 'function') {
-      const kufIncrement = Math.max(0, Math.floor(summary.kuf.total));
-      if (kufIncrement > 0) {
-        setKufGlyphs(getKufGlyphs() + kufIncrement);
-      }
-    }
     evaluateAchievements();
 
     return summary;
   }
 
-  function grantSpireMinuteIncome(spireId) {
+  function grantSpireMinuteIncome(spireId = 'aleph') {
     const summary = calculateIdleSpireSummary(60000);
-    if (summary.minutes <= 0) {
+    if (summary.minutes <= 0 || (spireId !== 'aleph' && spireId !== 'wellOfInspiration')) {
       return;
     }
-
-    let resourcesGranted = false;
-
-    switch (spireId) {
-      case 'aleph': {
-        if (summary.aleph.total > 0) {
-          addIdleMoteBank(summary.aleph.total, { target: 'aleph' });
-          resourcesGranted = true;
-        }
-        break;
-      }
-      case 'bet': {
-        if (summary.bet.unlocked && summary.bet.total > 0) {
-          addIdleMoteBank(summary.bet.total, { target: 'bet' });
-          resourcesGranted = true;
-        }
-        break;
-      }
-      case 'lamed': {
-        if (summary.lamed.unlocked && summary.lamed.total > 0) {
-          setLamedSparkBank(getLamedSparkBank() + summary.lamed.total);
-          resourcesGranted = true;
-        }
-        break;
-      }
-      case 'tsadi': {
-        if (summary.tsadi.unlocked && summary.tsadi.total > 0) {
-          setTsadiParticleBank(getTsadiParticleBank() + summary.tsadi.total);
-          resourcesGranted = true;
-        }
-        if (summary.bindingAgents.unlocked && summary.bindingAgents.total > 0) {
-          const updatedBindingAgents = setTsadiBindingAgents(
-            getTsadiBindingAgents() + summary.bindingAgents.total,
-          );
-          if (typeof onTsadiBindingAgentsChange === 'function') {
-            onTsadiBindingAgentsChange(updatedBindingAgents);
-          }
-          resourcesGranted = true;
-        }
-        break;
-      }
-      case 'shin': {
-        if (summary.shin.unlocked && summary.shin.total > 0) {
-          addIterons(summary.shin.total);
-          updateShinDisplay();
-          resourcesGranted = true;
-        }
-        break;
-      }
-      case 'kuf':
-      default:
-        break;
-    }
-
-    if (resourcesGranted) {
+    if (summary.aleph.total > 0) {
+      addIdleMoteBank(summary.aleph.total, { target: 'aleph' });
       evaluateAchievements();
-      spireMenuController.updateCounts();
     }
   }
 
   function bindSpireClickIncome() {
-    const clickTargets = [
-      { elementId: 'powder-simulation-card', spireId: 'aleph' },
-      { elementId: 'fluid-simulation-card', spireId: 'bet' },
-      { elementId: 'lamed-simulation-card', spireId: 'lamed' },
-      { elementId: 'tsadi-simulation-card', spireId: 'tsadi' },
-      { elementId: 'shin-fractal-content', spireId: 'shin' },
-      { elementId: 'kuf-simulation-card', spireId: 'kuf' },
-    ];
+    const clickTargets = [{ elementId: 'powder-simulation-card', spireId: 'aleph' }];
 
     clickTargets.forEach(({ elementId, spireId }) => {
       const element = document.getElementById(elementId);

@@ -30,10 +30,10 @@ export function toSubscriptNumber(value) {
 
 /**
  * Format a glyph label with subscript numbering for the given symbol.
- * Shared helper used by formatAlephLabel, formatBetLabel, and any future glyph types.
- * @param {string} symbol - The glyph symbol prefix (e.g., 'ℵ', 'בּ').
+ * Shared helper used by formatAlephLabel and any future active glyph types.
+ * @param {string} symbol - The glyph symbol prefix (for example, 'ℵ').
  * @param {number} index - The glyph index (0-based).
- * @returns {string} Formatted label like "ℵ₀", "בּ₁", etc.
+ * @returns {string} Formatted label like "ℵ₀" or "ℵ₁".
  */
 export function formatGlyphLabel(symbol, index) {
   const normalized = Number.isFinite(index) ? Math.max(0, Math.floor(index)) : 0;
@@ -47,17 +47,6 @@ export function formatGlyphLabel(symbol, index) {
  */
 export function formatAlephLabel(index) {
   return formatGlyphLabel('ℵ', index);
-}
-
-/**
- * Format a Bet glyph label using Hebrew letter Bet with dagesh (בּ) with subscript numbering.
- * Bet glyphs are the second type of upgrade currency, exclusive to the Bet Spire,
- * appearing on the right wall and complementing Aleph glyphs on the left.
- * @param {number} index - The glyph index (0-based)
- * @returns {string} Formatted label like "בּ₀", "בּ₁", "בּ₂", etc.
- */
-export function formatBetLabel(index) {
-  return formatGlyphLabel('בּ', index);
 }
 
 /**

@@ -71,7 +71,7 @@ export const pi = {
       baseValue: 0,
       step: 1,
       upgradable: true,
-      glyphCurrency: 'bet',
+      glyphCurrency: 'aleph',
       maxLevel: 50,
       format: (value) => {
         const bet1 = Math.max(0, Math.min(99, Number.isFinite(value) ? value : 0));
@@ -121,7 +121,7 @@ export const pi = {
       baseValue: 0,
       step: 1,
       upgradable: true,
-      glyphCurrency: 'lamed',
+      glyphCurrency: 'aleph',
       maxLevel: 10,
       format: (value) => {
         const lamed1 = Math.max(0, Number.isFinite(value) ? value : 0);

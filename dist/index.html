@@ -82,7 +82,7 @@
       <div class="offline-overlay__content">
         <p class="offline-overlay__title" id="offline-overlay-title">While asleep…</p>
         <div class="offline-overlay__equation-group" aria-live="polite">
-          <div class="offline-overlay__equation-row" id="offline-aleph-row" aria-label="Aleph idle gains">
+          <div class="offline-overlay__equation-row" id="offline-aleph-row" aria-label="Well of Inspiration idle gains">
             <span class="offline-overlay__label offline-overlay__label--placeholder" aria-hidden="true"></span>
             <div class="offline-overlay__equation">
               <span class="offline-symbol">×</span>
@@ -92,66 +92,6 @@
               <span class="offline-symbol offline-symbol--glyph" aria-hidden="true">ℵ</span>
               <span class="offline-symbol">−</span>
               <span class="offline-resource__label">Motes</span>
-            </div>
-          </div>
-          <div class="offline-overlay__equation-row" id="offline-bet-row" aria-label="Bet idle gains">
-            <span class="offline-overlay__label offline-overlay__label--placeholder" aria-hidden="true"></span>
-            <div class="offline-overlay__equation">
-              <span class="offline-symbol">×</span>
-              <span class="offline-number" id="offline-bet-multiplier">0</span>
-              <span class="offline-symbol">=</span>
-              <span class="offline-number" id="offline-bet-total">0</span>
-              <span class="offline-symbol offline-symbol--glyph" aria-hidden="true">בּ</span>
-              <span class="offline-symbol">−</span>
-              <span class="offline-resource__label">Scintillae</span>
-            </div>
-          </div>
-          <div class="offline-overlay__equation-row" id="offline-lamed-row" aria-label="Lamed idle gains">
-            <span class="offline-overlay__label offline-overlay__label--placeholder" aria-hidden="true"></span>
-            <div class="offline-overlay__equation">
-              <span class="offline-symbol">×</span>
-              <span class="offline-number" id="offline-lamed-multiplier">0</span>
-              <span class="offline-symbol">=</span>
-              <span class="offline-number" id="offline-lamed-total">0</span>
-              <span class="offline-symbol offline-symbol--glyph" aria-hidden="true">ל</span>
-              <span class="offline-symbol">−</span>
-              <span class="offline-resource__label">Stars</span>
-            </div>
-          </div>
-          <div class="offline-overlay__equation-row" id="offline-tsadi-row" aria-label="Tsadi idle gains">
-            <span class="offline-overlay__label offline-overlay__label--placeholder" aria-hidden="true"></span>
-            <div class="offline-overlay__equation">
-              <span class="offline-symbol">×</span>
-              <span class="offline-number" id="offline-tsadi-multiplier">0</span>
-              <span class="offline-symbol">=</span>
-              <span class="offline-number" id="offline-tsadi-total">0</span>
-              <span class="offline-symbol offline-symbol--glyph" aria-hidden="true">צ</span>
-              <span class="offline-symbol">−</span>
-              <span class="offline-resource__label">Atoms</span>
-            </div>
-          </div>
-          <div class="offline-overlay__equation-row" id="offline-shin-row" aria-label="Shin idle gains">
-            <span class="offline-overlay__label offline-overlay__label--placeholder" aria-hidden="true"></span>
-            <div class="offline-overlay__equation">
-              <span class="offline-symbol">×</span>
-              <span class="offline-number" id="offline-shin-multiplier">0</span>
-              <span class="offline-symbol">=</span>
-              <span class="offline-number" id="offline-shin-total">0</span>
-              <span class="offline-symbol offline-symbol--glyph" aria-hidden="true">ש</span>
-              <span class="offline-symbol">−</span>
-              <span class="offline-resource__label">Equivalence</span>
-            </div>
-          </div>
-          <div class="offline-overlay__equation-row" id="offline-kuf-row" aria-label="Kuf idle gains">
-            <span class="offline-overlay__label offline-overlay__label--placeholder" aria-hidden="true"></span>
-            <div class="offline-overlay__equation">
-              <span class="offline-symbol">×</span>
-              <span class="offline-number" id="offline-kuf-multiplier">0</span>
-              <span class="offline-symbol">=</span>
-              <span class="offline-number" id="offline-kuf-total">0</span>
-              <span class="offline-symbol offline-symbol--glyph" aria-hidden="true">ק</span>
-              <span class="offline-symbol">−</span>
-              <span class="offline-resource__label">Shards</span>
             </div>
           </div>
         </div>
@@ -1296,40 +1236,12 @@
         >
           <!-- Present tower resource summaries near the top of the Towers tab. -->
           <div class="tower-glyph-summary" id="tower-glyph-summary" aria-live="polite">
-            <!-- Arrange the first trio of glyph counters on a dedicated desktop row. -->
+            <!-- Only the surviving Well of Inspiration glyph remains active. -->
             <div class="tower-glyph-row tower-glyph-row--primary">
               <div class="tower-glyph-item">
-                <span class="tower-glyph-label">Aleph Glyphs:</span>
+                <span class="tower-glyph-label">Well of Inspiration Glyphs:</span>
                 <span class="tower-glyph-value" id="tower-glyphs-aleph-total">0 ℵ</span>
                 <span class="tower-glyph-unallocated" id="tower-glyphs-aleph-unused"></span>
-              </div>
-              <div class="tower-glyph-item">
-                <span class="tower-glyph-label">Bet Glyphs:</span>
-                <span class="tower-glyph-value" id="tower-glyphs-bet-total">0 בּ</span>
-                <span class="tower-glyph-unallocated" id="tower-glyphs-bet-unused"></span>
-              </div>
-              <div class="tower-glyph-item">
-                <span class="tower-glyph-label">Lamed Glyphs:</span>
-                <span class="tower-glyph-value" id="tower-glyphs-lamed-total">0 ל</span>
-                <span class="tower-glyph-unallocated" id="tower-glyphs-lamed-unused"></span>
-              </div>
-            </div>
-            <!-- Position the higher-tier glyph counters beneath the introductory row. -->
-            <div class="tower-glyph-row tower-glyph-row--secondary">
-              <div class="tower-glyph-item">
-                <span class="tower-glyph-label">Tsadi Glyphs:</span>
-                <span class="tower-glyph-value" id="tower-glyphs-tsadi-total">0 צ</span>
-                <span class="tower-glyph-unallocated" id="tower-glyphs-tsadi-unused"></span>
-              </div>
-              <div class="tower-glyph-item">
-                <span class="tower-glyph-label">Shin Glyphs:</span>
-                <span class="tower-glyph-value" id="tower-glyphs-shin-total">0 ש</span>
-                <span class="tower-glyph-unallocated" id="tower-glyphs-shin-unused"></span>
-              </div>
-              <div class="tower-glyph-item">
-                <span class="tower-glyph-label">Kuf Glyphs:</span>
-                <span class="tower-glyph-value" id="tower-glyphs-kuf-total">0 ק</span>
-                <span class="tower-glyph-unallocated" id="tower-glyphs-kuf-unused"></span>
               </div>
             </div>
           </div>
@@ -2867,54 +2779,6 @@
                   <p class="developer-control-hint">Set motes dispensed per second.</p>
                 </div>
                 <div class="developer-control-field">
-                  <label for="developer-lamed-bank">Lamed spark bank</label>
-                  <input
-                    type="number"
-                    id="developer-lamed-bank"
-                    data-developer-field="lamedBank"
-                    min="0"
-                    step="1"
-                    inputmode="numeric"
-                  />
-                  <p class="developer-control-hint">Override the Lamed spire spark reserve.</p>
-                </div>
-                <div class="developer-control-field">
-                  <label for="developer-lamed-rate">Lamed spark rate</label>
-                  <input
-                    type="number"
-                    id="developer-lamed-rate"
-                    data-developer-field="lamedRate"
-                    min="0"
-                    step="0.01"
-                    inputmode="decimal"
-                  />
-                  <p class="developer-control-hint">Set sparks dispensed per second.</p>
-                </div>
-                <div class="developer-control-field">
-                  <label for="developer-tsadi-bank">Tsadi particle bank</label>
-                  <input
-                    type="number"
-                    id="developer-tsadi-bank"
-                    data-developer-field="tsadiBank"
-                    min="0"
-                    step="1"
-                    inputmode="numeric"
-                  />
-                  <p class="developer-control-hint">Override the Tsadi spire particle reserve.</p>
-                </div>
-                <div class="developer-control-field">
-                  <label for="developer-tsadi-rate">Tsadi particle rate</label>
-                  <input
-                    type="number"
-                    id="developer-tsadi-rate"
-                    data-developer-field="tsadiRate"
-                    min="0"
-                    step="0.01"
-                    inputmode="decimal"
-                  />
-                  <p class="developer-control-hint">Set particles dispensed per second.</p>
-                </div>
-                <div class="developer-control-field">
                   <label for="developer-start-thero">Base start þ</label>
                   <input
                     type="number"
@@ -2941,7 +2805,7 @@
                   </p>
                 </div>
                 <div class="developer-control-field">
-                  <label for="developer-glyphs-aleph">Aleph glyphs</label>
+                  <label for="developer-glyphs-aleph">Well of Inspiration glyphs</label>
                   <input
                     type="number"
                     id="developer-glyphs-aleph"
@@ -2950,115 +2814,7 @@
                     step="1"
                     inputmode="numeric"
                   />
-                  <p class="developer-control-hint">Override Aleph glyphs earned and currency.</p>
-                </div>
-                <div class="developer-control-field">
-                  <label for="developer-glyphs-bet">Bet glyphs</label>
-                  <input
-                    type="number"
-                    id="developer-glyphs-bet"
-                    data-developer-field="glyphsBet"
-                    min="0"
-                    step="1"
-                    inputmode="numeric"
-                  />
-                  <p class="developer-control-hint">Set Bet glyphs earned from the Bet Spire Terrarium.</p>
-                </div>
-                <div class="developer-control-field">
-                  <label for="developer-glyphs-lamed">Lamed glyphs</label>
-                  <input
-                    type="number"
-                    id="developer-glyphs-lamed"
-                    data-developer-field="glyphsLamed"
-                    min="0"
-                    step="1"
-                    inputmode="numeric"
-                  />
-                  <p class="developer-control-hint">Manually set Lamed spark glyph conversions.</p>
-                </div>
-                <div class="developer-control-field">
-                  <label for="developer-glyphs-tsadi">Tsadi glyphs</label>
-                  <input
-                    type="number"
-                    id="developer-glyphs-tsadi"
-                    data-developer-field="glyphsTsadi"
-                    min="0"
-                    step="1"
-                    inputmode="numeric"
-                  />
-                  <p class="developer-control-hint">Override Tsadi fusion glyph totals.</p>
-                </div>
-                <div class="developer-control-field">
-                  <label for="developer-glyphs-shin">Shin glyphs</label>
-                  <input
-                    type="number"
-                    id="developer-glyphs-shin"
-                    data-developer-field="glyphsShin"
-                    min="0"
-                    step="1"
-                    inputmode="numeric"
-                  />
-                  <p class="developer-control-hint">Set glyphs granted by fractal completions.</p>
-                </div>
-                <div class="developer-control-field">
-                  <label for="developer-glyphs-kuf">Kuf glyphs</label>
-                  <input
-                    type="number"
-                    id="developer-glyphs-kuf"
-                    data-developer-field="glyphsKuf"
-                    min="0"
-                    step="1"
-                    inputmode="numeric"
-                  />
-                  <p class="developer-control-hint">Manually set Kuf glyph earnings from tactics.</p>
-                </div>
-                <div class="developer-control-field">
-                  <label for="developer-bet-drop-rate">Bet Spire Scintillae rate</label>
-                  <input
-                    type="number"
-                    id="developer-bet-drop-rate"
-                    data-developer-field="betDropRate"
-                    min="0"
-                    step="0.01"
-                    inputmode="decimal"
-                  />
-                  <p class="developer-control-hint">Set Scintillae per second for Bet Spire.</p>
-                </div>
-                <div class="developer-control-field">
-                  <label for="developer-bet-bank">Bet Spire Scintillae reserve</label>
-                  <input
-                    type="number"
-                    id="developer-bet-bank"
-                    data-developer-field="betDropBank"
-                    min="0"
-                    step="1"
-                    inputmode="numeric"
-                  />
-                  <p class="developer-control-hint">Override the stored Scintillae reserve for Bet Spire.</p>
-                </div>
-                <div class="developer-control-field">
-                  <label for="developer-iteron-bank">Shin Spire iteron bank</label>
-                  <input
-                    type="number"
-                    id="developer-iteron-bank"
-                    data-developer-field="iteronBank"
-                    min="0"
-                    step="1"
-                    inputmode="numeric"
-                  />
-                  <p class="developer-control-hint">Override the stored iteron reserve for Shin Spire.</p>
-                </div>
-                <div class="developer-control-field">
-                  <label for="developer-iteration-rate">Shin Spire iteration rate</label>
-                  <input
-                    type="number"
-                    id="developer-iteration-rate"
-                    data-developer-field="iterationRate"
-                    min="0"
-                    step="0.1"
-                    inputmode="decimal"
-                  />
-                  <p class="developer-control-hint">Set Equivalence allocated per second for Shin Spire.</p>
+                  <p class="developer-control-hint">Override surviving Well glyphs earned and currency.</p>
                 </div>
               </div>
             </div>
@@ -3067,6 +2823,54 @@
       </main>
 
       <nav class="tab-bar" aria-label="Primary" role="tablist">
+        <button
+          class="tab-button active"
+          data-tab="tower"
+          id="tab-tower"
+          data-preserve-icon="true"
+          type="button"
+          role="tab"
+          aria-label="Defense"
+          aria-controls="panel-tower"
+          aria-selected="true"
+          aria-pressed="true"
+        >
+          <span class="tab-icon" aria-hidden="true">℘</span>
+          <span class="tab-label">Defense</span>
+        </button>
+        <button
+          class="tab-button"
+          data-tab="towers"
+          id="tab-towers"
+          type="button"
+          role="tab"
+          aria-label="Towers"
+          aria-controls="panel-towers"
+          aria-selected="false"
+          aria-pressed="false"
+        >
+          <span class="tab-icon" aria-hidden="true">α</span>
+          <span class="tab-label">Towers</span>
+          <span class="tab-icon-badge tab-icon-badge--glyphs" id="tab-glyph-badge" hidden>0</span>
+        </button>
+        <div
+          class="tab-button-stack spire-tab-stack spire-tab-stack--layout-1"
+          id="spire-tab-stack"
+          aria-label="Well of Inspiration"
+        >
+          <button
+            class="tab-button tab-button--stacked tab-button--stacked-aleph"
+            data-tab="powder"
+            id="tab-powder"
+            type="button"
+            role="tab"
+            aria-label="Well of Inspiration"
+            aria-controls="panel-powder"
+            aria-selected="false"
+            aria-pressed="false"
+          >
+            <span class="tab-icon" aria-hidden="true">ℵ</span>
+          </button>
         </div>
         <button
           class="tab-button"
@@ -3093,9 +2897,7 @@
           aria-selected="false"
           aria-pressed="false"
         >
-          <span class="tab-icon">
-          <span class="tab-icon">⧖</span>
-          </span>
+          <span class="tab-icon" aria-hidden="true">⧖</span>
           <span class="tab-label">Codex</span>
         </button>
       </nav>

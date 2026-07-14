@@ -465,60 +465,72 @@ async function run() {
 
   await test('createSpireResourceState: complete default state with no overrides', () => {
     const state = spireResourceStateModule.createSpireResourceState();
-    assert.deepEqual(state.powder, { unlocked: false, storySeen: false });
-    assert.deepEqual(state.shin, { unlocked: false, storySeen: false });
-    assert.deepEqual(state.kuf, { unlocked: false, storySeen: false });
-    assert.equal(state.fluid.particleFactorMilestone, 100);
-    assert.equal(state.fluid.betGlyphsAwarded, 0);
-    assert.equal(state.lamed.starMass, 10);
-    assert.equal(state.lamed.dragLevel, 0);
-    assert.equal(state.lamed.simulationSnapshot, null);
-    assert.equal(state.tsadi.bindingAgents, 0);
-    assert.deepEqual(state.tsadi.discoveredMolecules, []);
-  });
-
-  await test('createSpireResourceState: branch-specific override merging (top-level fields)', () => {
-    const state = spireResourceStateModule.createSpireResourceState({
-      lamed: { unlocked: true, dragLevel: 3 },
-      tsadi: { bindingAgents: 5 },
+    assert.deepEqual(state, {
+      wellOfInspiration: { unlocked: true, storySeen: false },
+      achievements: { storySeen: false },
     });
-    assert.equal(state.lamed.unlocked, true);
-    assert.equal(state.lamed.dragLevel, 3);
-    // Non-overridden top-level field on the same branch survives.
-    assert.equal(state.lamed.starMass, 10);
-    assert.equal(state.tsadi.bindingAgents, 5);
-    assert.equal(state.tsadi.unlocked, false);
   });
 
-  await test('createSpireResourceState: nested upgrades/stats merge precedence (override wins, base fills gaps)', () => {
+  await test('createSpireResourceState: accepts the current Well override', () => {
     const state = spireResourceStateModule.createSpireResourceState({
-      lamed: { stats: { totalAbsorptions: 9 } },
+      wellOfInspiration: { storySeen: true },
+      achievements: { storySeen: true },
     });
-    assert.equal(state.lamed.stats.totalAbsorptions, 9);
-    // Non-overridden nested stat fields survive from the base default.
-    assert.equal(state.lamed.stats.totalMassGained, 0);
-    assert.equal(state.lamed.stats.starMilestoneReached, 0);
-    assert.equal(state.lamed.upgrades.starMass, 0);
+    assert.deepEqual(state.wellOfInspiration, { unlocked: true, storySeen: true });
+    assert.deepEqual(state.achievements, { storySeen: true });
   });
 
-  await test('createSpireResourceState: defaults are not mutated by a prior override call', () => {
-    spireResourceStateModule.createSpireResourceState({
-      lamed: { dragLevel: 99, stats: { totalAbsorptions: 500 } },
+  await test('createSpireResourceState: migrates legacy Aleph aliases without renaming save keys', () => {
+    const state = spireResourceStateModule.createSpireResourceState({
+      powder: { unlocked: false, storySeen: true },
+    });
+    assert.deepEqual(state.wellOfInspiration, { unlocked: true, storySeen: true });
+  });
+
+  await test('createSpireResourceState: ignores retired branches from old saves', () => {
+    const state = spireResourceStateModule.createSpireResourceState({
       fluid: { betGlyphsAwarded: 12345 },
+      lamed: { dragLevel: 99 },
+      tsadi: { bindingAgents: 500 },
+      shin: { unlocked: true },
+      kuf: { unlocked: true },
     });
-    const freshState = spireResourceStateModule.createSpireResourceState();
-    assert.equal(freshState.lamed.dragLevel, 0);
-    assert.equal(freshState.lamed.stats.totalAbsorptions, 0);
-    assert.equal(freshState.fluid.betGlyphsAwarded, 0);
+    assert.deepEqual(Object.keys(state).sort(), ['achievements', 'wellOfInspiration']);
   });
 
   await test('createSpireResourceState: each call returns fresh, independent nested objects (no shared references)', () => {
     const stateA = spireResourceStateModule.createSpireResourceState();
     const stateB = spireResourceStateModule.createSpireResourceState();
-    assert.notEqual(stateA.lamed, stateB.lamed);
-    assert.notEqual(stateA.lamed.stats, stateB.lamed.stats);
-    stateA.lamed.stats.totalAbsorptions = 777;
-    assert.equal(stateB.lamed.stats.totalAbsorptions, 0);
+    assert.notEqual(stateA.wellOfInspiration, stateB.wellOfInspiration);
+    stateA.wellOfInspiration.storySeen = true;
+    assert.equal(stateB.wellOfInspiration.storySeen, false);
+  });
+
+  const saveCompatibility = await importAsEsm('assets/saveCompatibility.js');
+
+  await test('migrateWellOfInspirationSave: old retired branches are ignored without blocking startup data', () => {
+    const migrated = saveCompatibility.migrateWellOfInspirationSave({
+      powder: { idleMoteBank: 42, storySeen: true },
+      fluid: { idleBank: 999 },
+      lamed: { unlocked: true },
+      tsadi: { bindingAgents: 7 },
+      shin: { iterons: 8 },
+      kuf: { shards: 9 },
+    });
+    assert.deepEqual(migrated, {
+      wellOfInspiration: { idleMoteBank: 42, storySeen: true },
+    });
+  });
+
+  await test('migrateWellOfInspirationSave: preserves a valid legacy simulation snapshot', () => {
+    const migrated = saveCompatibility.migrateWellOfInspirationSave({
+      alephSpire: { storySeen: true },
+      loadedSimulationState: { idleBank: 12 },
+    });
+    assert.deepEqual(migrated, {
+      wellOfInspiration: { storySeen: true },
+      simulation: { idleBank: 12 },
+    });
   });
 
   // --- assets/state/monetizationState.js (Phase 5A) ------------------------

@@ -214,8 +214,6 @@ const towerTabState = {
   audioManager: null,
   playfield: null,
   glyphCurrency: 0,
-  betGlyphCurrency: 0,
-  tsadiGlyphCurrency: 0,
   hideUpgradeMatrix: null,
   renderUpgradeMatrix: null,
   discoveredVariables: new Map(),
@@ -786,42 +784,6 @@ export function addGlyphCurrency(delta) {
 
 export function getGlyphCurrency() {
   return towerTabState.glyphCurrency;
-}
-
-export function setBetGlyphCurrency(value) {
-  if (Number.isFinite(value)) {
-    towerTabState.betGlyphCurrency = Math.max(0, Math.floor(value));
-    updateTowerUpgradeGlyphDisplay();
-    updateStatusDisplaysCallback?.(); // Update tower tab resource summary to reflect Bet glyph changes.
-  }
-}
-
-export function addBetGlyphCurrency(delta) {
-  if (Number.isFinite(delta)) {
-    setBetGlyphCurrency(towerTabState.betGlyphCurrency + delta);
-  }
-}
-
-export function getBetGlyphCurrency() {
-  return towerTabState.betGlyphCurrency;
-}
-
-export function setTsadiGlyphCurrency(value) {
-  if (Number.isFinite(value)) {
-    towerTabState.tsadiGlyphCurrency = Math.max(0, Math.floor(value));
-    updateTowerUpgradeGlyphDisplay();
-    updateStatusDisplaysCallback?.();
-  }
-}
-
-export function addTsadiGlyphCurrency(delta) {
-  if (Number.isFinite(delta)) {
-    setTsadiGlyphCurrency(towerTabState.tsadiGlyphCurrency + delta);
-  }
-}
-
-export function getTsadiGlyphCurrency() {
-  return towerTabState.tsadiGlyphCurrency;
 }
 
 export function setTheroSymbol(symbol = 'þ') {
@@ -1484,25 +1446,15 @@ function getVariableGlyphLabel(variable) {
   return 'ℵ';
 }
 
-function getVariableCurrencyKey(variable) {
-  if (variable?.glyphCurrency === 'bet') return 'bet';
-  if (variable?.glyphCurrency === 'tsadi') return 'tsadi';
+function getVariableCurrencyKey(_variable) {
   return 'aleph';
 }
 
-function getCurrencyMeta(currencyKey = 'aleph') {
-  if (currencyKey === 'bet') {
-    return { singular: 'Bet glyph', plural: 'Bet glyphs', short: 'Bet Glyphs', symbol: 'בּ' };
-  }
-  if (currencyKey === 'tsadi') {
-    return { singular: 'Tsadi glyph', plural: 'Tsadi glyphs', short: 'Tsadi Glyphs', symbol: 'צ' };
-  }
-  return { singular: 'glyph', plural: 'glyphs', short: 'Glyphs', symbol: 'ℵ' };
+function getCurrencyMeta(_currencyKey = 'aleph') {
+  return { singular: 'Well glyph', plural: 'Well glyphs', short: 'Well Glyphs', symbol: 'ℵ' };
 }
 
-function getAvailableCurrency(currencyKey = 'aleph') {
-  if (currencyKey === 'bet') return Math.max(0, Math.floor(towerTabState.betGlyphCurrency || 0));
-  if (currencyKey === 'tsadi') return Math.max(0, Math.floor(towerTabState.tsadiGlyphCurrency || 0));
+function getAvailableCurrency(_currencyKey = 'aleph') {
   return Math.max(0, Math.floor(towerTabState.glyphCurrency || 0));
 }
 

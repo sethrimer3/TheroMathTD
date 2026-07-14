@@ -888,26 +888,6 @@ body.graphics-mode-low .control-button {
   --offline-resource-icon: url('./sprites/idleScreen/aleph_resourceIcon.webp');
 }
 
-#offline-bet-row .offline-resource__label {
-  --offline-resource-icon: url('./sprites/idleScreen/bet_resourceIcon.webp');
-}
-
-#offline-lamed-row .offline-resource__label {
-  --offline-resource-icon: url('./sprites/idleScreen/lamed__resourceIcon.webp');
-}
-
-#offline-tsadi-row .offline-resource__label {
-  --offline-resource-icon: url('./sprites/idleScreen/tsadi_resourceIcon.webp');
-}
-
-#offline-shin-row .offline-resource__label {
-  --offline-resource-icon: url('./sprites/idleScreen/shin_resourceIcon.webp');
-}
-
-#offline-kuf-row .offline-resource__label {
-  --offline-resource-icon: url('./sprites/idleScreen/kuf_resourceIcon.webp');
-}
-
 .offline-symbol {
   color: rgba(255, 255, 255, 0.68);
   font-size: clamp(1.2rem, 3vw, 2.2rem);

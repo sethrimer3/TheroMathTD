@@ -1,4 +1,8 @@
 /**
+ * DISABLED LEGACY: preserved for possible Achievements Terrarium restoration.
+ * This module must not be imported by the active application entry graph.
+ * See assets/legacy/achievementsTerrarium/README.md.
+ *
  * Manage Achievement Terrarium visual preferences.
  * Provides render size controls for the achievement terrarium.
  */

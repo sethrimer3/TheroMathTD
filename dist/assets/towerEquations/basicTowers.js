@@ -160,7 +160,7 @@ export const beta = {
         ];
       },
     },
-    // Bet glyph sink that fuels β's slowing field potency for the Bet Spire.
+    // Well glyph sink that fuels beta's slowing field potency.
     {
       key: 'betSlow',
       symbol: BET1_GLYPH,
@@ -171,7 +171,7 @@ export const beta = {
       baseValue: 0,
       step: 1,
       upgradable: true,
-      glyphCurrency: 'bet',
+      glyphCurrency: 'aleph',
       attachedToVariable: 'slw',
       format: (value) => formatWholeNumber(Math.max(0, value)),
       cost: (level) => Math.max(1, 1 + Math.max(0, Math.floor(Number.isFinite(level) ? level : 0))),

@@ -133,9 +133,8 @@ import { createPowderPersistence } from './powderPersistence.js';
 import { createPowderDisplaySystem } from './powderDisplay.js';
 import { createPowderViewportController } from './powderViewportController.js';
 import { createPowderResizeObserver } from './powderResizeObserver.js';
-// DOM helpers extracted from main.js to hydrate powder and fluid overlays.
+// DOM helpers extracted from main.js to hydrate the Well of Inspiration.
 import { createPowderUiDomHelpers } from './powderUiDomHelpers.js';
-// Bet Spire Terrarium lifecycle: slimes, birds, trees, shrooms, sky cycle, celestial bodies.
 // Aleph tier-transition animation: wall-exit, golden glyph collection, wall-enter, palette scaling.
 import { createAlephTierTransitionController } from './alephTierTransitionController.js';
 import { createResourceHud } from './resourceHud.js';
@@ -151,20 +150,13 @@ import { refreshBetaShotSpritePaletteCache } from '../scripts/features/towers/be
 import { refreshGammaShotSpritePaletteCache } from '../scripts/features/towers/gammaTower.js';
 // Delta tower sprite tint cache builder for palette-synced ship sprites.
 import { refreshDeltaShipSpritePaletteCache } from '../scripts/features/towers/deltaTower.js';
-// Powder Spire palette and simulation helpers (idle game producing Aleph glyphs).
+// Well of Inspiration palette and simulation helpers (internally Aleph for save compatibility).
 import {
   DEFAULT_MOTE_PALETTE,
   POWDER_CELL_SIZE_PX,
   PowderSimulation,
   mergeMotePalette,
 } from '../scripts/features/towers/powderTower.js';
-// Fluid Spire (Bet) shallow-water simulation (idle game producing Bet glyphs).
-// Lamed Spire gravity simulation for orbital mechanics with sparks (idle game producing Lamed glyphs).
-// Tsadi Spire particle fusion simulation with tier-based merging (idle game producing Tsadi glyphs).
-// Shin state management for Iteron allocation and fractal terrarium progression.
-// Shin UI components for fractal tab management and display.
-// Cardinal Warden reverse danmaku game for Shin Spire.
-// Shin Grapheme Codex UI for displaying grapheme information.
 // Shared color palette orchestration utilities.
 import {
   configureColorSchemeSystem,
@@ -241,8 +233,6 @@ import {
   setGlyphCurrency,
   addGlyphCurrency,
   getGlyphCurrency,
-  setBetGlyphCurrency,
-  getBetGlyphCurrency,
   setTheroSymbol,
   setHideUpgradeMatrixCallback,
   setRenderUpgradeMatrixCallback,
@@ -333,8 +323,6 @@ import {
   bindDeveloperControls,
   syncDeveloperControlValues,
   updateDeveloperControlsVisibility,
-  setDeveloperIteronBank,
-  setDeveloperIterationRate,
 } from './developerControls.js';
 import {
   configureTabManager,
@@ -415,19 +403,8 @@ import { createSpireCameraController } from './spireCameraController.js';
     theroMultiplier: null,
     glyphsAlephTotal: null,
     glyphsAlephUnused: null,
-    glyphsBetTotal: null,
-    glyphsBetUnused: null,
-    glyphsLamedTotal: null,
-    glyphsLamedUnused: null,
-    glyphsTsadiTotal: null,
-    glyphsTsadiUnused: null,
-    glyphsShinTotal: null,
-    glyphsShinUnused: null,
-    glyphsKufTotal: null,
-    glyphsKufUnused: null,
     tabGlyphBadge: null,
     tabMoteBadge: null,
-    tabFluidBadge: null,
   };
 
   const THERO_SYMBOL = 'þ';
@@ -521,7 +498,7 @@ import { createSpireCameraController } from './spireCameraController.js';
     EQUIPMENT_STORAGE_KEY,
     OFFLINE_STORAGE_KEY,
     COLOR_SCHEME_STORAGE_KEY,
-    // Clear Kuf tactical progress so glyph wipes remove saved spire runs.
+    // Retired storage keys remain in reset coverage for compatibility with old saves.
     KUF_STATE_STORAGE_KEY,
     SHIN_STATE_STORAGE_KEY,
   ].filter(Boolean);
@@ -746,13 +723,6 @@ import { createSpireCameraController } from './spireCameraController.js';
     getStartButton: () => playfieldElements.startButton,
   });
 
-
-  /**
-   * Award Bet glyph currency when Bet Spire water reaches height milestones.
-   * Bet glyphs (בּ) are the second type of upgrade currency, exclusive to the Bet Spire
-   * and unlocked at the same height thresholds as Aleph glyphs but tracked independently.
-   * @param {number} count - Number of Bet glyphs to award
-   */
   const gameStats = {
     manualVictories: 0,
     idleVictories: 0,
@@ -1003,8 +973,6 @@ import { createSpireCameraController } from './spireCameraController.js';
     getBaseStartThero,
     getGlyphCurrency,
     setGlyphCurrency,
-    setBetGlyphCurrency,
-    getBetGlyphCurrency,
     spireResourceState,
     gameStats,
     updateDeveloperMapElementsVisibility,
@@ -1236,8 +1204,6 @@ import { createSpireCameraController } from './spireCameraController.js';
     setMergingLogicUnlocked,
     powderState,
     spireResourceState,
-    setDeveloperIteronBank,
-    setDeveloperIterationRate,
     setDeveloperInfiniteTheroEnabled,
     getPowderSimulation: () => powderSimulation,
     setPowderSimulation: (value) => {
@@ -1363,16 +1329,8 @@ import { createSpireCameraController } from './spireCameraController.js';
   function updateActiveLevelBanner() { levelGridCtrl.updateActiveLevelBanner(); }
   function _updateLevelSetLocks() { levelGridCtrl.updateLevelSetLocks(); }
 
-  /**
-   * Preserve the active Lamed gravity simulation state so tab switches or reloads can resume seamlessly.
-   */
-  /**
-   * Capture Tsadi particle sandbox state for autosave hydration and tab resume.
-   */
-  // Normalize the aleph glyph tithe before using it for unlock checks or logs.
+  // The retired multi-Spire mode switch has no active button; retain the callback seam for shared HUD refreshes.
   function updatePowderModeButton() {
-    // Mode toggle button removed - spires unlock automatically based on glyphs
-    // Keeping this function as a no-op to avoid breaking existing call sites
     return;
   }
 
@@ -2189,7 +2147,7 @@ import { createSpireCameraController } from './spireCameraController.js';
       spireId: 'playfield-settings',
     });
     
-    // Activate spire option dropdown toggles so every tab shares the same UX as Lamed.
+    // Activate the Well of Inspiration options dropdown.
     bindSpireOptionsDropdown({
       toggleId: 'powder-spire-options-toggle-button',
       menuId: 'powder-options-menu',
@@ -2456,7 +2414,7 @@ import { createSpireCameraController } from './spireCameraController.js';
     updatePowderLogDisplay();
     updateResourceRates();
     updatePowderDisplay();
-    // Start resource ticker for idle resources (iterons, motes, etc.) since no level is active initially
+    // Start the resource ticker for active idle resources while no level is active.
     resourceState.running = true;
     ensureResourceTicker();
     // Begin the recurring autosave cadence once the core systems are initialized.
