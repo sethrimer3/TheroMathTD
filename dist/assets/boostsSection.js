@@ -14,7 +14,7 @@ import {
 
 // Spire display names and symbols
 const SPIRE_INFO = [
-  { id: 'powder', name: 'Aleph', symbol: 'ℵ' },
+  { id: 'powder', name: 'Well of Inspiration', symbol: 'ℵ' },
   { id: 'fluid', name: 'Bet', symbol: 'בּ' },
   { id: 'lamed', name: 'Lamed', symbol: 'ל' },
   { id: 'tsadi', name: 'Tsadi', symbol: 'צ' },

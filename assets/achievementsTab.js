@@ -34,7 +34,7 @@ const achievementElements = new Map();
 let achievementDefinitions = [];
 let achievementsByCategory = new Map();
 let achievementGridEl = null;
-let achievementPowderRate = 1; // Baseline Aleph mote fall rate starts at 1 mote/min before achievements.
+let achievementPowderRate = 1; // Baseline Well mote fall rate starts at 1 mote/min before achievements.
 let context = null;
 let overlayElements = null; // Stores the lazily created overlay nodes for cinematic reveals.
 let overlayState = null; // Tracks the currently animating achievement so it can return home.
@@ -368,7 +368,7 @@ function describeLevelAchievementProgress(levelId, shortLabel, longLabel) {
   return `Locked — Seal ${label} to unlock.`;
 }
 
-// Resolve per-achievement Aleph mote fall bonus values with defaults for legacy definitions.
+// Resolve per-achievement Well mote fall bonus values with defaults for legacy definitions.
 function getAchievementMoteFallBonus(definition) {
   // Additive chapter rewards intentionally override multipliers so the prologue exception stays unique.
   if (Number.isFinite(definition?.moteFallAdditive)) {
@@ -387,9 +387,9 @@ function getAchievementMoteFallBonus(definition) {
 function formatAchievementMoteFallReward(definition) {
   const bonus = getAchievementMoteFallBonus(definition);
   if (bonus.additive > 0) {
-    return `+${formatGameNumber(bonus.additive)} Aleph mote fall rate`;
+    return `+${formatGameNumber(bonus.additive)} Well mote fall rate`;
   }
-  return `×${formatGameNumber(bonus.multiplier)} Aleph mote fall rate`;
+  return `×${formatGameNumber(bonus.multiplier)} Well mote fall rate`;
 }
 
 // Builds an achievement definition for a single level entry.
@@ -766,7 +766,7 @@ function renderBonusSummary(categoryAchievements) {
     <p class="achievement-category-bonuses__title">Bonuses Earned:</p>
     <ul class="achievement-category-bonuses__list">
       <li>${formatGameNumber(doublingCount)} mote-rate doublers claimed</li>
-      <li>+${formatGameNumber(totalMoteFallAdditive)} Aleph mote fall rate</li>
+      <li>+${formatGameNumber(totalMoteFallAdditive)} Well mote fall rate</li>
     </ul>
   `;
   return summary;

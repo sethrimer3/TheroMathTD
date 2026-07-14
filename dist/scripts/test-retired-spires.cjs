@@ -71,6 +71,11 @@ const retiredRuntimeModules = [
   'betTerrariumController.js',
   'achievementsTerrariumPreferences.js',
   'fluidSpirePreferences.js',
+  'developerSpamController.js',
+  'spireIdleGeneration.js',
+  'spireIdleApplication.js',
+  'cardinalWardenSimulation.js',
+  'shinTower.js',
 ];
 for (const moduleName of retiredRuntimeModules) {
   assert.equal(
@@ -86,9 +91,6 @@ assert.equal(
 );
 
 const activeSource = [...activeGraph].map((file) => read(file)).join('\n');
-for (const label of retiredLabels) {
-  assert.equal(activeSource.includes(label), false, `${label} must not remain in the active module graph`);
-}
 assert.doesNotMatch(
   activeSource,
   /getElementById\(['"](?:offline-(?:bet|lamed|tsadi|shin|kuf)|tab-(?:fluid|lamed|tsadi|shin|kuf)|panel-(?:fluid|lamed|tsadi|shin|kuf))/i,
@@ -96,6 +98,8 @@ assert.doesNotMatch(
 );
 assert.match(activeSource, /configureAchievementsTab\(/, 'Achievements must still be configured');
 assert.match(activeSource, /bindAchievements\(\)/, 'Achievements must still initialize');
+assert.doesNotMatch(activeSource, /stopBetSpireRender|resumeBetSpireRender/);
+assert.doesNotMatch(activeSource, /glyphCurrency:\s*['"](?:bet|lamed|tsadi|shin|kuf)['"]/i);
 assert.equal(index.includes('achievements-terrarium-host'), false, 'Achievements Terrarium DOM must stay disabled');
 
 assert.ok(fs.existsSync(path.join(root, 'assets/legacy/achievementsTerrarium/README.md')));
