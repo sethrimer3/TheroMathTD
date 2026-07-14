@@ -656,6 +656,277 @@ async function run() {
 
   global.setTimeout = realSetTimeout;
 
+  // --- assets/state/cognitiveRealmState.js (Phase 5B) ---------------------
+  // Fresh import per test group that needs a pristine module-level singleton,
+  // since cognitiveRealmState.js's `cognitiveRealmState` object and territory
+  // array are shared mutable module state (mirroring the original .js).
+  function importFreshCognitiveRealmState() {
+    return importAsEsm('assets/state/cognitiveRealmState.js');
+  }
+
+  // Deterministically stub Math.random for conquest-probability tests instead
+  // of relying on real randomness, per the migration plan's testing requirement.
+  function withMockedRandom(sequence, fn) {
+    const realRandom = Math.random;
+    let index = 0;
+    Math.random = () => {
+      const value = sequence[Math.min(index, sequence.length - 1)];
+      index += 1;
+      return value;
+    };
+    try {
+      return fn();
+    } finally {
+      Math.random = realRandom;
+    }
+  }
+
+  {
+    const cognitiveRealm = await importFreshCognitiveRealmState();
+
+    await test('cognitiveRealmState: generates exactly 81 territories in a 9x9 grid', () => {
+      const territories = cognitiveRealm.getTerritories();
+      assert.equal(territories.length, 81);
+      const dims = cognitiveRealm.getGridDimensions();
+      assert.deepEqual(dims, { width: 9, height: 9 });
+      // Every (x, y) in [0,9) x [0,9) is present exactly once.
+      const seen = new Set();
+      territories.forEach((t) => {
+        assert.ok(t.x >= 0 && t.x < 9 && t.y >= 0 && t.y < 9);
+        const key = `${t.x},${t.y}`;
+        assert.ok(!seen.has(key), `duplicate territory at ${key}`);
+        seen.add(key);
+      });
+      assert.equal(seen.size, 81);
+    });
+
+    await test('cognitiveRealmState: archetype/emotion placement follows the (x+y) % 3 === 0 pattern', () => {
+      const territories = cognitiveRealm.getTerritories();
+      territories.forEach((t) => {
+        const shouldBeArchetype = (t.x + t.y) % 3 === 0;
+        if (shouldBeArchetype) {
+          assert.equal(t.nodeType, 'archetype');
+          assert.ok(t.archetype !== null);
+          assert.equal(t.emotion, null);
+        } else {
+          assert.equal(t.nodeType, 'emotion');
+          assert.ok(t.emotion !== null);
+          assert.equal(t.archetype, null);
+        }
+      });
+      // Exactly 27 archetype anchors in a 9x9 grid (every third cell by (x+y)%3===0).
+      const archetypeCount = territories.filter((t) => t.nodeType === 'archetype').length;
+      assert.equal(archetypeCount, 27);
+      assert.equal(territories.length - archetypeCount, 54);
+    });
+
+    await test('cognitiveRealmState: initial state is unlocked=false, locked=true, all territories neutral', () => {
+      assert.equal(cognitiveRealm.isCognitiveRealmUnlocked(), false);
+      assert.equal(cognitiveRealm.isCognitiveRealmLocked(), true);
+      const stats = cognitiveRealm.getTerritoryStats();
+      assert.deepEqual(stats, { total: 81, player: 0, enemy: 0, neutral: 81 });
+    });
+
+    await test('unlockCognitiveRealm / unlockCognitiveRealmRendering: flip their respective flags only', () => {
+      cognitiveRealm.unlockCognitiveRealm();
+      assert.equal(cognitiveRealm.isCognitiveRealmUnlocked(), true);
+      assert.equal(cognitiveRealm.isCognitiveRealmLocked(), true);
+      cognitiveRealm.unlockCognitiveRealmRendering();
+      assert.equal(cognitiveRealm.isCognitiveRealmLocked(), false);
+    });
+
+    await test('getTerritory: finds a territory by exact (x, y) coordinates', () => {
+      const territory = cognitiveRealm.getTerritory(3, 4);
+      assert.ok(territory);
+      assert.equal(territory.x, 3);
+      assert.equal(territory.y, 4);
+      assert.equal(cognitiveRealm.getTerritory(100, 100), undefined);
+    });
+
+    await test('setTerritoryOwner: mutates a single territory by id and fires the change callback', () => {
+      const territory = cognitiveRealm.getTerritory(0, 0);
+      let callbackCount = 0;
+      cognitiveRealm.setOnTerritoriesChanged(() => { callbackCount += 1; });
+      cognitiveRealm.setTerritoryOwner(territory.id, cognitiveRealm.TERRITORY_PLAYER);
+      assert.equal(cognitiveRealm.getTerritory(0, 0).owner, cognitiveRealm.TERRITORY_PLAYER);
+      assert.equal(callbackCount, 1);
+      // Unknown territory id: no-op, no callback fired.
+      cognitiveRealm.setTerritoryOwner('territory-does-not-exist', cognitiveRealm.TERRITORY_ENEMY);
+      assert.equal(callbackCount, 1);
+      cognitiveRealm.setOnTerritoriesChanged(null);
+    });
+
+    await test('resetTerritories: sets every territory back to neutral and fires the callback once', () => {
+      let callbackCount = 0;
+      cognitiveRealm.setOnTerritoriesChanged(() => { callbackCount += 1; });
+      cognitiveRealm.resetTerritories();
+      assert.equal(callbackCount, 1);
+      const stats = cognitiveRealm.getTerritoryStats();
+      assert.deepEqual(stats, { total: 81, player: 0, enemy: 0, neutral: 81 });
+      cognitiveRealm.setOnTerritoriesChanged(null);
+    });
+
+    await test('updateTerritoriesForLevel: invalid levelId (no level-N match) is a no-op', () => {
+      const before = JSON.stringify(cognitiveRealm.getTerritories());
+      cognitiveRealm.updateTerritoriesForLevel('not-a-level-id', true);
+      const after = JSON.stringify(cognitiveRealm.getTerritories());
+      assert.equal(before, after);
+      assert.equal(cognitiveRealm.cognitiveRealmState.lastLevelCompleted, null);
+    });
+
+    await test('updateTerritoriesForLevel: victory sets the target territory to PLAYER and records lastLevelCompleted', () => {
+      // levelNum % 81 picks the territory index; use a small level number for a
+      // predictable target. Mock Math.random to always fail conquest rolls
+      // (return 1, above both CONQUEST_CHANCE thresholds) so only the direct
+      // target territory changes, not its neighbors.
+      withMockedRandom([1, 1, 1, 1], () => {
+        cognitiveRealm.updateTerritoriesForLevel('level-03-something', true);
+      });
+      assert.equal(cognitiveRealm.cognitiveRealmState.lastLevelCompleted, 'level-03-something');
+      const target = cognitiveRealm.getTerritories()[3];
+      assert.equal(target.owner, cognitiveRealm.TERRITORY_PLAYER);
+    });
+
+    await test('updateTerritoriesForLevel: defeat sets the target territory to ENEMY with no adjacent spread', () => {
+      cognitiveRealm.resetTerritories();
+      cognitiveRealm.updateTerritoriesForLevel('level-05-something', false);
+      const target = cognitiveRealm.getTerritories()[5];
+      assert.equal(target.owner, cognitiveRealm.TERRITORY_ENEMY);
+    });
+
+    await test('updateTerritoriesForLevel: victory with a guaranteed-success roll converts an adjacent neutral territory', () => {
+      cognitiveRealm.resetTerritories();
+      // Math.random() < 0.3 (CONQUEST_CHANCE_FROM_NEUTRAL) always succeeds when
+      // random() returns 0.
+      withMockedRandom([0, 0, 0, 0], () => {
+        cognitiveRealm.updateTerritoriesForLevel('level-10-something', true);
+      });
+      const target = cognitiveRealm.getTerritories()[10];
+      assert.equal(target.owner, cognitiveRealm.TERRITORY_PLAYER);
+      // At least the target's in-bounds neighbors should have converted from
+      // neutral to player given a guaranteed-success roll each.
+      const dims = cognitiveRealm.getGridDimensions();
+      const offsets = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+      offsets.forEach(([dx, dy]) => {
+        const adjX = target.x + dx;
+        const adjY = target.y + dy;
+        if (adjX >= 0 && adjX < dims.width && adjY >= 0 && adjY < dims.height) {
+          const adjacent = cognitiveRealm.getTerritory(adjX, adjY);
+          assert.equal(adjacent.owner, cognitiveRealm.TERRITORY_PLAYER);
+        }
+      });
+    });
+
+    await test('serializeCognitiveRealmState: produces the documented key set with archetype/emotion ids extracted', () => {
+      cognitiveRealm.resetTerritories();
+      const snapshot = cognitiveRealm.serializeCognitiveRealmState();
+      assert.deepEqual(Object.keys(snapshot).sort(), ['lastLevelCompleted', 'locked', 'territories', 'unlocked']);
+      assert.equal(snapshot.territories.length, 81);
+      snapshot.territories.forEach((t) => {
+        assert.deepEqual(Object.keys(t).sort(), ['archetypeId', 'emotionId', 'id', 'nodeType', 'owner', 'x', 'y']);
+        if (t.nodeType === 'archetype') {
+          assert.ok(typeof t.archetypeId === 'string');
+          assert.equal(t.emotionId, null);
+        } else {
+          assert.ok(typeof t.emotionId === 'string');
+          assert.equal(t.archetypeId, null);
+        }
+      });
+    });
+
+    await test('serialize/deserialize round trip: territories, owners, and ids survive unchanged', () => {
+      cognitiveRealm.resetTerritories();
+      cognitiveRealm.setTerritoryOwner(cognitiveRealm.getTerritories()[7].id, cognitiveRealm.TERRITORY_PLAYER);
+      cognitiveRealm.setTerritoryOwner(cognitiveRealm.getTerritories()[20].id, cognitiveRealm.TERRITORY_ENEMY);
+      cognitiveRealm.unlockCognitiveRealm();
+      cognitiveRealm.updateTerritoriesForLevel('level-07-roundtrip', true);
+      const before = cognitiveRealm.serializeCognitiveRealmState();
+
+      // Mutate live state so we can prove deserialize actually restores it.
+      cognitiveRealm.resetTerritories();
+      cognitiveRealm.deserializeCognitiveRealmState(before);
+      const after = cognitiveRealm.serializeCognitiveRealmState();
+      assert.deepEqual(after, before);
+    });
+
+    await test('deserializeCognitiveRealmState: missing `locked` in save data falls back to true (locked)', () => {
+      const snapshot = cognitiveRealm.serializeCognitiveRealmState();
+      delete snapshot.locked;
+      cognitiveRealm.deserializeCognitiveRealmState(snapshot);
+      assert.equal(cognitiveRealm.isCognitiveRealmLocked(), true);
+    });
+
+    await test('deserializeCognitiveRealmState: missing/invalid `lastLevelCompleted` leaves the prior value untouched', () => {
+      cognitiveRealm.updateTerritoriesForLevel('level-09-keep', true);
+      const snapshot = cognitiveRealm.serializeCognitiveRealmState();
+      snapshot.lastLevelCompleted = 12345; // not a string
+      cognitiveRealm.deserializeCognitiveRealmState(snapshot);
+      // Original code only assigns when typeof === 'string', so the previous
+      // value ('level-09-keep') should still be in place.
+      assert.equal(cognitiveRealm.cognitiveRealmState.lastLevelCompleted, 'level-09-keep');
+    });
+
+    await test('deserializeCognitiveRealmState: malformed/old-sized territory array falls back to a fresh 9x9 grid', () => {
+      const snapshot = cognitiveRealm.serializeCognitiveRealmState();
+      snapshot.territories = snapshot.territories.slice(0, 10); // old, too-short layout
+      cognitiveRealm.deserializeCognitiveRealmState(snapshot);
+      const territories = cognitiveRealm.getTerritories();
+      assert.equal(territories.length, 81);
+      // A freshly generated grid should be back at neutral ownership.
+      const stats = cognitiveRealm.getTerritoryStats();
+      assert.equal(stats.total, 81);
+    });
+
+    await test('deserializeCognitiveRealmState: missing archetype/emotion ids fall back to index-based lookup, not a crash', () => {
+      const snapshot = cognitiveRealm.serializeCognitiveRealmState();
+      snapshot.territories = snapshot.territories.map((t) => ({ ...t, archetypeId: null, emotionId: null }));
+      assert.doesNotThrow(() => cognitiveRealm.deserializeCognitiveRealmState(snapshot));
+      const territories = cognitiveRealm.getTerritories();
+      territories.forEach((t) => {
+        if (t.nodeType === 'archetype') {
+          assert.ok(t.archetype !== null);
+        } else {
+          assert.ok(t.emotion !== null);
+        }
+      });
+    });
+
+    await test('deserializeCognitiveRealmState: unrecognized archetype/emotion ids fall back to index-based lookup', () => {
+      const snapshot = cognitiveRealm.serializeCognitiveRealmState();
+      snapshot.territories = snapshot.territories.map((t) => ({
+        ...t,
+        archetypeId: t.archetypeId ? 'not-a-real-archetype-id' : null,
+        emotionId: t.emotionId ? 'not-a-real-emotion-id' : null,
+      }));
+      assert.doesNotThrow(() => cognitiveRealm.deserializeCognitiveRealmState(snapshot));
+      const territories = cognitiveRealm.getTerritories();
+      territories.forEach((t) => {
+        if (t.nodeType === 'archetype') {
+          assert.ok(t.archetype !== null);
+        } else {
+          assert.ok(t.emotion !== null);
+        }
+      });
+    });
+
+    await test('deserializeCognitiveRealmState: malformed top-level payload (non-object) is a no-op', () => {
+      const before = cognitiveRealm.serializeCognitiveRealmState();
+      cognitiveRealm.deserializeCognitiveRealmState(null);
+      cognitiveRealm.deserializeCognitiveRealmState('not an object');
+      cognitiveRealm.deserializeCognitiveRealmState(42);
+      const after = cognitiveRealm.serializeCognitiveRealmState();
+      assert.deepEqual(after, before);
+    });
+
+    await test('exported constants keep their original names and values', () => {
+      assert.equal(cognitiveRealm.TERRITORY_NEUTRAL, 0);
+      assert.equal(cognitiveRealm.TERRITORY_PLAYER, 1);
+      assert.equal(cognitiveRealm.TERRITORY_ENEMY, 2);
+      assert.ok(Array.isArray(cognitiveRealm.ARCHETYPES));
+      assert.equal(cognitiveRealm.ARCHETYPES.length, 27);
+    });
+  }
+
   // --- report --------------------------------------------------------------
   if (failures.length) {
     console.error(`\nUnit tests failed: ${failures.length}/${passed + failures.length}`);

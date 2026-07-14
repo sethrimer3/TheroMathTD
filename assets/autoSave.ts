@@ -12,6 +12,15 @@
 // as opaque `Record<string, unknown>` shapes (not modeled game-state schemas),
 // because designing a full save-state type system is explicitly out of scope
 // for this phase.
+//
+// Phase 5B exception: the cognitive-realm hooks below (`getCognitiveRealmStateSnapshot`/
+// `applyCognitiveRealmStateSnapshot`) ARE narrowed to `CognitiveRealmStateSnapshot`
+// because - unlike the spire-resource hooks, whose real save schema lives in the
+// still-unmigrated `assets/spireResourcePersistence.js` - `assets/state/cognitiveRealmState.ts`
+// directly owns and implements both the getter (`serializeCognitiveRealmState`) and the
+// setter (`deserializeCognitiveRealmState`), so narrowing here is honest, not a guess.
+
+import type { CognitiveRealmStateSnapshot } from './state/cognitiveRealmState.js';
 
 export const GRAPHICS_MODE_STORAGE_KEY = 'glyph-defense-idle:graphics-mode';
 export const NOTATION_STORAGE_KEY = 'glyph-defense-idle:notation';
@@ -151,8 +160,8 @@ export interface AutoSaveDependencies {
   applySpireResourceStateSnapshot: ((snapshot: AutoSaveSnapshot) => void) | null;
   getLevelProgressSnapshot: (() => AutoSaveSnapshot) | null;
   applyLevelProgressSnapshot: ((snapshot: AutoSaveSnapshot) => void) | null;
-  getCognitiveRealmStateSnapshot: (() => AutoSaveSnapshot) | null;
-  applyCognitiveRealmStateSnapshot: ((snapshot: AutoSaveSnapshot) => void) | null;
+  getCognitiveRealmStateSnapshot: (() => CognitiveRealmStateSnapshot) | null;
+  applyCognitiveRealmStateSnapshot: ((snapshot: CognitiveRealmStateSnapshot) => void) | null;
 }
 
 /**
@@ -351,7 +360,7 @@ export function loadPersistentState(): void {
   }
 
   if (typeof dependencies.applyCognitiveRealmStateSnapshot === 'function') {
-    const storedCognitiveRealm = readStorageJson<AutoSaveSnapshot>(COGNITIVE_REALM_STORAGE_KEY);
+    const storedCognitiveRealm = readStorageJson<CognitiveRealmStateSnapshot>(COGNITIVE_REALM_STORAGE_KEY);
     if (storedCognitiveRealm && typeof storedCognitiveRealm === 'object') {
       dependencies.applyCognitiveRealmStateSnapshot(storedCognitiveRealm);
     }

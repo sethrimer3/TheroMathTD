@@ -125,7 +125,7 @@ No TypeScript conversion phase is recorded as complete in this plan.
 | Doc/tooling repair | Recalculate migration counts, fix stale tower-file count, reconcile Principle 9, make TS-source discovery scale via globs | COMPLETE | See "Documentation and Tooling Repair" section and Implementation Log entry below |
 | 4 | Static Tower Definition Data (`assets/data/towers/`) | COMPLETE | See Phase 4 section below and Implementation Log entry below |
 | 5A | Game State Containers — `resourceState.js`, `spireResourceState.js`, `monetizationState.js` | COMPLETE | See Phase 5 section below and Implementation Log entry below |
-| 5B | Cognitive Realm Territory State (`assets/state/cognitiveRealmState.js`) | DEFERRED (not started) | See Phase 5 section's "Scope decision and split rationale" |
+| 5B | Cognitive Realm Territory State (`assets/state/cognitiveRealmState.js`) | COMPLETE | See Phase 5 section below and Implementation Log entry below |
 
 ---
 
@@ -362,9 +362,9 @@ Total suite: **38/38 passing** (29 pre-existing from Phases 2–3 + 9 new).
 
 ---
 
-## Phase 5 — Game State Containers (`assets/state/*.js`) (5A COMPLETE, 5B DEFERRED)
+## Phase 5 — Game State Containers (`assets/state/*.js`) (5A COMPLETE, 5B COMPLETE)
 
-**Status:** 5A COMPLETE, 5B DEFERRED (not started) (2026-07-13)
+**Status:** 5A COMPLETE, 5B COMPLETE (2026-07-13)
 **Implementation start date:** 2026-07-13
 **Migration type:** Behavior-preserving migration
 

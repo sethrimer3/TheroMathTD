@@ -12,6 +12,13 @@
 // as opaque `Record<string, unknown>` shapes (not modeled game-state schemas),
 // because designing a full save-state type system is explicitly out of scope
 // for this phase.
+//
+// Phase 5B exception: the cognitive-realm hooks below (`getCognitiveRealmStateSnapshot`/
+// `applyCognitiveRealmStateSnapshot`) ARE narrowed to `CognitiveRealmStateSnapshot`
+// because - unlike the spire-resource hooks, whose real save schema lives in the
+// still-unmigrated `assets/spireResourcePersistence.js` - `assets/state/cognitiveRealmState.ts`
+// directly owns and implements both the getter (`serializeCognitiveRealmState`) and the
+// setter (`deserializeCognitiveRealmState`), so narrowing here is honest, not a guess.
 export const GRAPHICS_MODE_STORAGE_KEY = 'glyph-defense-idle:graphics-mode';
 export const NOTATION_STORAGE_KEY = 'glyph-defense-idle:notation';
 // Storage key used to persist the glyph equation visibility toggle.
