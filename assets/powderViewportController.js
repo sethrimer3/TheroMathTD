@@ -1,14 +1,12 @@
 'use strict';
 
 /**
- * Encapsulates viewport transforms, wall spacing, and interaction wiring for the powder/fluid overlays.
+ * Encapsulates viewport transforms, wall spacing, and interaction wiring for the Well of Inspiration.
  * Dependencies are injected so the helpers remain decoupled from the main orchestrator and simulations.
  *
  * @param {Object} options - Factory options for dependency injection
  * @param {() => import('../scripts/features/towers/powderTower.js').PowderSimulation | null} options.getActiveSimulation
- * @param {() => import('../scripts/features/towers/fluidTower.js').FluidSimulation | null} options.getFluidSimulation
  * @param {() => any} options.getPowderElements - Getter for the powder DOM bindings
- * @param {() => any} options.getFluidElements - Getter for the fluid DOM bindings
  * @param {Object} options.powderState - Shared powder state bag that tracks transforms and wall targets
  * @param {Object} options.powderConfig - Powder configuration with wall gap parameters
  * @param {() => void} [options.schedulePowderBasinSave] - Optional persistence hook for state changes
@@ -16,9 +14,7 @@
  */
 export function createPowderViewportController({
   getActiveSimulation,
-  getFluidSimulation,
   getPowderElements,
-  getFluidElements,
   powderState,
   powderConfig,
   schedulePowderBasinSave,
@@ -27,7 +23,6 @@ export function createPowderViewportController({
   const ALEPH_UNDERSCORE_VARIANT_MIN_TIER = 4;
   const ALEPH_UNDERSCORE_VARIANT_MAX_TIER = 10;
   let powderWallMetrics = null;
-  let fluidWallMetrics = null;
 
   const callScheduleSave = () => {
     if (typeof schedulePowderBasinSave === 'function') {
@@ -89,26 +84,14 @@ export function createPowderViewportController({
   }
 
   function getElementsForSimulation(simulation) {
-    const fluidSimulation = typeof getFluidSimulation === 'function' ? getFluidSimulation() : null;
-    if (simulation && fluidSimulation && simulation === fluidSimulation) {
-      return typeof getFluidElements === 'function' ? getFluidElements() : null;
-    }
     return typeof getPowderElements === 'function' ? getPowderElements() : null;
   }
 
   function applyPowderViewportTransform(transform, simulation = (typeof getActiveSimulation === 'function' ? getActiveSimulation() : null)) {
     const elements = getElementsForSimulation(simulation);
     const viewport = elements?.viewport;
-    const fluidSimulation = typeof getFluidSimulation === 'function' ? getFluidSimulation() : null;
-    const isFluid = Boolean(simulation && fluidSimulation && simulation === fluidSimulation);
-    const transformTarget = isFluid ? elements?.terrariumLayer || viewport : viewport;
+    const transformTarget = viewport;
     if (!transformTarget) {
-      if (viewport) {
-        viewport.style.transform = '';
-      }
-      if (isFluid && elements?.terrariumLayer) {
-        elements.terrariumLayer.style.transform = '';
-      }
       return;
     }
     if (!transform) {
@@ -148,10 +131,7 @@ export function createPowderViewportController({
 
   function syncPowderWallVisuals(metrics) {
     const activeSimulation = typeof getActiveSimulation === 'function' ? getActiveSimulation() : null;
-    const fluidSimulation = typeof getFluidSimulation === 'function' ? getFluidSimulation() : null;
-    const isFluidActive = activeSimulation && fluidSimulation && activeSimulation === fluidSimulation;
-    const cachedMetrics = isFluidActive ? fluidWallMetrics : powderWallMetrics;
-    const activeMetrics = metrics || cachedMetrics || (activeSimulation?.getWallMetrics?.() ?? null);
+    const activeMetrics = metrics || powderWallMetrics || (activeSimulation?.getWallMetrics?.() ?? null);
     if (!activeMetrics) {
       return;
     }
@@ -161,10 +141,7 @@ export function createPowderViewportController({
     const rightWidth = Number.isFinite(rightPixels) ? Math.max(0, rightPixels) : Math.max(0, rightCells * cellSize);
     const gapWidth = Number.isFinite(gapPixels) ? Math.max(0, gapPixels) : Math.max(0, gapCells * cellSize);
 
-    const powderDom = typeof getPowderElements === 'function' ? getPowderElements() : null;
-    const fluidDom = typeof getFluidElements === 'function' ? getFluidElements() : null;
     const activeElements = getElementsForSimulation(activeSimulation);
-    const inactiveElements = activeElements === powderDom ? fluidDom : powderDom;
 
     const resolveContentWidth = (element, targetWidth) => {
       if (!element || !Number.isFinite(targetWidth)) {
@@ -189,25 +166,21 @@ export function createPowderViewportController({
       const contentWidth = resolveContentWidth(activeElements.leftWall, leftWidth);
       activeElements.leftWall.style.width = `${contentWidth.toFixed(1)}px`;
       activeElements.leftWall.style.setProperty('--powder-wall-visual-width', `${leftWidth.toFixed(1)}px`);
-      if (!isFluidActive) {
-        const tier = getNormalizedAlephWallTier();
-        activeElements.leftWall.style.setProperty(
-          '--powder-wall-left-image',
-          `url('${resolveAlephWallSpritePath('left', tier)}')`,
-        );
-      }
+      const tier = getNormalizedAlephWallTier();
+      activeElements.leftWall.style.setProperty(
+        '--powder-wall-left-image',
+        `url('${resolveAlephWallSpritePath('left', tier)}')`,
+      );
     }
     if (activeElements?.rightWall) {
       const contentWidth = resolveContentWidth(activeElements.rightWall, rightWidth);
       activeElements.rightWall.style.width = `${contentWidth.toFixed(1)}px`;
       activeElements.rightWall.style.setProperty('--powder-wall-visual-width', `${rightWidth.toFixed(1)}px`);
-      if (!isFluidActive) {
-        const tier = getNormalizedAlephWallTier();
-        activeElements.rightWall.style.setProperty(
-          '--powder-wall-right-image',
-          `url('${resolveAlephWallSpritePath('right', tier)}')`,
-        );
-      }
+      const tier = getNormalizedAlephWallTier();
+      activeElements.rightWall.style.setProperty(
+        '--powder-wall-right-image',
+        `url('${resolveAlephWallSpritePath('right', tier)}')`,
+      );
     }
     if (activeElements?.leftHitbox) {
       activeElements.leftHitbox.style.width = `${leftWidth.toFixed(1)}px`;
@@ -219,35 +192,13 @@ export function createPowderViewportController({
       activeElements.basin.style.setProperty('--powder-gap-width', `${gapWidth.toFixed(1)}px`);
     }
 
-    if (inactiveElements?.leftWall) {
-      inactiveElements.leftWall.style.removeProperty('width');
-      inactiveElements.leftWall.style.removeProperty('--powder-wall-visual-width');
-      inactiveElements.leftWall.style.removeProperty('--powder-wall-left-image');
-    }
-    if (inactiveElements?.rightWall) {
-      inactiveElements.rightWall.style.removeProperty('width');
-      inactiveElements.rightWall.style.removeProperty('--powder-wall-visual-width');
-      inactiveElements.rightWall.style.removeProperty('--powder-wall-right-image');
-    }
-    if (inactiveElements?.leftHitbox) {
-      inactiveElements.leftHitbox.style.removeProperty('width');
-    }
-    if (inactiveElements?.rightHitbox) {
-      inactiveElements.rightHitbox.style.removeProperty('width');
-    }
   }
 
   function updatePowderHitboxVisibility() {
     const activeSimulation = typeof getActiveSimulation === 'function' ? getActiveSimulation() : null;
-    const fluidSimulation = typeof getFluidSimulation === 'function' ? getFluidSimulation() : null;
-    const isFluidActive = activeSimulation && fluidSimulation && activeSimulation === fluidSimulation;
-    const cachedMetrics = isFluidActive ? fluidWallMetrics : powderWallMetrics;
-    const metrics = cachedMetrics || (activeSimulation?.getWallMetrics?.() ?? null);
+    const metrics = powderWallMetrics || (activeSimulation?.getWallMetrics?.() ?? null);
     const showHitboxes = getDeveloperModeActive() && metrics;
-    const powderDom = typeof getPowderElements === 'function' ? getPowderElements() : null;
-    const fluidDom = typeof getFluidElements === 'function' ? getFluidElements() : null;
     const activeElements = getElementsForSimulation(activeSimulation);
-    const inactiveElements = activeElements === powderDom ? fluidDom : powderDom;
 
     if (activeElements?.leftHitbox) {
       activeElements.leftHitbox.classList.toggle(
@@ -261,29 +212,13 @@ export function createPowderViewportController({
         Boolean(showHitboxes && metrics?.rightCells > 0),
       );
     }
-    if (inactiveElements?.leftHitbox) {
-      inactiveElements.leftHitbox.classList.remove('powder-wall-hitbox--visible');
-    }
-    if (inactiveElements?.rightHitbox) {
-      inactiveElements.rightHitbox.classList.remove('powder-wall-hitbox--visible');
-    }
   }
 
-  function handlePowderWallMetricsChange(metrics, source) {
+  function handlePowderWallMetricsChange(metrics) {
     const activeSimulation = typeof getActiveSimulation === 'function' ? getActiveSimulation() : null;
-    const fluidSimulation = typeof getFluidSimulation === 'function' ? getFluidSimulation() : null;
-    const isFluidActive = Boolean(activeSimulation && fluidSimulation && activeSimulation === fluidSimulation);
-    const origin = source || (isFluidActive ? 'fluid' : 'sand');
-    if (origin === 'fluid') {
-      fluidWallMetrics = metrics || null;
-    } else {
-      powderWallMetrics = metrics || null;
-    }
-    const shouldRefreshDecorations = (origin === 'fluid' && isFluidActive) || (origin !== 'fluid' && !isFluidActive);
-    if (shouldRefreshDecorations) {
-      syncPowderWallVisuals(metrics || undefined);
-      updatePowderHitboxVisibility();
-    }
+    powderWallMetrics = metrics || null;
+    syncPowderWallVisuals(metrics || activeSimulation?.getWallMetrics?.());
+    updatePowderHitboxVisibility();
     callScheduleSave();
   }
 
@@ -299,8 +234,7 @@ export function createPowderViewportController({
       return;
     }
     simulation.setWallGapTarget(target);
-    const isFluid = simulation === (getFluidSimulation?.() ?? null);
-    handlePowderWallMetricsChange(simulation.getWallMetrics(), isFluid ? 'fluid' : 'sand');
+    handlePowderWallMetricsChange(simulation.getWallMetrics());
   }
 
   function initializePowderViewInteraction() {
@@ -309,10 +243,8 @@ export function createPowderViewportController({
       return;
     }
 
-    const fluidSimulation = typeof getFluidSimulation === 'function' ? getFluidSimulation() : null;
     const powderElements = typeof getPowderElements === 'function' ? getPowderElements() : null;
-    const fluidElements = typeof getFluidElements === 'function' ? getFluidElements() : null;
-    const viewport = simulation === fluidSimulation ? fluidElements?.viewport : powderElements?.viewport;
+    const viewport = powderElements?.viewport;
     if (!viewport) {
       return;
     }
@@ -347,51 +279,9 @@ export function createPowderViewportController({
       return scale;
     };
 
-    // Check if the current simulation is the fluid (Bet) simulation.
-    const isFluidSimulation = () => {
-      const activeSimulation = getSimulation();
-      const fluidSim = typeof getFluidSimulation === 'function' ? getFluidSimulation() : null;
-      return Boolean(activeSimulation === fluidSim);
-    };
-
-    // Check if a button menu is currently open in the Bet terrarium.
-    const isButtonMenuOpen = () => {
-      return isFluidSimulation() && Boolean(powderState.betTerrarium?.buttonMenuOpen);
-    };
-
-    // Allow camera gestures only when camera mode is explicitly enabled for the current spire.
+    // Allow camera gestures only when camera mode is explicitly enabled for the Well.
     const isCameraModeActive = () => {
-      if (!isFluidSimulation()) {
-        return Boolean(powderState?.alephCameraMode);
-      }
-      return Boolean(powderState?.betTerrarium?.cameraMode);
-    };
-
-    // Close any open button menus when user initiates camera gestures.
-    const closeButtonMenus = () => {
-      if (isFluidSimulation() && powderState.betTerrarium?.buttonMenuOpen) {
-        powderState.betTerrarium.buttonMenuOpen = false;
-        // Trigger DOM update by dispatching a custom event
-        if (typeof window !== 'undefined' && typeof window.CustomEvent === 'function') {
-          const event = new CustomEvent('betTerrariumMenuClose');
-          window.dispatchEvent(event);
-        }
-      }
-    };
-
-    // Check if the event target is a button element or within a button menu.
-    const isButtonOrMenu = (target) => {
-      if (!target || !(target instanceof Element)) {
-        return false;
-      }
-      return Boolean(
-        target.closest('.fluid-tree-level-button') ||
-        target.closest('.fluid-tree-store-button') ||
-        target.closest('.fluid-tree-level-toggle') ||
-        target.closest('.fluid-tree-store-toggle') ||
-        target.closest('.fluid-tree-store-panel') ||
-        target.closest('.fluid-tree-level__upgrade')
-      );
+      return Boolean(powderState?.alephCameraMode);
     };
 
     // Clear pinch bookkeeping when touches end or become invalid.
@@ -477,13 +367,6 @@ export function createPowderViewportController({
       if (!isCameraModeActive()) {
         return;
       }
-      // Skip camera pan initiation if clicking on buttons or a button menu is open
-      if (isButtonOrMenu(event.target)) {
-        return;
-      }
-      if (isButtonMenuOpen()) {
-        return;
-      }
       if (event.pointerType === 'touch') {
         interaction.activePointers.set(event.pointerId, { clientX: event.clientX, clientY: event.clientY });
         if (interaction.activePointers.size >= 2) {
@@ -519,8 +402,6 @@ export function createPowderViewportController({
           if (typeof event.preventDefault === 'function') {
             event.preventDefault();
           }
-          // Close menus when pinch zoom gesture is detected
-          closeButtonMenus();
           performPinchZoom();
           return;
         }
@@ -538,13 +419,6 @@ export function createPowderViewportController({
 
       const dx = event.clientX - interaction.lastPoint.x;
       const dy = event.clientY - interaction.lastPoint.y;
-      
-      // Close menus if user starts dragging (pan gesture detected)
-      const movement = Math.hypot(dx, dy);
-      const MAX_CLICK_MOVEMENT = 5;
-      if (movement > MAX_CLICK_MOVEMENT) {
-        closeButtonMenus();
-      }
       
       interaction.lastPoint = { x: event.clientX, y: event.clientY };
 
@@ -588,8 +462,6 @@ export function createPowderViewportController({
       if (!delta) {
         return;
       }
-      // Close menus when user zooms
-      closeButtonMenus();
       const factor = delta > 0 ? 0.9 : 1.1;
       const anchorPoint = { clientX: event.clientX, clientY: event.clientY };
       const changed = activeSimulation.applyZoomFactor(factor, anchorPoint);

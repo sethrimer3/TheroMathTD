@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * Factory that manages the Aleph Spire tier-transition animation sequence:
+ * Factory that manages the Well of Inspiration tier-transition animation sequence:
  * wall-exit → golden glyph collection → wall-enter, plus tier palette
  * updates, drain-rate scaling, and visual glyph-count freezing.
  * Extracted from main.js to reduce its line count and isolate the tier

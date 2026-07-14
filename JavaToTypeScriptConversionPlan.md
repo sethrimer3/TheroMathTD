@@ -86,6 +86,12 @@ Before reporting completion, update this document in the same branch or commit s
 
 ## Current Repository Baseline
 
+### 2026-07-13 product-retirement inventory note
+
+The obsolete-Spire retirement is an intentional product change, not a general migration phase. It removed active Bet, Lamed, Tsadi, Shin, and Kuf modules and added one typed compatibility boundary, `assets/saveCompatibility.ts`. The Aleph experience remains active under the user-facing name **Well of Inspiration**; compatibility-sensitive `powder`/`aleph` identifiers remain unchanged.
+
+Using the established count method, the current tree contains **48 authored `.ts` modules** and **265 authored `.js` modules without a same-path `.ts` sibling** (313 total). Of those 265 JavaScript modules, **18 are explicitly disabled legacy Achievements Terrarium/Bet Terrarium files** documented at `assets/legacy/achievementsTerrarium/README.md`; they are preserved for possible restoration and are not part of the active migration backlog. The active remaining JavaScript backlog is therefore **247 modules**. The Collective Unconscious/Cognitive Realm is unchanged by this feature task.
+
 **Plan created:** 2026-07-13  
 **Repository:** `sethrimer3/TheroMathTD`  
 **Active game referred to as “Thero”:** this repository, not `sethrimer3/Thero_Idle_TD`.

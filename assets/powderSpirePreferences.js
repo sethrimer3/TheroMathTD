@@ -1,5 +1,5 @@
 /**
- * Manage Aleph spire powder visual preferences.
+ * Manage Well of Inspiration powder visual preferences.
  * Surfaces a toggle for glowing motes and their falling trails, persisting the
  * choice and applying it to the active powder simulation in real time.
  */
@@ -28,10 +28,10 @@ let starsToggle = null;
 let starsStateLabel = null;
 let trailsToggle = null;
 let trailsStateLabel = null;
-// Track the Aleph spire camera controls toggle elements.
+// Track the Well of Inspiration camera controls toggle elements.
 let cameraToggle = null;
 let cameraStateLabel = null;
-// Render size controls for the Aleph spire layout.
+// Render size controls for the Well of Inspiration layout.
 let renderOverlapSelect = null;
 let _renderOverlapRow = null;
 let developerOnlyRenderSizeOptions = [];
@@ -39,7 +39,7 @@ let developerOnlyRenderSizeOptions = [];
 let cameraModeHandler = null;
 
 /**
- * Persist the current Aleph spire visual settings into storage.
+ * Persist the current Well of Inspiration visual settings into storage.
  */
 function persistSettings() {
   writeStorage(POWDER_VISUAL_SETTINGS_STORAGE_KEY, JSON.stringify(settings));
@@ -230,7 +230,7 @@ export function setPowderCameraModeHandler(handler) {
 }
 
 /**
- * Bind Aleph spire option controls and wire event listeners.
+ * Bind Well of Inspiration option controls and wire event listeners.
  */
 export function bindPowderSpireOptions() {
   glowToggle = document.getElementById('powder-mote-glow-toggle');

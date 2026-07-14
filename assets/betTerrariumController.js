@@ -1,6 +1,10 @@
 'use strict';
 
 /**
+ * DISABLED LEGACY: preserved for possible Achievements Terrarium restoration.
+ * This module must not be imported by the active application entry graph.
+ * See assets/legacy/achievementsTerrarium/README.md.
+ *
  * Factory that owns all Bet Spire Terrarium visual layers: slimes, birds,
  * grass, water, crystal, trees, sky cycle, celestial bodies, shrooms, and the
  * items dropdown.  Extracted from main.js to reduce its line count and isolate

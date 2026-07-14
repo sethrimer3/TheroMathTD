@@ -13,7 +13,7 @@
     "electron": "electron .",
     "lint": "eslint .",
     "test": "node scripts/smoke-test.cjs",
-    "test:unit": "node scripts/unit-test-core.cjs"
+    "test:unit": "node scripts/unit-test-core.cjs && node scripts/test-retired-spires.cjs"
   },
   "repository": {
     "type": "git",
