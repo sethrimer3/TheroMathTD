@@ -4,9 +4,8 @@ const tabHotkeys = new Map([
     ['1', 'tower'],
     ['2', 'towers'],
     ['3', 'powder'],
-    ['4', 'fluid'],
-    ['5', 'achievements'],
-    ['6', 'options'],
+    ['4', 'achievements'],
+    ['5', 'options'],
 ]);
 let tabs = [];
 let panels = [];

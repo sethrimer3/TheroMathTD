@@ -8,12 +8,7 @@
 
 // Narrative targets for each spire tab so the shared story overlay can surface their briefings.
 export const SPIRE_STORY_TARGETS = {
-  powder: { id: 'spire-powder', title: 'Aleph Spire' },
-  fluid: { id: 'spire-fluid', title: 'Bet Spire' },
-  lamed: { id: 'spire-lamed', title: 'Lamed Spire' },
-  tsadi: { id: 'spire-tsadi', title: 'Tsadi Spire' },
-  shin: { id: 'spire-shin', title: 'Shin Spire' },
-  kuf: { id: 'spire-kuf', title: 'Kuf Spire' },
+  powder: { id: 'spire-powder', title: 'Well of Inspiration' },
   achievements: { id: 'achievements', title: 'Achievements' },
 };
 
@@ -39,17 +34,16 @@ export function createSpireStoryManager({
 }) {
   /**
    * Retrieve or initialize the persistent story branch for a spire so unlock flow and autosave share state.
-   * @param {string} spireId - Identifier for the spire tab (powder, fluid, lamed, tsadi, shin, kuf).
+   * @param {string} spireId - Identifier for the surviving Well or achievements tab.
    * @returns {Object|null} Reference to the spire story state branch.
    */
   function getSpireStoryBranch(spireId) {
     if (!spireId) {
       return null;
     }
-    if (!Object.prototype.hasOwnProperty.call(spireResourceState, spireId)) {
-      spireResourceState[spireId] = { storySeen: false };
-    }
-    const branch = spireResourceState[spireId] || {};
+    const stateKey = spireId === 'powder' ? 'wellOfInspiration' : spireId;
+    if (!Object.prototype.hasOwnProperty.call(spireResourceState, stateKey)) return null;
+    const branch = spireResourceState[stateKey] || {};
     if (typeof branch.storySeen !== 'boolean') {
       branch.storySeen = false;
     }

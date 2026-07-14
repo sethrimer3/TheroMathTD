@@ -15,21 +15,6 @@ const offlineOverlayElements = {
   alephRow: null,
   alephMultiplier: null,
   alephTotal: null,
-  betRow: null,
-  betMultiplier: null,
-  betTotal: null,
-  lamedRow: null,
-  lamedMultiplier: null,
-  lamedTotal: null,
-  tsadiRow: null,
-  tsadiMultiplier: null,
-  tsadiTotal: null,
-  shinRow: null,
-  shinMultiplier: null,
-  shinTotal: null,
-  kufRow: null,
-  kufMultiplier: null,
-  kufTotal: null,
   prompt: null,
 };
 
@@ -159,27 +144,8 @@ async function showOfflineOverlay(summary = {}) {
 
   const {
     title,
-    alephRow: _alephRow,
     alephMultiplier,
     alephTotal,
-    betRow,
-    betMultiplier,
-    betTotal,
-    lamedRow,
-    lamedMultiplier,
-    lamedTotal,
-    tsadiRow,
-    tsadiMultiplier,
-    tsadiTotal,
-    waalsRow: _waalsRow,
-    waalsMultiplier: _waalsMultiplier,
-    waalsTotal: _waalsTotal,
-    shinRow,
-    shinMultiplier,
-    shinTotal,
-    kufRow,
-    kufMultiplier,
-    kufTotal,
   } = offlineOverlayElements;
 
   const minutesValue = Math.max(0, Number(summary.minutes) || 0);
@@ -190,63 +156,13 @@ async function showOfflineOverlay(summary = {}) {
     title.textContent = `Asleep ${dependencies.formatWholeNumber(minutesValue)} ${minutesText}…`;
   }
   const alephSummary = summary.aleph || {};
-  const betSummary = summary.bet || {};
-  const lamedSummary = summary.lamed || {};
-  const tsadiSummary = summary.tsadi || {};
-  const shinSummary = summary.shin || {};
-  const kufSummary = summary.kuf || {};
 
   const alephMultiplierValue = Math.max(0, Number(alephSummary.multiplier) || 0);
   const alephTotalValue = Math.max(0, Number(alephSummary.total) || 0);
-  const betUnlocked = Boolean(betSummary.unlocked);
-  const betMultiplierValue = Math.max(0, Number(betSummary.multiplier) || 0);
-  const betTotalValue = Math.max(0, Number(betSummary.total) || 0);
-  const lamedUnlocked = Boolean(lamedSummary.unlocked);
-  const lamedMultiplierValue = Math.max(0, Number(lamedSummary.multiplier) || 0);
-  const lamedTotalValue = Math.max(0, Number(lamedSummary.total) || 0);
-  const tsadiUnlocked = Boolean(tsadiSummary.unlocked);
-  const tsadiMultiplierValue = Math.max(0, Number(tsadiSummary.multiplier) || 0);
-  const tsadiTotalValue = Math.max(0, Number(tsadiSummary.total) || 0);
-  const shinUnlocked = Boolean(shinSummary.unlocked);
-  const shinMultiplierValue = Math.max(0, Number(shinSummary.multiplier) || 0);
-  const shinTotalValue = Math.max(0, Number(shinSummary.total) || 0);
-  const kufUnlocked = Boolean(kufSummary.unlocked);
-  const kufMultiplierValue = Math.max(0, Number(kufSummary.multiplier) || 0);
-  const kufTotalValue = Math.max(0, Number(kufSummary.total) || 0);
-
-  // Hide locked rows entirely so players only see idle equations for unlocked spires.
-  const syncOfflineRowVisibility = (rowElement, unlocked) => {
-    if (!rowElement) {
-      return;
-    }
-    rowElement.classList.toggle('offline-overlay__equation-row--inactive', !unlocked);
-    rowElement.setAttribute('aria-hidden', unlocked ? 'false' : 'true');
-    if (unlocked) {
-      rowElement.removeAttribute('hidden');
-    } else {
-      rowElement.setAttribute('hidden', '');
-    }
-  };
-
-  syncOfflineRowVisibility(betRow, betUnlocked);
-  syncOfflineRowVisibility(lamedRow, lamedUnlocked);
-  syncOfflineRowVisibility(tsadiRow, tsadiUnlocked);
-  syncOfflineRowVisibility(shinRow, shinUnlocked);
-  syncOfflineRowVisibility(kufRow, kufUnlocked);
 
   [
     alephMultiplier,
     alephTotal,
-    betMultiplier,
-    betTotal,
-    lamedMultiplier,
-    lamedTotal,
-    tsadiMultiplier,
-    tsadiTotal,
-    shinMultiplier,
-    shinTotal,
-    kufMultiplier,
-    kufTotal,
   ].forEach((element) => {
     if (element) {
       element.textContent = '0';
@@ -255,40 +171,10 @@ async function showOfflineOverlay(summary = {}) {
 
   await Promise.all([
     animateOfflineNumber(alephMultiplier, alephMultiplierValue, { format: dependencies.formatGameNumber }),
-    animateOfflineNumber(betMultiplier, betUnlocked ? betMultiplierValue : 0, {
-      format: dependencies.formatGameNumber,
-    }),
-    animateOfflineNumber(lamedMultiplier, lamedUnlocked ? lamedMultiplierValue : 0, {
-      format: dependencies.formatGameNumber,
-    }),
-    animateOfflineNumber(tsadiMultiplier, tsadiUnlocked ? tsadiMultiplierValue : 0, {
-      format: dependencies.formatGameNumber,
-    }),
-    animateOfflineNumber(shinMultiplier, shinUnlocked ? shinMultiplierValue : 0, {
-      format: dependencies.formatGameNumber,
-    }),
-    animateOfflineNumber(kufMultiplier, kufUnlocked ? kufMultiplierValue : 0, {
-      format: dependencies.formatGameNumber,
-    }),
   ]);
 
   await Promise.all([
     animateOfflineNumber(alephTotal, alephTotalValue, {
-      format: dependencies.formatGameNumber,
-    }),
-    animateOfflineNumber(betTotal, betUnlocked ? betTotalValue : 0, {
-      format: dependencies.formatGameNumber,
-    }),
-    animateOfflineNumber(lamedTotal, lamedUnlocked ? lamedTotalValue : 0, {
-      format: dependencies.formatGameNumber,
-    }),
-    animateOfflineNumber(tsadiTotal, tsadiUnlocked ? tsadiTotalValue : 0, {
-      format: dependencies.formatGameNumber,
-    }),
-    animateOfflineNumber(shinTotal, shinUnlocked ? shinTotalValue : 0, {
-      format: dependencies.formatGameNumber,
-    }),
-    animateOfflineNumber(kufTotal, kufUnlocked ? kufTotalValue : 0, {
       format: dependencies.formatGameNumber,
     }),
   ]);
@@ -339,21 +225,6 @@ export function bindOfflineOverlayElements() {
   offlineOverlayElements.alephRow = document.getElementById('offline-aleph-row');
   offlineOverlayElements.alephMultiplier = document.getElementById('offline-aleph-multiplier');
   offlineOverlayElements.alephTotal = document.getElementById('offline-aleph-total');
-  offlineOverlayElements.betRow = document.getElementById('offline-bet-row');
-  offlineOverlayElements.betMultiplier = document.getElementById('offline-bet-multiplier');
-  offlineOverlayElements.betTotal = document.getElementById('offline-bet-total');
-  offlineOverlayElements.lamedRow = document.getElementById('offline-lamed-row');
-  offlineOverlayElements.lamedMultiplier = document.getElementById('offline-lamed-multiplier');
-  offlineOverlayElements.lamedTotal = document.getElementById('offline-lamed-total');
-  offlineOverlayElements.tsadiRow = document.getElementById('offline-tsadi-row');
-  offlineOverlayElements.tsadiMultiplier = document.getElementById('offline-tsadi-multiplier');
-  offlineOverlayElements.tsadiTotal = document.getElementById('offline-tsadi-total');
-  offlineOverlayElements.shinRow = document.getElementById('offline-shin-row');
-  offlineOverlayElements.shinMultiplier = document.getElementById('offline-shin-multiplier');
-  offlineOverlayElements.shinTotal = document.getElementById('offline-shin-total');
-  offlineOverlayElements.kufRow = document.getElementById('offline-kuf-row');
-  offlineOverlayElements.kufMultiplier = document.getElementById('offline-kuf-multiplier');
-  offlineOverlayElements.kufTotal = document.getElementById('offline-kuf-total');
   offlineOverlayElements.prompt = document.getElementById('offline-prompt');
 
   // Allow players to bypass the offline tally as soon as they interact with the overlay.

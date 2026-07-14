@@ -25,12 +25,7 @@ const ACHIEVEMENT_CATEGORIES = [
   { id: 'campaign-story', name: 'Campaign: Story', icon: 'assets/sprites/menu/campaignButton_story.webp', iconType: 'image', type: 'campaign', campaign: 'Story' },
   { id: 'campaign-challenges', name: 'Campaign: Challenges', icon: 'assets/sprites/menu/campaignButton_trials.webp', iconType: 'image', type: 'campaign', campaign: 'Challenges' },
   { id: 'campaign-ladder', name: 'Campaign: Ladder', icon: 'assets/sprites/menu/campaignButton_ladder.webp', iconType: 'image', type: 'campaign', campaign: 'Ladder' },
-  { id: 'spire-powder', name: 'Aleph Spire', icon: 'ℵ', type: 'spire', spireId: 'powder' },
-  { id: 'spire-fluid', name: 'Bet Spire', icon: 'בּ', type: 'spire', spireId: 'fluid' },
-  { id: 'spire-lamed', name: 'Lamed Spire', icon: 'ל', type: 'spire', spireId: 'lamed' },
-  { id: 'spire-tsadi', name: 'Tsadi Spire', icon: 'צ', type: 'spire', spireId: 'tsadi' },
-  { id: 'spire-shin', name: 'Shin Spire', icon: 'ש', type: 'spire', spireId: 'shin' },
-  { id: 'spire-kuf', name: 'Kuf Spire', icon: 'ק', type: 'spire', spireId: 'kuf' },
+  { id: 'spire-powder', name: 'Well of Inspiration', icon: 'ℵ', type: 'spire', spireId: 'powder' },
   { id: 'secret', name: 'Secret Achievements', icon: '?', type: 'secret' },
 ];
 
@@ -455,20 +450,10 @@ function createLevelAchievementDefinition(levelId, ordinal, metadataMap) {
 
 // Helper to get glyph count for a spire (handles powder/fluid differently)
 function getSpireGlyphCount(spireId) {
-  const { spireResourceState, powderState } = getContext();
+  const { powderState } = getContext();
   
-  // Powder and fluid use powderState tracking
   if (spireId === 'powder' && powderState) {
     return powderState.glyphsAwarded || 0;
-  }
-  if (spireId === 'fluid' && powderState) {
-    return powderState.fluidGlyphsAwarded || 0;
-  }
-  
-  // Advanced spires use their own stats tracking
-  if (spireResourceState && spireResourceState[spireId]) {
-    const stats = spireResourceState[spireId].stats || {};
-    return stats.totalGlyphs || 0;
   }
   
   return 0;
@@ -495,15 +480,6 @@ function generateSpireAchievements(spireId, spireName, spireIcon) {
     },
   };
   
-  // Add terrarium rewards based on spire type
-  if (spireId === 'powder') {
-    // First Aleph glyph adds the first slime
-    firstGlyphAchievement.terrariumReward = { type: 'creature', item: 'slime', count: 1 };
-  } else if (spireId === 'fluid') {
-    // First Bet glyph adds 2 more slimes
-    firstGlyphAchievement.terrariumReward = { type: 'creature', item: 'slime', count: 2 };
-  }
-  
   achievements.push(firstGlyphAchievement);
 
   // Achievement for earning 10 glyphs
@@ -522,15 +498,6 @@ function generateSpireAchievements(spireId, spireName, spireIcon) {
     },
   };
   
-  // Add terrarium rewards based on spire type
-  if (spireId === 'powder') {
-    // 10 Aleph glyphs adds a small tree
-    tenGlyphAchievement.terrariumReward = { type: 'item', item: 'betTreeSmall', count: 1 };
-  } else if (spireId === 'fluid') {
-    // 10 Bet glyphs adds a large tree
-    tenGlyphAchievement.terrariumReward = { type: 'item', item: 'betTreeLarge', count: 1 };
-  }
-  
   achievements.push(tenGlyphAchievement);
 
   // Achievement for earning 100 glyphs
@@ -548,21 +515,6 @@ function generateSpireAchievements(spireId, spireName, spireIcon) {
       return glyphs >= 100 ? 'Unlocked' : `Locked — ${glyphs}/100 glyphs earned.`;
     },
   };
-  
-  // Add terrarium rewards based on spire type
-  if (spireId === 'powder') {
-    // 100 Aleph glyphs adds yellow shrooms
-    hundredGlyphAchievement.terrariumReward = { type: 'item', item: 'phiShroomYellow', count: 1 };
-  } else if (spireId === 'fluid') {
-    // 100 Bet glyphs adds green shrooms
-    hundredGlyphAchievement.terrariumReward = { type: 'item', item: 'phiShroomGreen', count: 1 };
-  } else if (spireId === 'lamed') {
-    // 100 Lamed glyphs adds blue shrooms
-    hundredGlyphAchievement.terrariumReward = { type: 'item', item: 'phiShroomBlue', count: 1 };
-  } else if (spireId === 'tsadi' || spireId === 'shin' || spireId === 'kuf') {
-    // Advanced spires add psi shrooms
-    hundredGlyphAchievement.terrariumReward = { type: 'item', item: 'psiShroom', count: 1 };
-  }
   
   achievements.push(hundredGlyphAchievement);
 
@@ -636,7 +588,7 @@ function generateStoryAchievements() {
     rewardFlux: ACHIEVEMENT_REWARD_FLUX * 2,
     moteFallAdditive: 1,
     description:
-      'Complete the full prologue chapter to awaken as a scholar. The moon appears in your achievements terrarium. Unlocking grants +1 Aleph mote fall rate.',
+      'Complete the full prologue chapter to awaken as a scholar. Unlocking grants +1 mote fall rate in the Well of Inspiration.',
     condition: () => {
       return PROLOGUE_CHAPTER_LEVEL_IDS.every(levelId => isLevelCompleted(levelId));
     },
@@ -644,10 +596,6 @@ function generateStoryAchievements() {
       const completed = PROLOGUE_CHAPTER_LEVEL_IDS.filter(levelId => isLevelCompleted(levelId)).length;
       const total = PROLOGUE_CHAPTER_LEVEL_IDS.length;
       return completed >= total ? 'Unlocked — The moon illuminates your path.' : `Locked — Complete ${completed}/${total} prologue levels.`;
-    },
-    terrariumReward: {
-      type: 'celestialBody',
-      item: 'moon',
     },
   });
   
@@ -675,14 +623,7 @@ export async function generateLevelAchievements() {
     }
 
     // Generate spire glyph achievements
-    const spires = [
-      { id: 'powder', name: 'Aleph', icon: 'ℵ' },
-      { id: 'fluid', name: 'Bet', icon: 'בּ' },
-      { id: 'lamed', name: 'Lamed', icon: 'ל' },
-      { id: 'tsadi', name: 'Tsadi', icon: 'צ' },
-      { id: 'shin', name: 'Shin', icon: 'ש' },
-      { id: 'kuf', name: 'Kuf', icon: 'ק' },
-    ];
+    const spires = [{ id: 'powder', name: 'Well of Inspiration', icon: 'ℵ' }];
 
     spires.forEach(spire => {
       const spireAchievements = generateSpireAchievements(spire.id, spire.name, spire.icon);
@@ -1411,38 +1352,6 @@ function updateCategoryButtonCounts() {
   });
 }
 
-// Apply terrarium rewards when achievements are unlocked
-function applyTerrariumReward(reward) {
-  if (!reward || typeof reward !== 'object') {
-    return;
-  }
-
-  const { unlockTerrariumCelestialBody, addTerrariumCreature, addTerrariumItem } = getContext();
-
-  // Handle celestial body rewards (sun/moon)
-  if (reward.type === 'celestialBody' && reward.item) {
-    if (typeof unlockTerrariumCelestialBody === 'function') {
-      unlockTerrariumCelestialBody(reward.item);
-    }
-  }
-
-  // Handle creature rewards (slimes, birds)
-  if (reward.type === 'creature' && reward.item) {
-    if (typeof addTerrariumCreature === 'function') {
-      const count = reward.count || 1;
-      addTerrariumCreature(reward.item, count);
-    }
-  }
-
-  // Handle item rewards (trees, shrooms)
-  if (reward.type === 'item' && reward.item) {
-    if (typeof addTerrariumItem === 'function') {
-      const count = reward.count || 1;
-      addTerrariumItem(reward.item, count);
-    }
-  }
-}
-
 // Checks all achievements to unlock any that now satisfy their condition.
 export function evaluateAchievements() {
   achievementDefinitions.forEach((definition) => {
@@ -1505,29 +1414,9 @@ function claimAchievement(definition) {
   const rewards = [];
   rewards.push(formatAchievementMoteFallReward(definition));
   
-  // Add terrarium reward descriptions
-  if (definition.terrariumReward) {
-    const reward = definition.terrariumReward;
-    if (reward.type === 'celestialBody' && reward.item) {
-      rewards.push(`${reward.item === 'moon' ? 'Moon' : 'Sun'} added to terrarium`);
-    } else if (reward.type === 'creature' && reward.item) {
-      const count = reward.count || 1;
-      const itemName = reward.item === 'slime' ? 'Slime' : reward.item;
-      rewards.push(`${count} ${itemName}${count > 1 ? 's' : ''} added to terrarium`);
-    } else if (reward.type === 'item' && reward.item) {
-      const count = reward.count || 1;
-      rewards.push(`${count} terrarium item${count > 1 ? 's' : ''} added`);
-    }
-  }
-  
   // Show golden text animation for rewards
   showGoldenTextRewards(rewards);
   
-  // Process terrarium rewards
-  if (definition.terrariumReward) {
-    applyTerrariumReward(definition.terrariumReward);
-  }
-
   const { recordPowderEvent, updateResourceRates, updatePowderLedger, updateStatusDisplays } = getContext();
 
   refreshAchievementPowderRate();

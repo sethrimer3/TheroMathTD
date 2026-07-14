@@ -4,23 +4,20 @@ import {
   colorToRgbaString,
   resolvePaletteColorStops,
 } from '../scripts/features/towers/powderTower.js';
-import { formatAlephLabel, formatBetLabel } from './formatHelpers.js';
+import { formatAlephLabel } from './formatHelpers.js';
 
 const GOLD_ALEPH_SPRITE_PATH = 'assets/sprites/spires/alephSpire/Gold_Aleph.webp';
 const GOLD_NUMBER_SPRITE_PATH_PREFIX = 'assets/sprites/goldNumbers/Gold_';
 
 /**
- * Factory that bundles DOM helpers used by the powder and Bet Spire Terrarium overlays.
+ * Factory that bundles DOM helpers used by the Well of Inspiration overlay.
  * @param {Object} options - Dependency injection container for DOM bindings and utilities.
  * @returns {Object} Powder overlay helper functions consumed by main.js.
  */
 export function createPowderUiDomHelpers(options = {}) {
   const {
     getPowderElements,
-    fluidElements,
-    achievementsTerrariumElements,
     powderGlyphColumns = [],
-    fluidGlyphColumns = [],
     moteGemState,
     formatWholeNumber,
     formatGameNumber: _formatGameNumber,
@@ -85,87 +82,6 @@ export function createPowderUiDomHelpers(options = {}) {
     glyphElement.appendChild(strip);
   }
 
-  // Collect references to the Bet Spire UI so powderDisplay can hydrate the fluid viewport.
-  function bindFluidControls() {
-    if (!fluidElements || typeof document === 'undefined') {
-      return;
-    }
-    fluidElements.panel = document.getElementById('panel-fluid');
-    fluidElements.host = document.getElementById('fluid-simulation-host');
-    fluidElements.simulationCard = document.getElementById('fluid-simulation-card');
-    fluidElements.canvas = document.getElementById('fluid-canvas');
-    fluidElements.basin = document.getElementById('fluid-basin');
-    fluidElements.terrariumLayer = document.getElementById('fluid-terrarium-layer');
-    fluidElements.terrariumStage = document.getElementById('fluid-terrarium-stage');
-    fluidElements.terrariumMedia = document.getElementById('fluid-terrarium-stage-media');
-    // Cache terrarium sky layers for the day/night cycle renderer.
-    fluidElements.terrariumSky = document.getElementById('fluid-terrarium-sky');
-    fluidElements.terrariumStarsNear = document.getElementById('fluid-terrarium-stars-near');
-    fluidElements.terrariumStarsFar = document.getElementById('fluid-terrarium-stars-far');
-    fluidElements.terrariumSun = document.getElementById('fluid-terrarium-sun');
-    fluidElements.terrariumMoon = document.getElementById('fluid-terrarium-moon');
-    fluidElements.viewport = document.getElementById('fluid-viewport');
-    fluidElements.leftWall = document.getElementById('fluid-wall-left');
-    fluidElements.rightWall = document.getElementById('fluid-wall-right');
-    fluidElements.leftHitbox = document.getElementById('fluid-wall-hitbox-left');
-    fluidElements.rightHitbox = document.getElementById('fluid-wall-hitbox-right');
-    fluidElements.reservoirValue = document.getElementById('fluid-reservoir');
-    fluidElements.dripRateValue = document.getElementById('fluid-drip-rate');
-    fluidElements.statusNote = document.getElementById('fluid-status-note');
-    fluidElements.cameraModeToggle = document.getElementById('fluid-camera-mode-toggle');
-    fluidElements.cameraModeStateLabel = document.getElementById('fluid-camera-mode-state');
-    fluidElements.cameraModeHint = document.getElementById('fluid-camera-mode-hint');
-    fluidElements.floatingIslandSprite = document.getElementById('fluid-terrarium-floating-island');
-    fluidElements.floatingIslandCollisionSprite =
-      document.getElementById('fluid-terrarium-floating-island-collision') ||
-      fluidElements.floatingIslandSprite;
-    fluidElements.terrainSprite = document.getElementById('fluid-terrarium-foreground');
-    // Reuse the high-fidelity terrain SVG for collision sampling so silhouettes match visuals.
-    fluidElements.terrainCollisionSprite =
-      document.getElementById('fluid-terrarium-foreground-collision') || fluidElements.terrainSprite;
-    // Terrarium items dropdown for managing and upgrading items.
-    fluidElements.terrariumItemsToggle = document.getElementById('fluid-terrarium-items-toggle');
-    fluidElements.terrariumItemsDropdown = document.getElementById('fluid-terrarium-items-dropdown');
-    fluidElements.terrariumItemsEmpty = document.getElementById('fluid-terrarium-items-empty');
-    fluidElements.terrariumItemsList = document.getElementById('fluid-terrarium-items-list');
-    fluidElements.wallGlyphColumns = Array.from(
-      document.querySelectorAll('[data-fluid-glyph-column]') || [],
-    );
-  }
-
-  // Collect references to the achievements terrarium UI elements.
-  function bindAchievementsTerrariumControls() {
-    if (!achievementsTerrariumElements || typeof document === 'undefined') {
-      return;
-    }
-    achievementsTerrariumElements.host = document.getElementById('achievements-terrarium-host');
-    achievementsTerrariumElements.card = document.getElementById('achievements-terrarium-card');
-    achievementsTerrariumElements.canvas = document.getElementById('achievements-terrarium-canvas');
-    achievementsTerrariumElements.basin = document.getElementById('achievements-terrarium-basin');
-    achievementsTerrariumElements.terrariumLayer = document.getElementById('achievements-terrarium-layer');
-    achievementsTerrariumElements.terrariumStage = document.getElementById('achievements-terrarium-stage');
-    achievementsTerrariumElements.terrariumMedia = document.getElementById('achievements-terrarium-stage-media');
-    achievementsTerrariumElements.terrariumSky = document.getElementById('achievements-terrarium-sky');
-    achievementsTerrariumElements.terrariumStarsNear = document.getElementById('achievements-terrarium-stars-near');
-    achievementsTerrariumElements.terrariumStarsFar = document.getElementById('achievements-terrarium-stars-far');
-    achievementsTerrariumElements.terrariumSun = document.getElementById('achievements-terrarium-sun');
-    achievementsTerrariumElements.terrariumMoon = document.getElementById('achievements-terrarium-moon');
-    achievementsTerrariumElements.floatingIslandSprite = document.getElementById('achievements-terrarium-floating-island');
-    achievementsTerrariumElements.floatingIslandCollisionSprite =
-      document.getElementById('achievements-terrarium-floating-island-collision') ||
-      achievementsTerrariumElements.floatingIslandSprite;
-    achievementsTerrariumElements.terrainSprite = document.getElementById('achievements-terrarium-foreground');
-    achievementsTerrariumElements.terrainCollisionSprite =
-      document.getElementById('achievements-terrarium-foreground-collision') ||
-      achievementsTerrariumElements.terrainSprite;
-    achievementsTerrariumElements.viewport = document.getElementById('achievements-terrarium-viewport');
-    achievementsTerrariumElements.terrariumItemsToggle = document.getElementById('achievements-terrarium-items-toggle');
-    achievementsTerrariumElements.terrariumItemsDropdown = document.getElementById('achievements-terrarium-items-dropdown');
-    achievementsTerrariumElements.terrariumItemsEmpty = document.getElementById('achievements-terrarium-items-empty');
-    achievementsTerrariumElements.terrariumItemsList = document.getElementById('achievements-terrarium-items-list');
-  }
-
-  // Align the Towers tab Mind Gate emblem with the active mote palette so the UI mirrors the canvas exponent glow.
   function applyMindGatePaletteToDom(palette) {
     if (typeof document === 'undefined') {
       return;
@@ -466,134 +382,10 @@ export function createPowderUiDomHelpers(options = {}) {
     };
   }
 
-  function removeFluidGlyph(column, index) {
-    const glyph = column.glyphs.get(index);
-    if (glyph) {
-      column.element.removeChild(glyph);
-      column.glyphs.delete(index);
-    }
-  }
-
-  // Bet spire glyphs render on the right wall and share spacing conventions with Aleph glyphs.
-  function updateFluidGlyphColumns(info = {}) {
-    const rows = Number.isFinite(info.rows) && info.rows > 0 ? info.rows : 1;
-    const cellSize = Number.isFinite(info.cellSize) && info.cellSize > 0 ? info.cellSize : POWDER_CELL_SIZE_PX;
-    const scrollOffset = Number.isFinite(info.scrollOffset) ? Math.max(0, info.scrollOffset) : 0;
-    const highestRawInput = Number.isFinite(info.highestNormalized) ? info.highestNormalized : 0;
-    const totalRawInput = Number.isFinite(info.totalNormalized) ? info.totalNormalized : highestRawInput;
-    const highestNormalized = Math.max(0, highestRawInput, totalRawInput);
-    const GLYPH_SPACING_NORMALIZED = 0.5;
-    const GLYPH_BASE_NORMALIZED = GLYPH_SPACING_NORMALIZED;
-    const safeRows = Math.max(1, rows);
-    const basinHeight = safeRows * cellSize;
-    const viewTopNormalized = scrollOffset / safeRows;
-    const viewBottomNormalized = (scrollOffset + safeRows) / safeRows;
-    const bufferGlyphs = 2;
-
-    const normalizeIndex = createGlyphIndexNormalizer(GLYPH_BASE_NORMALIZED, GLYPH_SPACING_NORMALIZED);
-
-    const rawMinIndex = normalizeIndex(viewTopNormalized);
-    const rawMaxIndex = Math.ceil(
-      (viewBottomNormalized - GLYPH_BASE_NORMALIZED) / GLYPH_SPACING_NORMALIZED,
-    );
-    const minIndex = Math.max(0, (Number.isFinite(rawMinIndex) ? rawMinIndex : 0) - bufferGlyphs);
-    const maxIndex = Math.max(
-      minIndex,
-      (Number.isFinite(rawMaxIndex) ? rawMaxIndex : 0) + bufferGlyphs,
-    );
-
-    const glyphHeightForIndex = (index) =>
-      GLYPH_BASE_NORMALIZED + Math.max(0, index) * GLYPH_SPACING_NORMALIZED;
-
-    if (fluidGlyphColumns.length) {
-      fluidGlyphColumns.forEach((column) => {
-        const isLeftWall = column.side === 'left';
-
-        // Only show Bet glyphs on the right wall; left wall should be empty.
-        if (isLeftWall) {
-          column.glyphs.forEach((_, index) => {
-            removeFluidGlyph(column, index);
-          });
-          return;
-        }
-
-        const indicesToDelete = [];
-        column.glyphs.forEach((_, index) => {
-          if (index < minIndex || index > maxIndex) {
-            indicesToDelete.push(index);
-          }
-        });
-
-        indicesToDelete.forEach((index) => {
-          removeFluidGlyph(column, index);
-        });
-
-        for (let index = minIndex; index <= maxIndex; index += 1) {
-          let glyph = column.glyphs.get(index);
-          if (!glyph) {
-            glyph = document.createElement('span');
-            glyph.className = 'powder-glyph';
-            glyph.dataset.betIndex = String(index);
-            column.element.appendChild(glyph);
-            column.glyphs.set(index, glyph);
-          }
-          glyph.textContent = formatBetLabel(index);
-          const glyphNormalized = glyphHeightForIndex(index);
-          const relativeRows = glyphNormalized * safeRows - scrollOffset;
-          const topPx = basinHeight - relativeRows * cellSize;
-          glyph.style.top = `${topPx.toFixed(1)}px`;
-          const achieved = highestNormalized >= glyphNormalized;
-          glyph.classList.toggle('powder-glyph--achieved', achieved);
-        }
-      });
-    }
-
-    const glyphsLit =
-      highestNormalized >= GLYPH_BASE_NORMALIZED
-        ? Math.max(
-            0,
-            Math.floor((highestNormalized - GLYPH_BASE_NORMALIZED) / GLYPH_SPACING_NORMALIZED) + 1,
-          )
-        : 0;
-    const achievedIndex = glyphsLit > 0 ? glyphsLit - 1 : 0;
-    const nextIndex = glyphsLit;
-    const previousThreshold =
-      glyphsLit > 0
-        ? GLYPH_BASE_NORMALIZED + (glyphsLit - 1) * GLYPH_SPACING_NORMALIZED
-        : 0;
-    const nextThreshold = GLYPH_BASE_NORMALIZED + glyphsLit * GLYPH_SPACING_NORMALIZED;
-    const span = Math.max(GLYPH_SPACING_NORMALIZED, nextThreshold - previousThreshold);
-    const progressFraction = clampUnitInterval((highestNormalized - previousThreshold) / span);
-    const remainingToNext = Math.max(0, nextThreshold - highestNormalized);
-
-    if (fluidGlyphColumns.length) {
-      fluidGlyphColumns.forEach((column) => {
-        column.glyphs.forEach((glyph, index) => {
-          const isTarget = index === nextIndex;
-          const glyphNormalized = glyphHeightForIndex(index);
-          glyph.classList.toggle('powder-glyph--target', isTarget);
-          glyph.classList.toggle('powder-glyph--achieved', highestNormalized >= glyphNormalized);
-        });
-      });
-    }
-
-    return {
-      achievedCount: achievedIndex,
-      nextIndex,
-      highestRaw: highestNormalized,
-      glyphsLit,
-      progressFraction,
-      remainingToNext,
-    };
-  }
-
   return {
-    bindFluidControls,
-    bindAchievementsTerrariumControls,
     applyMindGatePaletteToDom,
     updateMoteGemInventoryDisplay,
     updatePowderGlyphColumns,
-    updateFluidGlyphColumns,
   };
 }
 
