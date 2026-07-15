@@ -3,6 +3,11 @@ import type {
   AlephChainUpgradePlayfield,
   AlephChainUpgradeSnapshot,
 } from './alephUpgradeState.js';
+import type {
+  SerializedTowerUpgradeState,
+  TowerUpgradeStateSnapshot,
+  TowerUpgradeStateSnapshotInput,
+} from './towerBlueprintPresenter.js';
 
 /** Mutable story flag owned by the surviving Well and Achievements state branches. */
 export interface MutableStoryState {
@@ -88,25 +93,21 @@ export type SpireResourceStateSnapshotInput =
   | SpireResourceStateSnapshot
   | LegacySpireResourceStateSnapshot;
 
-/** Opaque base tower snapshot owned by `assets/towerBlueprintPresenter.js`. */
-export type ExternalTowerUpgradeSnapshot = Record<string, unknown>;
-
-/** Exact wrapper emitted after adding Aleph-chain state to the base tower snapshot. */
-export type TowerUpgradeSnapshotWithAleph = ExternalTowerUpgradeSnapshot & {
+/** Exact persistence-owned wrapper emitted after adding Aleph state to base tower entries. */
+export interface TowerUpgradeSnapshotWithAleph {
+  [towerId: string]: SerializedTowerUpgradeState | AlephChainUpgradeSnapshot;
   alephChainUpgrades: AlephChainUpgradeSnapshot;
-};
+}
 
 /** Autosave tower-upgrade input, including historical snapshots without Aleph data. */
-export type TowerUpgradeSnapshotInput = ExternalTowerUpgradeSnapshot & {
-  alephChainUpgrades?: unknown;
-};
+export type TowerUpgradeSnapshotInput = TowerUpgradeStateSnapshotInput;
 
 /** Dependencies injected by `assets/main.js` into the persistence adapter. */
 export interface SpireResourcePersistenceDependencies {
   spireResourceState: SpireResourcePersistenceState;
   moteGemState: MoteGemPersistenceState;
-  getTowerUpgradeStateSnapshot: () => ExternalTowerUpgradeSnapshot;
-  applyTowerUpgradeStateSnapshot: (snapshot: ExternalTowerUpgradeSnapshot) => void;
+  getTowerUpgradeStateSnapshot: () => TowerUpgradeStateSnapshot;
+  applyTowerUpgradeStateSnapshot: (snapshot: TowerUpgradeStateSnapshotInput) => void;
   getAlephChainUpgrades: () => AlephChainUpgradeSnapshot;
   applyAlephChainUpgradeSnapshot: (
     snapshot: unknown,

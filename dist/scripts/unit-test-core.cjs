@@ -100,6 +100,69 @@ function importAlephUpgradeStateModule() {
   return import(pathToFileURL(path.join(tmpDir, 'assets/alephUpgradeState.js')).href);
 }
 
+// Import the compiled tower presenter against a deterministic authored-blueprint
+// registry so tests exercise production logic without loading the full UI/codex graph.
+function importTowerBlueprintPresenterModule() {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thero-unit-test-tower-presenter-'));
+  fs.writeFileSync(path.join(tmpDir, 'package.json'), JSON.stringify({ type: 'module' }));
+  const presenterDest = path.join(tmpDir, 'assets', 'towerBlueprintPresenter.js');
+  const registryDest = path.join(tmpDir, 'assets', 'towerEquations', 'index.js');
+  fs.mkdirSync(path.dirname(presenterDest), { recursive: true });
+  fs.mkdirSync(path.dirname(registryDest), { recursive: true });
+  fs.copyFileSync(path.join(rootDir, 'assets', 'towerBlueprintPresenter.js'), presenterDest);
+  fs.writeFileSync(
+    registryDest,
+    `export const TOWER_EQUATION_BLUEPRINTS = {
+      authored: {
+        mathSymbol: 'A',
+        baseEquation: 'A = authored',
+        variables: [{ key: 'power', baseValue: 3, step: 2, upgradable: true, cost: 2 }],
+        computeResult(values) { return values.power; },
+      },
+      source: {
+        variables: [{ key: 'value', baseValue: 4, upgradable: false }],
+        computeResult(values) { return values.value; },
+      },
+      exponentReference: {
+        variables: [{ key: 'linked', reference: 'source', exponent: 2 }],
+        computeResult(values) { return values.linked; },
+      },
+      transformedReference: {
+        variables: [{ key: 'linked', reference: 'source', transform(value) { return value + 5; } }],
+        computeResult(values) { return values.linked; },
+      },
+      invalidSource: {
+        variables: [],
+        computeResult() { return Infinity; },
+      },
+      invalidReference: {
+        variables: [{ key: 'linked', reference: 'invalidSource' }],
+        computeResult(values) { return values.linked; },
+      },
+      recursiveA: {
+        variables: [{ key: 'linked', reference: 'recursiveB' }],
+        computeResult(values) { return values.linked; },
+      },
+      recursiveB: {
+        variables: [{ key: 'linked', reference: 'recursiveA' }],
+        computeResult(values) { return values.linked; },
+      },
+      aggregate: {
+        variables: [
+          { key: 'first', baseValue: 2, upgradable: false },
+          { key: 'second', baseValue: 3, upgradable: false },
+          { key: 'invalid', computeValue() { return NaN; }, baseValue: 0, upgradable: false },
+        ],
+      },
+      nonFiniteResult: {
+        variables: [],
+        computeResult() { return NaN; },
+      },
+    };`,
+  );
+  return import(pathToFileURL(presenterDest).href);
+}
+
 // Build a fresh dependency-injected persistence controller for each test so
 // mutable story flags, inventory maps, and invocation logs never leak between cases.
 function createSpirePersistenceHarness(spirePersistence, options = {}) {
@@ -1180,6 +1243,306 @@ async function run() {
     assert.equal(receivedStates[0], alephUpgrades.alephChainUpgradeState);
     assert.equal(receivedStates[1], alephUpgrades.alephChainUpgradeState);
     assert.notEqual(first, alephUpgrades.alephChainUpgradeState);
+  });
+
+  // --- assets/towerBlueprintPresenter.js ----------------------------------
+  const towerPresenter = await importTowerBlueprintPresenterModule();
+
+  function createTowerPresenterHarness(overrides = {}) {
+    const definitions = {
+      authored: { symbol: 'definition-symbol', damage: 99, rate: 99 },
+      fallback: { symbol: 'F', damage: 6, rate: 1.5 },
+      cached: { symbol: 'C', damage: 2, rate: 3 },
+      secondary: { symbol: 'S', damage: 4, rate: 2 },
+      ...overrides.definitions,
+    };
+    const dynamicContext = overrides.dynamicContext ?? { marker: 'dynamic-context' };
+    const controller = towerPresenter.createTowerBlueprintPresenter({
+      getTowerDefinition: (towerId) => definitions[towerId] || null,
+      getDynamicContext: overrides.getDynamicContext || (() => dynamicContext),
+      formatters: overrides.formatters,
+    });
+    return { controller, definitions, dynamicContext };
+  }
+
+  await test('tower presenter: missing resolver throws the exact construction error', () => {
+    assert.throws(
+      () => towerPresenter.createTowerBlueprintPresenter(),
+      { message: 'createTowerBlueprintPresenter requires getTowerDefinition.' },
+    );
+    assert.throws(
+      () => towerPresenter.createTowerBlueprintPresenter({ getTowerDefinition: true }),
+      { message: 'createTowerBlueprintPresenter requires getTowerDefinition.' },
+    );
+  });
+
+  await test('tower presenter: optional dependencies fall back and missing IDs stay null', () => {
+    const controller = towerPresenter.createTowerBlueprintPresenter({
+      getTowerDefinition: (towerId) =>
+        towerId === 'fallback' ? { symbol: 'F', damage: 4, rate: 2 } : null,
+      getDynamicContext: 'invalid',
+      formatters: { formatWholeNumber: false, formatDecimal: null },
+    });
+    assert.equal(controller.getTowerEquationBlueprint(null), null);
+    assert.equal(controller.getTowerEquationBlueprint('missing'), null);
+    const fallback = controller.getTowerEquationBlueprint('fallback');
+    assert.equal(fallback.variables[0].format(null), '0');
+    assert.equal(fallback.variables[1].format(undefined), '0');
+  });
+
+  await test('tower presenter: authored blueprints take precedence and retain stable identity', () => {
+    const { controller } = createTowerPresenterHarness();
+    const first = controller.getTowerEquationBlueprint('authored');
+    const second = controller.getTowerEquationBlueprint('authored');
+    assert.equal(first, second);
+    assert.equal(first.mathSymbol, 'A');
+    assert.equal(first.baseEquation, 'A = authored');
+  });
+
+  await test('tower presenter: fallback blueprints preserve exact fields, math, formatting, and cache identity', () => {
+    const formatCalls = [];
+    const { controller } = createTowerPresenterHarness({
+      formatters: {
+        formatWholeNumber: (value) => {
+          formatCalls.push(['whole', value]);
+          return `whole:${value}`;
+        },
+        formatDecimal: (value, digits) => {
+          formatCalls.push(['decimal', value, digits]);
+          return `decimal:${value}:${digits}`;
+        },
+      },
+    });
+    const first = controller.getTowerEquationBlueprint('fallback');
+    const second = controller.getTowerEquationBlueprint('fallback');
+    assert.equal(first, second);
+    assert.equal(first.mathSymbol, 'F');
+    assert.equal(first.baseEquation, '\\( F = X \\times Y \\)');
+    assert.deepEqual(first.variables.map(({ key, symbol, stat, upgradable }) => ({ key, symbol, stat, upgradable })), [
+      { key: 'damage', symbol: 'X', stat: 'damage', upgradable: false },
+      { key: 'rate', symbol: 'Y', stat: 'rate', upgradable: false },
+    ]);
+    assert.equal(first.variables[0].format(6), 'whole:6');
+    assert.equal(first.variables[1].format(1.5), 'decimal:1.5:2');
+    assert.deepEqual(formatCalls, [['whole', 6], ['decimal', 1.5, 2]]);
+    assert.equal(first.computeResult({ damage: 6, rate: 1.5 }), 9);
+    assert.equal(first.computeResult({ damage: Infinity, rate: 2 }), 0);
+    assert.equal(
+      first.formatGoldenEquation({ formatResult: () => '9', formatVariable: (key) => key }),
+      '\\( 9 = damage \\times rate \\)',
+    );
+  });
+
+  await test('tower presenter: state initialization is lazy, stable, and preserves legacy variables', () => {
+    const { controller } = createTowerPresenterHarness();
+    const empty = controller.ensureTowerUpgradeState('');
+    assert.deepEqual(empty, { variables: {} });
+    assert.deepEqual(controller.getTowerUpgradeStateSnapshot(), {});
+    const first = controller.ensureTowerUpgradeState('authored');
+    first.variables.legacy = { level: 7 };
+    const second = controller.ensureTowerUpgradeState('authored');
+    assert.equal(first, second);
+    assert.deepEqual(second.variables, { power: { level: 0 }, legacy: { level: 7 } });
+  });
+
+  await test('tower presenter: snapshots preserve inclusion, clamping, fractional, and omission behavior', () => {
+    const { controller } = createTowerPresenterHarness();
+    const authored = controller.ensureTowerUpgradeState('authored');
+    authored.variables.power.level = -2.5;
+    authored.variables.fractional = { level: 2.75 };
+    authored.variables.invalid = { level: NaN };
+    controller.ensureTowerUpgradeState('missing');
+    assert.deepEqual(controller.getTowerUpgradeStateSnapshot(), {
+      authored: {
+        variables: {
+          power: { level: 0 },
+          fractional: { level: 2.75 },
+        },
+      },
+    });
+  });
+
+  await test('tower presenter: invalid restore payloads and invalid tower branches are no-ops', () => {
+    const { controller } = createTowerPresenterHarness();
+    [null, undefined, false, 12, 'invalid'].forEach((snapshot) => {
+      controller.applyTowerUpgradeStateSnapshot(snapshot);
+    });
+    controller.applyTowerUpgradeStateSnapshot({ authored: null, fallback: { variables: 3 } });
+    assert.deepEqual(controller.getTowerUpgradeStateSnapshot(), {});
+  });
+
+  await test('tower presenter: restore merges positive levels and retains zero, negative, and existing state', () => {
+    const { controller } = createTowerPresenterHarness();
+    const state = controller.ensureTowerUpgradeState('authored');
+    state.variables.power.level = 4;
+    state.variables.retained = { level: 6 };
+    controller.applyTowerUpgradeStateSnapshot({
+      authored: {
+        variables: {
+          power: { level: 0 },
+          negative: { level: -3 },
+          fractional: { level: 2.5 },
+          unknown: { level: 8 },
+          invalid: { level: '9' },
+        },
+      },
+    });
+    assert.deepEqual(controller.getTowerUpgradeStateSnapshot().authored.variables, {
+      power: { level: 4 },
+      retained: { level: 6 },
+      fractional: { level: 2.5 },
+      unknown: { level: 8 },
+    });
+  });
+
+  await test('tower presenter: upgrade costs preserve function, numeric, invalid, floor, and minimum branches', () => {
+    const { controller } = createTowerPresenterHarness();
+    assert.equal(controller.calculateTowerVariableUpgradeCost(null, 4), 1);
+    assert.equal(controller.calculateTowerVariableUpgradeCost({ key: 'a', cost: () => 4.9 }, 0), 4);
+    assert.equal(controller.calculateTowerVariableUpgradeCost({ key: 'a', cost: () => 0.2 }, 3), 1);
+    assert.equal(controller.calculateTowerVariableUpgradeCost({ key: 'a', cost: () => NaN }, 2), 3);
+    assert.equal(controller.calculateTowerVariableUpgradeCost({ key: 'a', cost: 3.8 }, 0), 3);
+    assert.equal(controller.calculateTowerVariableUpgradeCost({ key: 'a', cost: -5 }, 2), 1);
+  });
+
+  await test('tower presenter: invested glyph totals preserve multi-variable and fractional iteration behavior', () => {
+    const { controller } = createTowerPresenterHarness();
+    const authored = controller.ensureTowerUpgradeState('authored');
+    authored.variables.power.level = 2.5;
+    const fallback = controller.ensureTowerUpgradeState('fallback');
+    fallback.variables.legacy = { level: 2 };
+    assert.equal(controller.calculateInvestedGlyphs(), 8);
+  });
+
+  await test('tower presenter: references preserve direct, transform, exponent, and normalized non-finite behavior', () => {
+    const { controller } = createTowerPresenterHarness();
+    assert.equal(controller.computeTowerVariableValue('exponentReference', 'linked'), 16);
+    assert.equal(controller.computeTowerVariableValue('transformedReference', 'linked'), 9);
+    assert.equal(controller.computeTowerVariableValue('invalidReference', 'linked'), 0);
+  });
+
+  await test('tower presenter: custom computeValue receives context and takes precedence over base branches', () => {
+    const { controller, dynamicContext } = createTowerPresenterHarness();
+    let received = null;
+    const blueprint = {
+      variables: [{
+        key: 'custom',
+        stat: 'damage',
+        baseValue: 2,
+        computeValue: (context) => {
+          received = context;
+          return 11;
+        },
+      }],
+    };
+    assert.equal(controller.computeTowerVariableValue('fallback', 'custom', blueprint), 11);
+    assert.equal(received.dynamicContext, dynamicContext);
+    assert.equal(received.definition.damage, 6);
+    assert.equal(received.blueprint, blueprint);
+  });
+
+  await test('tower presenter: thrown computeValue warns and falls through to base evaluation', () => {
+    const { controller } = createTowerPresenterHarness();
+    const warnings = [];
+    const originalWarn = console.warn;
+    console.warn = (...args) => warnings.push(args);
+    try {
+      const blueprint = {
+        variables: [{ key: 'custom', baseValue: 7, computeValue: () => { throw new Error('boom'); } }],
+      };
+      assert.equal(controller.computeTowerVariableValue('fallback', 'custom', blueprint), 7);
+    } finally {
+      console.warn = originalWarn;
+    }
+    assert.equal(warnings.length, 1);
+    assert.equal(warnings[0][0], 'Failed to evaluate custom tower variable computeValue');
+  });
+
+  await test('tower presenter: getBase, definition stat, static base, and invalid base precedence are preserved', () => {
+    const { controller } = createTowerPresenterHarness();
+    assert.equal(controller.computeTowerVariableValue('fallback', 'v', {
+      variables: [{ key: 'v', getBase: () => 7, stat: 'damage', baseValue: 2, upgradable: false }],
+    }), 7);
+    assert.equal(controller.computeTowerVariableValue('fallback', 'v', {
+      variables: [{ key: 'v', stat: 'damage', baseValue: 2, upgradable: false }],
+    }), 6);
+    assert.equal(controller.computeTowerVariableValue('fallback', 'v', {
+      variables: [{ key: 'v', baseValue: 2, upgradable: false }],
+    }), 2);
+    assert.equal(controller.computeTowerVariableValue('fallback', 'v', {
+      variables: [{ key: 'v', getBase: () => NaN, stat: 'damage', baseValue: 2, upgradable: false }],
+    }), 0);
+  });
+
+  await test('tower presenter: non-upgradable, function step, static step, and missing step behavior is preserved', () => {
+    const { controller } = createTowerPresenterHarness();
+    const blueprint = {
+      variables: [
+        { key: 'locked', baseValue: 3, step: 100, upgradable: false },
+        { key: 'function', baseValue: 1, getStep: (level) => level + 1 },
+        { key: 'static', baseValue: 2, step: 1.5 },
+        { key: 'missing', baseValue: 4 },
+      ],
+    };
+    const state = controller.ensureTowerUpgradeState('custom', blueprint);
+    Object.values(state.variables).forEach((variableState) => { variableState.level = 2; });
+    assert.equal(controller.computeTowerVariableValue('custom', 'locked', blueprint), 3);
+    assert.equal(controller.computeTowerVariableValue('custom', 'function', blueprint), 7);
+    assert.equal(controller.computeTowerVariableValue('custom', 'static', blueprint), 5);
+    assert.equal(controller.computeTowerVariableValue('custom', 'missing', blueprint), 4);
+  });
+
+  await test('tower presenter: custom, fallback aggregate, and non-finite equation results normalize exactly', () => {
+    const { controller } = createTowerPresenterHarness();
+    assert.equal(controller.calculateTowerEquationResult('authored'), 3);
+    assert.equal(controller.calculateTowerEquationResult('aggregate'), 0);
+    assert.equal(controller.calculateTowerEquationResult('nonFiniteResult'), 0);
+    assert.equal(controller.calculateTowerEquationResult('missing'), 0);
+  });
+
+  await test('tower presenter: recursive references return zero without poisoning future cache results', () => {
+    const { controller } = createTowerPresenterHarness();
+    assert.equal(controller.calculateTowerEquationResult('recursiveA'), 0);
+    controller.invalidateTowerEquationCache();
+    assert.equal(controller.calculateTowerEquationResult('source'), 4);
+  });
+
+  await test('tower presenter: cache reuse and explicit invalidation preserve their timing', () => {
+    const { controller, definitions } = createTowerPresenterHarness();
+    assert.equal(controller.calculateTowerEquationResult('cached'), 6);
+    definitions.cached.damage = 10;
+    assert.equal(controller.calculateTowerEquationResult('cached'), 6);
+    controller.invalidateTowerEquationCache();
+    assert.equal(controller.calculateTowerEquationResult('cached'), 30);
+  });
+
+  await test('tower presenter: targeted clear trims the id, preserves other state, and invalidates all cached math', () => {
+    const { controller, definitions } = createTowerPresenterHarness();
+    controller.ensureTowerUpgradeState('authored').variables.power.level = 2;
+    controller.ensureTowerUpgradeState('secondary').variables.legacy = { level: 3 };
+    assert.equal(controller.calculateTowerEquationResult('cached'), 6);
+    definitions.cached.rate = 5;
+    controller.clearTowerUpgradeState(' authored ');
+    assert.equal(controller.getTowerUpgradeStateSnapshot().authored, undefined);
+    assert.deepEqual(controller.getTowerUpgradeStateSnapshot().secondary, {
+      variables: {
+        damage: { level: 0 },
+        rate: { level: 0 },
+        legacy: { level: 3 },
+      },
+    });
+    assert.equal(controller.calculateTowerEquationResult('cached'), 10);
+  });
+
+  await test('tower presenter: blank or omitted clear targets reset every state entry and cache', () => {
+    const { controller } = createTowerPresenterHarness();
+    controller.ensureTowerUpgradeState('authored').variables.power.level = 2;
+    controller.ensureTowerUpgradeState('fallback').variables.damage.level = 1;
+    controller.clearTowerUpgradeState('   ');
+    assert.deepEqual(controller.getTowerUpgradeStateSnapshot(), {});
+    controller.ensureTowerUpgradeState('authored').variables.power.level = 1;
+    controller.clearTowerUpgradeState();
+    assert.deepEqual(controller.getTowerUpgradeStateSnapshot(), {});
   });
 
   // --- assets/spireResourcePersistence.js ----------------------------------
