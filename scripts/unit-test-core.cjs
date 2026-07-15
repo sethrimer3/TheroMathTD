@@ -83,6 +83,23 @@ function createLocalStorageStub() {
   };
 }
 
+// Import the compiled Aleph upgrade-state owner with its single relative
+// alephChain.js dependency inside a scratch ESM package.
+function importAlephUpgradeStateModule() {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thero-unit-test-aleph-upgrades-'));
+  fs.writeFileSync(path.join(tmpDir, 'package.json'), JSON.stringify({ type: 'module' }));
+  const relativeFiles = [
+    'assets/alephUpgradeState.js',
+    'scripts/features/towers/alephChain.js',
+  ];
+  for (const relativeFile of relativeFiles) {
+    const destPath = path.join(tmpDir, relativeFile);
+    fs.mkdirSync(path.dirname(destPath), { recursive: true });
+    fs.copyFileSync(path.join(rootDir, relativeFile), destPath);
+  }
+  return import(pathToFileURL(path.join(tmpDir, 'assets/alephUpgradeState.js')).href);
+}
+
 // Build a fresh dependency-injected persistence controller for each test so
 // mutable story flags, inventory maps, and invocation logs never leak between cases.
 function createSpirePersistenceHarness(spirePersistence, options = {}) {
@@ -989,6 +1006,181 @@ async function run() {
       assert.equal(cognitiveRealm.ARCHETYPES.length, 27);
     });
   }
+
+  // --- assets/alephUpgradeState.js -----------------------------------------
+  const alephUpgrades = await importAlephUpgradeStateModule();
+
+  await test('Aleph upgrades: defaults, export names, and defensive getter cloning are preserved', () => {
+    const liveState = alephUpgrades.alephChainUpgradeState;
+    assert.deepEqual(alephUpgrades.resetAlephChainUpgrades(), { x: 1, y: 1, z: 3 });
+    const first = alephUpgrades.getAlephChainUpgrades();
+    const second = alephUpgrades.getAlephChainUpgrades();
+    assert.deepEqual(first, { x: 1, y: 1, z: 3 });
+    assert.notEqual(first, liveState);
+    assert.notEqual(first, second);
+    first.x = 99;
+    assert.equal(alephUpgrades.getAlephChainUpgrades().x, 1);
+  });
+
+  await test('Aleph updates: positive x/y values survive exactly while z clamps and floors', () => {
+    const liveState = alephUpgrades.alephChainUpgradeState;
+    alephUpgrades.resetAlephChainUpgrades();
+    const result = alephUpgrades.updateAlephChainUpgrades({ x: 2.75, y: 4.5, z: 8.9 });
+    assert.deepEqual(result, { x: 2.75, y: 4.5, z: 8 });
+    assert.deepEqual(liveState, result);
+    assert.equal(alephUpgrades.alephChainUpgradeState, liveState);
+    assert.notEqual(result, liveState);
+
+    assert.deepEqual(alephUpgrades.updateAlephChainUpgrades({ z: -4.2 }), {
+      x: 2.75,
+      y: 4.5,
+      z: 1,
+    });
+  });
+
+  await test('Aleph updates: null and primitive payloads are complete no-ops', () => {
+    alephUpgrades.resetAlephChainUpgrades();
+    alephUpgrades.updateAlephChainUpgrades({ x: 2, y: 3, z: 4 });
+    const before = alephUpgrades.getAlephChainUpgrades();
+    [null, undefined, false, 0, 'invalid', () => ({ x: 9 })].forEach((payload) => {
+      assert.deepEqual(alephUpgrades.updateAlephChainUpgrades(payload), before);
+    });
+    assert.deepEqual(alephUpgrades.getAlephChainUpgrades(), before);
+  });
+
+  await test('Aleph updates: invalid numeric branches retain current values and do not synchronize', () => {
+    alephUpgrades.resetAlephChainUpgrades();
+    alephUpgrades.updateAlephChainUpgrades({ x: 2, y: 3, z: 4 });
+    const calls = [];
+    const playfield = {
+      alephChain: { setUpgrades: () => calls.push('set') },
+      syncAlephChainStats: () => calls.push('sync'),
+    };
+    const result = alephUpgrades.updateAlephChainUpgrades(
+      { x: 0, y: -2, z: Infinity, extra: 99 },
+      { playfield },
+    );
+    assert.deepEqual(result, { x: 2, y: 3, z: 4 });
+    assert.deepEqual(calls, []);
+  });
+
+  await test('Aleph updates: unchanged valid state is a no-op with no playfield synchronization', () => {
+    alephUpgrades.resetAlephChainUpgrades();
+    const calls = [];
+    const playfield = {
+      alephChain: { setUpgrades: () => calls.push('set') },
+      syncAlephChainStats: () => calls.push('sync'),
+    };
+    const result = alephUpgrades.updateAlephChainUpgrades({ x: 1, y: 1, z: 3 }, { playfield });
+    assert.deepEqual(result, { x: 1, y: 1, z: 3 });
+    assert.notEqual(result, alephUpgrades.alephChainUpgradeState);
+    assert.deepEqual(calls, []);
+  });
+
+  await test('Aleph updates: changed state synchronizes the live object before refreshing stats', () => {
+    alephUpgrades.resetAlephChainUpgrades();
+    const calls = [];
+    const receivedStates = [];
+    const playfield = {
+      alephChain: {
+        setUpgrades: (state) => {
+          calls.push('set');
+          receivedStates.push(state);
+        },
+      },
+      syncAlephChainStats: () => calls.push('sync'),
+    };
+    const result = alephUpgrades.updateAlephChainUpgrades({ x: 5 }, { playfield });
+    assert.deepEqual(calls, ['set', 'sync']);
+    assert.equal(receivedStates[0], alephUpgrades.alephChainUpgradeState);
+    assert.deepEqual(result, { x: 5, y: 1, z: 3 });
+    assert.notEqual(result, receivedStates[0]);
+  });
+
+  await test('Aleph updates: stats synchronization is nested under a present chain target', () => {
+    alephUpgrades.resetAlephChainUpgrades();
+    const calls = [];
+    const result = alephUpgrades.updateAlephChainUpgrades(
+      { y: 6 },
+      { playfield: { syncAlephChainStats: () => calls.push('sync') } },
+    );
+    assert.deepEqual(result, { x: 1, y: 6, z: 3 });
+    assert.deepEqual(calls, []);
+  });
+
+  await test('Aleph updates: non-function stats hooks are skipped after setUpgrades', () => {
+    alephUpgrades.resetAlephChainUpgrades();
+    const receivedStates = [];
+    const result = alephUpgrades.updateAlephChainUpgrades(
+      { x: 7 },
+      {
+        playfield: {
+          alephChain: { setUpgrades: (state) => receivedStates.push(state) },
+          syncAlephChainStats: true,
+        },
+      },
+    );
+    assert.equal(receivedStates.length, 1);
+    assert.deepEqual(result, { x: 7, y: 1, z: 3 });
+  });
+
+  await test('Aleph restore: invalid top-level snapshots are no-ops', () => {
+    alephUpgrades.resetAlephChainUpgrades();
+    alephUpgrades.updateAlephChainUpgrades({ x: 2, y: 3, z: 4 });
+    const before = alephUpgrades.getAlephChainUpgrades();
+    [null, false, 12, 'invalid'].forEach((snapshot) => {
+      assert.deepEqual(alephUpgrades.applyAlephChainUpgradeSnapshot(snapshot), before);
+    });
+  });
+
+  await test('Aleph restore: partial and legacy-invalid fields retain current normalized values', () => {
+    alephUpgrades.resetAlephChainUpgrades();
+    alephUpgrades.updateAlephChainUpgrades({ x: 2, y: 3, z: 4 });
+    assert.deepEqual(
+      alephUpgrades.applyAlephChainUpgradeSnapshot({ x: -1, y: 8.25, z: 2.9 }),
+      { x: 2, y: 8.25, z: 2 },
+    );
+    assert.deepEqual(
+      alephUpgrades.applyAlephChainUpgradeSnapshot({ x: NaN, y: Infinity, z: '7' }),
+      { x: 2, y: 8.25, z: 2 },
+    );
+  });
+
+  await test('Aleph restore: object-like arrays retain the original property-normalization behavior', () => {
+    alephUpgrades.resetAlephChainUpgrades();
+    const legacyArray = [];
+    legacyArray.x = 3.5;
+    legacyArray.y = 4.5;
+    legacyArray.z = 5.9;
+    assert.deepEqual(alephUpgrades.applyAlephChainUpgradeSnapshot(legacyArray), {
+      x: 3.5,
+      y: 4.5,
+      z: 5,
+    });
+  });
+
+  await test('Aleph reset: defaults are restored and playfield synchronization always runs', () => {
+    alephUpgrades.updateAlephChainUpgrades({ x: 8, y: 9, z: 10 });
+    const calls = [];
+    const receivedStates = [];
+    const playfield = {
+      alephChain: {
+        setUpgrades: (state) => {
+          calls.push('set');
+          receivedStates.push(state);
+        },
+      },
+      syncAlephChainStats: () => calls.push('sync'),
+    };
+    const first = alephUpgrades.resetAlephChainUpgrades({ playfield });
+    const second = alephUpgrades.resetAlephChainUpgrades({ playfield });
+    assert.deepEqual(first, { x: 1, y: 1, z: 3 });
+    assert.deepEqual(second, { x: 1, y: 1, z: 3 });
+    assert.deepEqual(calls, ['set', 'sync', 'set', 'sync']);
+    assert.equal(receivedStates[0], alephUpgrades.alephChainUpgradeState);
+    assert.equal(receivedStates[1], alephUpgrades.alephChainUpgradeState);
+    assert.notEqual(first, alephUpgrades.alephChainUpgradeState);
+  });
 
   // --- assets/spireResourcePersistence.js ----------------------------------
   const spirePersistence = await importAsEsm('assets/spireResourcePersistence.js');

@@ -1,3 +1,9 @@
+import type {
+  AlephChainUpgradeApplyOptions,
+  AlephChainUpgradePlayfield,
+  AlephChainUpgradeSnapshot,
+} from './alephUpgradeState.js';
+
 /** Mutable story flag owned by the surviving Well and Achievements state branches. */
 export interface MutableStoryState {
   storySeen: boolean;
@@ -85,12 +91,9 @@ export type SpireResourceStateSnapshotInput =
 /** Opaque base tower snapshot owned by `assets/towerBlueprintPresenter.js`. */
 export type ExternalTowerUpgradeSnapshot = Record<string, unknown>;
 
-/** Opaque Aleph-chain snapshot owned by `assets/alephUpgradeState.js`. */
-export type ExternalAlephChainUpgradeSnapshot = Record<string, unknown>;
-
 /** Exact wrapper emitted after adding Aleph-chain state to the base tower snapshot. */
 export type TowerUpgradeSnapshotWithAleph = ExternalTowerUpgradeSnapshot & {
-  alephChainUpgrades: ExternalAlephChainUpgradeSnapshot;
+  alephChainUpgrades: AlephChainUpgradeSnapshot;
 };
 
 /** Autosave tower-upgrade input, including historical snapshots without Aleph data. */
@@ -98,21 +101,18 @@ export type TowerUpgradeSnapshotInput = ExternalTowerUpgradeSnapshot & {
   alephChainUpgrades?: unknown;
 };
 
-/** Opaque live playfield boundary passed through to the Aleph subsystem unchanged. */
-export type AlephUpgradePlayfield = unknown;
-
 /** Dependencies injected by `assets/main.js` into the persistence adapter. */
 export interface SpireResourcePersistenceDependencies {
   spireResourceState: SpireResourcePersistenceState;
   moteGemState: MoteGemPersistenceState;
   getTowerUpgradeStateSnapshot: () => ExternalTowerUpgradeSnapshot;
   applyTowerUpgradeStateSnapshot: (snapshot: ExternalTowerUpgradeSnapshot) => void;
-  getAlephChainUpgrades: () => ExternalAlephChainUpgradeSnapshot;
+  getAlephChainUpgrades: () => AlephChainUpgradeSnapshot;
   applyAlephChainUpgradeSnapshot: (
-    snapshot: ExternalAlephChainUpgradeSnapshot,
-    options: { playfield: AlephUpgradePlayfield },
-  ) => unknown;
-  getPlayfield: () => AlephUpgradePlayfield;
+    snapshot: unknown,
+    options: AlephChainUpgradeApplyOptions,
+  ) => AlephChainUpgradeSnapshot;
+  getPlayfield: () => AlephChainUpgradePlayfield | null;
 }
 
 /** Public controller returned to the bootstrap and then wired into autosave. */
