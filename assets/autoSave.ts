@@ -13,14 +13,18 @@
 // because designing a full save-state type system is explicitly out of scope
 // for this phase.
 //
-// Phase 5B exception: the cognitive-realm hooks below (`getCognitiveRealmStateSnapshot`/
-// `applyCognitiveRealmStateSnapshot`) ARE narrowed to `CognitiveRealmStateSnapshot`
-// because - unlike the spire-resource hooks, whose real save schema lives in the
-// still-unmigrated `assets/spireResourcePersistence.js` - `assets/state/cognitiveRealmState.ts`
-// directly owns and implements both the getter (`serializeCognitiveRealmState`) and the
-// setter (`deserializeCognitiveRealmState`), so narrowing here is honest, not a guess.
+// Phase 5B narrowed the cognitive-realm hooks to the schema owned by
+// `assets/state/cognitiveRealmState.ts`. Phase 6 likewise narrows the Spire-resource
+// and tower/Aleph hooks to the post-retirement contracts now owned by
+// `assets/spireResourcePersistence.ts`; unrelated subsystem snapshots remain opaque.
 
 import type { CognitiveRealmStateSnapshot } from './state/cognitiveRealmState.js';
+import type {
+  SpireResourceStateSnapshot,
+  SpireResourceStateSnapshotInput,
+  TowerUpgradeSnapshotInput,
+  TowerUpgradeSnapshotWithAleph,
+} from './spireResourcePersistence.js';
 
 export const GRAPHICS_MODE_STORAGE_KEY = 'glyph-defense-idle:graphics-mode';
 export const NOTATION_STORAGE_KEY = 'glyph-defense-idle:notation';
@@ -146,10 +150,10 @@ export interface AutoSaveDependencies {
   audioStorageKey: string | null;
   getPowderBasinSnapshot: (() => AutoSaveSnapshot) | null;
   applyPowderBasinSnapshot: ((snapshot: AutoSaveSnapshot) => void) | null;
-  getTowerUpgradeStateSnapshot: (() => AutoSaveSnapshot) | null;
-  applyTowerUpgradeStateSnapshot: ((snapshot: AutoSaveSnapshot) => void) | null;
-  getSpireResourceStateSnapshot: (() => AutoSaveSnapshot) | null;
-  applySpireResourceStateSnapshot: ((snapshot: AutoSaveSnapshot) => void) | null;
+  getTowerUpgradeStateSnapshot: (() => TowerUpgradeSnapshotWithAleph) | null;
+  applyTowerUpgradeStateSnapshot: ((snapshot: TowerUpgradeSnapshotInput) => void) | null;
+  getSpireResourceStateSnapshot: (() => SpireResourceStateSnapshot) | null;
+  applySpireResourceStateSnapshot: ((snapshot: SpireResourceStateSnapshotInput) => void) | null;
   getLevelProgressSnapshot: (() => AutoSaveSnapshot) | null;
   applyLevelProgressSnapshot: ((snapshot: AutoSaveSnapshot) => void) | null;
   getCognitiveRealmStateSnapshot: (() => CognitiveRealmStateSnapshot) | null;
@@ -329,14 +333,14 @@ export function loadPersistentState(): void {
   }
 
   if (typeof dependencies.applyTowerUpgradeStateSnapshot === 'function') {
-    const storedUpgrades = readStorageJson<AutoSaveSnapshot>(TOWER_UPGRADE_STORAGE_KEY);
+    const storedUpgrades = readStorageJson<TowerUpgradeSnapshotInput>(TOWER_UPGRADE_STORAGE_KEY);
     if (storedUpgrades && typeof storedUpgrades === 'object') {
       dependencies.applyTowerUpgradeStateSnapshot(storedUpgrades);
     }
   }
 
   if (typeof dependencies.applySpireResourceStateSnapshot === 'function') {
-    const storedSpireResources = readStorageJson<AutoSaveSnapshot>(SPIRE_RESOURCE_STORAGE_KEY);
+    const storedSpireResources = readStorageJson<SpireResourceStateSnapshotInput>(SPIRE_RESOURCE_STORAGE_KEY);
     if (storedSpireResources && typeof storedSpireResources === 'object') {
       dependencies.applySpireResourceStateSnapshot(storedSpireResources);
     }

@@ -83,6 +83,57 @@ function createLocalStorageStub() {
   };
 }
 
+// Build a fresh dependency-injected persistence controller for each test so
+// mutable story flags, inventory maps, and invocation logs never leak between cases.
+function createSpirePersistenceHarness(spirePersistence, options = {}) {
+  const callOrder = [];
+  const towerApplyCalls = [];
+  const alephApplyCalls = [];
+  const spireResourceState = options.spireResourceState || {
+    wellOfInspiration: { unlocked: true, storySeen: false },
+    achievements: { storySeen: false },
+  };
+  const moteGemState = options.moteGemState || {
+    inventory: new Map(),
+    autoCollectUnlocked: false,
+    autoCollectDelayMs: 0,
+  };
+  const baseTowerSnapshot = options.baseTowerSnapshot || {
+    alpha: { variables: { glyph1: { level: 2 } } },
+    beta: { variables: { glyph2: { level: 3 } } },
+  };
+  const alephSnapshot = options.alephSnapshot || { x: 2, y: 3, z: 4 };
+  const playfield = options.playfield || { id: 'active-playfield' };
+
+  const controller = spirePersistence.createSpireResourcePersistence({
+    spireResourceState,
+    moteGemState,
+    getTowerUpgradeStateSnapshot: () => baseTowerSnapshot,
+    applyTowerUpgradeStateSnapshot: (snapshot) => {
+      callOrder.push('tower');
+      towerApplyCalls.push(snapshot);
+    },
+    getAlephChainUpgrades: () => alephSnapshot,
+    applyAlephChainUpgradeSnapshot: (snapshot, applyOptions) => {
+      callOrder.push('aleph');
+      alephApplyCalls.push({ snapshot, options: applyOptions });
+    },
+    getPlayfield: () => playfield,
+  });
+
+  return {
+    controller,
+    spireResourceState,
+    moteGemState,
+    baseTowerSnapshot,
+    alephSnapshot,
+    playfield,
+    callOrder,
+    towerApplyCalls,
+    alephApplyCalls,
+  };
+}
+
 async function run() {
   let passed = 0;
   const failures = [];
@@ -938,6 +989,255 @@ async function run() {
       assert.equal(cognitiveRealm.ARCHETYPES.length, 27);
     });
   }
+
+  // --- assets/spireResourcePersistence.js ----------------------------------
+  const spirePersistence = await importAsEsm('assets/spireResourcePersistence.js');
+
+  await test('spire serialization: emits the exact post-retirement keys and current story flags', () => {
+    const harness = createSpirePersistenceHarness(spirePersistence);
+    harness.spireResourceState.wellOfInspiration.storySeen = 1;
+    harness.spireResourceState.achievements.storySeen = 'seen';
+    const snapshot = harness.controller.getSpireResourceStateSnapshot();
+
+    assert.deepEqual(Object.keys(snapshot), ['wellOfInspiration', 'achievements', 'moteGems']);
+    assert.deepEqual(Object.keys(snapshot.wellOfInspiration), ['unlocked', 'storySeen']);
+    assert.deepEqual(snapshot.wellOfInspiration, { unlocked: true, storySeen: true });
+    assert.deepEqual(snapshot.achievements, { storySeen: true });
+    assert.deepEqual(Object.keys(snapshot.moteGems), [
+      'inventory',
+      'autoCollectUnlocked',
+      'autoCollectDelayMs',
+    ]);
+  });
+
+  await test('spire serialization: falls back from a missing Well branch to compatibility `powder`', () => {
+    const harness = createSpirePersistenceHarness(spirePersistence, {
+      spireResourceState: {
+        wellOfInspiration: null,
+        powder: { storySeen: true },
+        achievements: { storySeen: false },
+      },
+    });
+    assert.equal(harness.controller.getSpireResourceStateSnapshot().wellOfInspiration.storySeen, true);
+  });
+
+  await test('spire serialization: preserves inventory order and falls back only non-string labels to gemId', () => {
+    const harness = createSpirePersistenceHarness(spirePersistence);
+    harness.moteGemState.inventory.set('quartz', { label: 'Quartz', total: 7, count: 2 });
+    harness.moteGemState.inventory.set('ruby', { label: null, total: 4, count: 1 });
+    harness.moteGemState.inventory.set('empty-label', { label: '', total: 1, count: 1 });
+    assert.deepEqual(harness.controller.getSpireResourceStateSnapshot().moteGems.inventory, [
+      { gemId: 'quartz', label: 'Quartz', total: 7, count: 2 },
+      { gemId: 'ruby', label: 'ruby', total: 4, count: 1 },
+      { gemId: 'empty-label', label: '', total: 1, count: 1 },
+    ]);
+  });
+
+  await test('spire serialization: total clamps negatives and normalizes non-finite values without flooring', () => {
+    const harness = createSpirePersistenceHarness(spirePersistence);
+    harness.moteGemState.inventory.set('fractional', { total: 3.75, count: 0 });
+    harness.moteGemState.inventory.set('negative', { total: -8.5, count: 0 });
+    harness.moteGemState.inventory.set('nan', { total: NaN, count: 0 });
+    harness.moteGemState.inventory.set('infinity', { total: Infinity, count: 0 });
+    const totals = harness.controller.getSpireResourceStateSnapshot().moteGems.inventory.map((entry) => entry.total);
+    assert.deepEqual(totals, [3.75, 0, 0, 0]);
+  });
+
+  await test('spire serialization: count clamps, floors, and normalizes invalid values', () => {
+    const harness = createSpirePersistenceHarness(spirePersistence);
+    harness.moteGemState.inventory.set('fractional', { total: 0, count: 3.75 });
+    harness.moteGemState.inventory.set('negative', { total: 0, count: -2.1 });
+    harness.moteGemState.inventory.set('nan', { total: 0, count: NaN });
+    harness.moteGemState.inventory.set('infinity', { total: 0, count: Infinity });
+    const counts = harness.controller.getSpireResourceStateSnapshot().moteGems.inventory.map((entry) => entry.count);
+    assert.deepEqual(counts, [3, 0, 0, 0]);
+  });
+
+  await test('spire serialization: coerces auto-collection and clamps/floors its finite delay', () => {
+    const harness = createSpirePersistenceHarness(spirePersistence);
+    harness.moteGemState.autoCollectUnlocked = 'enabled';
+    harness.moteGemState.autoCollectDelayMs = 14.9;
+    assert.deepEqual(harness.controller.getSpireResourceStateSnapshot().moteGems, {
+      inventory: [],
+      autoCollectUnlocked: true,
+      autoCollectDelayMs: 14,
+    });
+    harness.moteGemState.autoCollectDelayMs = -8.2;
+    assert.equal(harness.controller.getSpireResourceStateSnapshot().moteGems.autoCollectDelayMs, 0);
+    harness.moteGemState.autoCollectDelayMs = Infinity;
+    assert.equal(harness.controller.getSpireResourceStateSnapshot().moteGems.autoCollectDelayMs, 0);
+  });
+
+  await test('spire restore: null and non-object top-level snapshots are complete no-ops', () => {
+    const harness = createSpirePersistenceHarness(spirePersistence);
+    harness.spireResourceState.wellOfInspiration.storySeen = true;
+    harness.spireResourceState.achievements.storySeen = true;
+    harness.moteGemState.inventory.set('existing', { label: 'Existing', total: 5, count: 2 });
+    harness.moteGemState.autoCollectUnlocked = true;
+    harness.moteGemState.autoCollectDelayMs = 22;
+    const before = harness.controller.getSpireResourceStateSnapshot();
+    [null, undefined, 'invalid', 42, false].forEach((value) => {
+      harness.controller.applySpireResourceStateSnapshot(value);
+    });
+    assert.deepEqual(harness.controller.getSpireResourceStateSnapshot(), before);
+  });
+
+  await test('spire restore: every supported Well alias restores and precedence remains unchanged', () => {
+    for (const alias of ['wellOfInspiration', 'powder', 'alephSpire', 'aleph']) {
+      const harness = createSpirePersistenceHarness(spirePersistence);
+      harness.controller.applySpireResourceStateSnapshot({ [alias]: { storySeen: true } });
+      assert.equal(harness.spireResourceState.wellOfInspiration.storySeen, true, alias);
+    }
+
+    const precedenceHarness = createSpirePersistenceHarness(spirePersistence);
+    precedenceHarness.controller.applySpireResourceStateSnapshot({
+      wellOfInspiration: { storySeen: false },
+      powder: { storySeen: true },
+      alephSpire: { storySeen: true },
+      aleph: { storySeen: true },
+    });
+    assert.equal(precedenceHarness.spireResourceState.wellOfInspiration.storySeen, false);
+  });
+
+  await test('spire restore: existing true Well and achievement story flags are monotonic', () => {
+    const harness = createSpirePersistenceHarness(spirePersistence);
+    harness.spireResourceState.wellOfInspiration.storySeen = true;
+    harness.spireResourceState.achievements.storySeen = true;
+    harness.controller.applySpireResourceStateSnapshot({
+      wellOfInspiration: { storySeen: false },
+      achievements: { storySeen: false },
+    });
+    assert.equal(harness.spireResourceState.wellOfInspiration.storySeen, true);
+    assert.equal(harness.spireResourceState.achievements.storySeen, true);
+
+    const freshHarness = createSpirePersistenceHarness(spirePersistence);
+    freshHarness.controller.applySpireResourceStateSnapshot({ achievements: { storySeen: 'yes' } });
+    assert.equal(freshHarness.spireResourceState.achievements.storySeen, true);
+  });
+
+  await test('spire restore: missing or non-array inventory leaves the existing Map untouched', () => {
+    const harness = createSpirePersistenceHarness(spirePersistence);
+    const existingRecord = { label: 'Existing', total: 8, count: 3 };
+    harness.moteGemState.inventory.set('existing', existingRecord);
+    harness.controller.applySpireResourceStateSnapshot({ moteGems: {} });
+    harness.controller.applySpireResourceStateSnapshot({ moteGems: { inventory: 'not-an-array' } });
+    assert.equal(harness.moteGemState.inventory.size, 1);
+    assert.equal(harness.moteGemState.inventory.get('existing'), existingRecord);
+  });
+
+  await test('spire restore: array inventory clears, skips blank ids, and trims/falls back labels', () => {
+    const harness = createSpirePersistenceHarness(spirePersistence);
+    harness.moteGemState.inventory.set('old', { label: 'Old', total: 1, count: 1 });
+    harness.controller.applySpireResourceStateSnapshot({
+      moteGems: {
+        inventory: [
+          { gemId: ' quartz ', label: '  Quartz Prime  ', total: 2, count: 1 },
+          { gemId: 'ruby', label: '   ', total: 3, count: 2 },
+          { gemId: '   ', label: 'Skipped', total: 99, count: 99 },
+          { gemId: null, label: 'Skipped Too', total: 99, count: 99 },
+        ],
+      },
+    });
+    assert.deepEqual(Array.from(harness.moteGemState.inventory.entries()), [
+      ['quartz', { label: 'Quartz Prime', total: 2, count: 1 }],
+      ['ruby', { label: 'ruby', total: 3, count: 2 }],
+    ]);
+  });
+
+  await test('spire restore: numeric fields keep exact total/count normalization and duplicate ids are last-write-wins', () => {
+    const harness = createSpirePersistenceHarness(spirePersistence);
+    harness.controller.applySpireResourceStateSnapshot({
+      moteGems: {
+        inventory: [
+          { gemId: 'fractional', label: 'First', total: 3.75, count: 3.75 },
+          { gemId: 'negative', total: -5.5, count: -2.2 },
+          { gemId: 'invalid', total: Infinity, count: NaN },
+          { gemId: 'fractional', label: 'Last', total: 9.25, count: 7.9 },
+        ],
+      },
+    });
+    assert.deepEqual(harness.moteGemState.inventory.get('fractional'), {
+      label: 'Last',
+      total: 9.25,
+      count: 7,
+    });
+    assert.deepEqual(harness.moteGemState.inventory.get('negative'), {
+      label: 'negative',
+      total: 0,
+      count: 0,
+    });
+    assert.deepEqual(harness.moteGemState.inventory.get('invalid'), {
+      label: 'invalid',
+      total: 0,
+      count: 0,
+    });
+  });
+
+  await test('spire restore: auto-collection is monotonic and delay changes only for finite values', () => {
+    const harness = createSpirePersistenceHarness(spirePersistence);
+    harness.moteGemState.autoCollectUnlocked = true;
+    harness.moteGemState.autoCollectDelayMs = 33;
+    harness.controller.applySpireResourceStateSnapshot({
+      moteGems: { autoCollectUnlocked: false, autoCollectDelayMs: Infinity },
+    });
+    assert.equal(harness.moteGemState.autoCollectUnlocked, true);
+    assert.equal(harness.moteGemState.autoCollectDelayMs, 33);
+
+    harness.controller.applySpireResourceStateSnapshot({
+      moteGems: { autoCollectUnlocked: 'yes', autoCollectDelayMs: 12.9 },
+    });
+    assert.equal(harness.moteGemState.autoCollectUnlocked, true);
+    assert.equal(harness.moteGemState.autoCollectDelayMs, 12);
+    harness.controller.applySpireResourceStateSnapshot({ moteGems: { autoCollectDelayMs: -4.2 } });
+    assert.equal(harness.moteGemState.autoCollectDelayMs, 0);
+  });
+
+  await test('tower/Aleph getter: preserves base properties and adds exactly the current Aleph snapshot', () => {
+    const harness = createSpirePersistenceHarness(spirePersistence);
+    const snapshot = harness.controller.getTowerUpgradeStateSnapshotWithAleph();
+    assert.deepEqual(snapshot, {
+      ...harness.baseTowerSnapshot,
+      alephChainUpgrades: harness.alephSnapshot,
+    });
+    assert.equal(snapshot.alpha, harness.baseTowerSnapshot.alpha);
+    assert.equal(snapshot.alephChainUpgrades, harness.alephSnapshot);
+  });
+
+  await test('tower/Aleph restore: null and primitive snapshots are no-ops', () => {
+    const harness = createSpirePersistenceHarness(spirePersistence);
+    [null, undefined, false, 0, 'invalid'].forEach((snapshot) => {
+      harness.controller.applyTowerUpgradeStateSnapshotWithAleph(snapshot);
+    });
+    assert.deepEqual(harness.towerApplyCalls, []);
+    assert.deepEqual(harness.alephApplyCalls, []);
+  });
+
+  await test('tower/Aleph restore: valid snapshots always reach base apply and invalid Aleph branches are skipped', () => {
+    const harness = createSpirePersistenceHarness(spirePersistence);
+    const snapshots = [
+      { alpha: { variables: {} } },
+      { alephChainUpgrades: null },
+      { alephChainUpgrades: false },
+      { alephChainUpgrades: 7 },
+      { alephChainUpgrades: 'invalid' },
+    ];
+    snapshots.forEach((snapshot) => harness.controller.applyTowerUpgradeStateSnapshotWithAleph(snapshot));
+    assert.deepEqual(harness.towerApplyCalls, snapshots);
+    assert.deepEqual(harness.alephApplyCalls, []);
+  });
+
+  await test('tower/Aleph restore: applies Aleph after base upgrades with the current playfield wrapper', () => {
+    const harness = createSpirePersistenceHarness(spirePersistence);
+    const alephChainUpgrades = { x: 5, y: 6, z: 7 };
+    const snapshot = { alpha: { variables: {} }, alephChainUpgrades };
+    harness.controller.applyTowerUpgradeStateSnapshotWithAleph(snapshot);
+
+    assert.deepEqual(harness.callOrder, ['tower', 'aleph']);
+    assert.equal(harness.towerApplyCalls[0], snapshot);
+    assert.deepEqual(harness.alephApplyCalls, [
+      { snapshot: alephChainUpgrades, options: { playfield: harness.playfield } },
+    ]);
+  });
 
   // --- report --------------------------------------------------------------
   if (failures.length) {

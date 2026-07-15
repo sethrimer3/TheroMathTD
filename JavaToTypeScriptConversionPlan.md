@@ -90,7 +90,7 @@ Before reporting completion, update this document in the same branch or commit s
 
 The obsolete-Spire retirement is an intentional product change, not a general migration phase. It removed active Bet, Lamed, Tsadi, Shin, and Kuf modules and added one typed compatibility boundary, `assets/saveCompatibility.ts`. The Aleph experience remains active under the user-facing name **Well of Inspiration**; compatibility-sensitive `powder`/`aleph` identifiers remain unchanged.
 
-Using the established count method, the current tree contains **46 authored `.ts` modules** and **261 authored `.js` modules without a same-path `.ts` sibling** (307 total). Of those 261 JavaScript modules, **19 are explicitly disabled legacy Achievements Terrarium/Bet Terrarium files** documented at `assets/legacy/achievementsTerrarium/README.md`; they are preserved for possible restoration and are not part of the active migration backlog. The active remaining JavaScript backlog is therefore **242 modules**. The retired `spireFloatingMenu` and `spireTabVisibility` TypeScript modules and the orphaned retired idle/developer controllers were removed because the one-Well navigation no longer imports or needs those multi-Spire managers. The Collective Unconscious/Cognitive Realm is unchanged by this feature task.
+Using the established count method, the current tree contains **47 authored `.ts` modules** and **260 authored `.js` modules without a same-path `.ts` sibling** (307 total). Of those 260 JavaScript modules, **19 are explicitly disabled legacy Achievements Terrarium/Bet Terrarium files** documented at `assets/legacy/achievementsTerrarium/README.md`; they are preserved for possible restoration and are not part of the active migration backlog. The active remaining JavaScript backlog is therefore **241 modules**. Phase 6 added `assets/spireResourcePersistence.ts` and narrowed its four autosave hooks without changing the total authored-module count. The retired `spireFloatingMenu` and `spireTabVisibility` TypeScript modules and the orphaned retired idle/developer controllers were removed because the one-Well navigation no longer imports or needs those multi-Spire managers. The Collective Unconscious/Cognitive Realm is unchanged by this feature task.
 
 **Plan created:** 2026-07-13  
 **Repository:** `sethrimer3/TheroMathTD`  
@@ -132,6 +132,7 @@ No TypeScript conversion phase is recorded as complete in this plan.
 | 4 | Static Tower Definition Data (`assets/data/towers/`) | COMPLETE | See Phase 4 section below and Implementation Log entry below |
 | 5A | Game State Containers — `resourceState.js`, `spireResourceState.js`, `monetizationState.js` | COMPLETE | See Phase 5 section below and Implementation Log entry below |
 | 5B | Cognitive Realm Territory State (`assets/state/cognitiveRealmState.js`) | COMPLETE | See Phase 5 section below and Implementation Log entry below |
+| 6 | Post-retirement Spire-resource and tower/Aleph persistence (`assets/spireResourcePersistence.js`) | COMPLETE | See Phase 6 section and Implementation Log entry below |
 
 ---
 
@@ -583,6 +584,42 @@ Suite total: **78/78 passing** (58 pre-existing from Phases 2–5A + 20 new).
 
 ---
 
+## Phase 6 — Post-Retirement Spire Resource Persistence (COMPLETE)
+
+**Status:** COMPLETE (2026-07-15)
+**Migration type:** Behavior-preserving migration
+
+**Revised live scope:** The historical recommendation predated the retirement of Bet, Lamed, Tsadi, Shin, and Kuf and described a much larger multi-Spire payload. The live `assets/spireResourcePersistence.js` was re-read in full (93 lines) and found to own only: Well of Inspiration story state; Achievements story state; mote-gem inventory and auto-collection state; the base tower-upgrade snapshot; and the Aleph-chain snapshot added to that tower snapshot. Retired branches in legacy saves remain intentionally ignored. Phase 6 converted that exact live module to `assets/spireResourcePersistence.ts`, narrowed its four autosave hooks in `assets/autoSave.ts`, and added compiled-output characterization tests. No broad persistence redesign was performed.
+
+**Importer and consumer inventory (re-derived from the live tree):**
+- `assets/main.js` is the only direct importer of `createSpireResourcePersistence`. It supplies `spireResourceState`, `moteGemState`, `getTowerUpgradeStateSnapshot`, `applyTowerUpgradeStateSnapshot`, `getAlephChainUpgrades`, `applyAlephChainUpgradeSnapshot`, and `getPlayfield: () => playfield`, then destructures all four returned controller functions.
+- `assets/main.js` passes `getTowerUpgradeStateSnapshotWithAleph`/`applyTowerUpgradeStateSnapshotWithAleph` to `configureAutoSave` as `getTowerUpgradeStateSnapshot`/`applyTowerUpgradeStateSnapshot`, and passes `getSpireResourceStateSnapshot`/`applySpireResourceStateSnapshot` directly as the two Spire-resource hooks. This confirms the module owns the runtime implementations behind all four autosave hooks narrowed in this phase.
+- `assets/state/spireResourceState.ts` owns the live `wellOfInspiration`/`achievements` branches and the legacy Well aliases accepted by its factory; `assets/enemies.js` owns the mutable `moteGemState`; `assets/towerBlueprintPresenter.js` owns the underlying tower-upgrade snapshot; `assets/alephUpgradeState.js` owns Aleph-chain state; and the current playfield is passed through without inspection as `{ playfield: getPlayfield() }`.
+- No direct importer required a runtime compatibility edit: the existing `./spireResourcePersistence.js` specifier and every export/return-object key remain unchanged because the established build synchronizes the compiled `.js` sibling beside the `.ts` source.
+
+**Types/interfaces introduced (`assets/spireResourcePersistence.ts`):**
+- Live dependency surfaces: `MutableStoryState`, `StoryStateSource`, `SpireResourcePersistenceState`, `MoteGemRecordSource`, `MoteGemPersistenceState`, `SpireResourcePersistenceDependencies`, and `SpireResourcePersistenceController`.
+- Owned serialized shapes: `SerializedWellStoryState`, `SerializedAchievementStoryState`, `SerializedMoteGemRecord`, `SerializedMoteGemState`, and `SpireResourceStateSnapshot`.
+- Restore compatibility: `LegacySpireResourceStateSnapshot` and `SpireResourceStateSnapshotInput`, retaining `wellOfInspiration || powder || alephSpire || aleph || {}` precedence without modeling retired branches this module ignores.
+- Named external boundaries: `ExternalTowerUpgradeSnapshot` (owned by `towerBlueprintPresenter.js`), `ExternalAlephChainUpgradeSnapshot` (owned by `alephUpgradeState.js`), and `AlephUpgradePlayfield` (passed through to the Aleph subsystem). The wrapper contracts owned here are `TowerUpgradeSnapshotWithAleph` and `TowerUpgradeSnapshotInput`.
+
+**Autosave narrowing (`assets/autoSave.ts`):**
+- `getSpireResourceStateSnapshot` now returns `SpireResourceStateSnapshot`; its apply hook accepts `SpireResourceStateSnapshotInput`; the `SPIRE_RESOURCE_STORAGE_KEY` read uses `readStorageJson<SpireResourceStateSnapshotInput>()`.
+- `getTowerUpgradeStateSnapshot` now returns `TowerUpgradeSnapshotWithAleph`; its apply hook accepts `TowerUpgradeSnapshotInput`; the `TOWER_UPGRADE_STORAGE_KEY` read uses `readStorageJson<TowerUpgradeSnapshotInput>()`.
+- The stale header comment saying `spireResourcePersistence.js` was unmigrated was replaced with the current Phase 6 ownership statement. Unrelated autosave payloads remain on `AutoSaveSnapshot` and were not expanded into a repository-wide save schema.
+
+**Behavior preserved exactly:** Well serialization still uses `wellOfInspiration || powder || {}` and always writes `unlocked: true`; story values and auto-collection state still use Boolean coercion; restore alias precedence and monotonic true flags are unchanged; inventory is cleared only for an actual array; blank ids are skipped; restored labels trim and fall back to `gemId`; totals clamp without flooring while counts clamp and floor; delays change only for finite values and then clamp/floor; duplicate ids retain `Map.set` last-write-wins behavior; invalid top-level snapshots remain no-ops; tower restoration occurs before conditional truthy object-like Aleph restoration; and Aleph restoration still receives `{ playfield: getPlayfield() }`.
+
+**Tests added:** `scripts/unit-test-core.cjs` gained 17 deterministic tests against the generated `assets/spireResourcePersistence.js`: six serialization tests, seven restore/legacy-normalization tests, and four tower/Aleph wrapper tests. Coverage includes exact key sets, Well/powder source selection, Achievements, inventory ordering/labels/numeric normalization, auto-collection coercion/delay normalization, every supported Well alias and precedence, monotonic flags, non-array versus array inventory behavior, blank ids, duplicate ids, invalid top-level inputs, base/Aleph getter composition, invalid wrapper inputs, skipped invalid Aleph branches, exact playfield options, and observable base-before-Aleph invocation order. Core suite total increased from 80/80 to **97/97**; retired-Spire checks continue to pass separately.
+
+**Validation:** Pre-change baseline was clean (`git status --short`; typecheck/build/lint; 80/80 core unit tests plus retired-Spire checks; smoke test). Final `npm run typecheck`, `npm run build`, `npm run lint`, `npm run test:unit`, and `npm test` all pass. The generated `assets/spireResourcePersistence.js` exists beside its `.ts` source; `dist/` contains no `.ts` files; import-resolution smoke checks pass; and the scoped audit found no `any`, suppressions, broad double assertions, or non-null assertions. Browser verification loaded Build 730 and exercised save restoration without console errors (see Implementation Log).
+
+**Counts after Phase 6 (established methodology):** 47 authored `.ts` modules; 260 authored `.js` modules without a same-path `.ts` sibling; 19 of those JS modules are disabled legacy Terrarium files; active remaining backlog 241; active authored total remains 288; authored total including preserved legacy remains 307.
+
+**Deferred findings:** No newly-discovered production defect was fixed or encoded as desirable behavior. The tower and Aleph sub-snapshots remain intentionally named external boundaries until their owner modules are migrated. Serialization preserves an empty string label when it is already a string, while restore trims blank labels and falls back to `gemId`; this asymmetry is inherited behavior and remains unchanged.
+
+---
+
 ## Tentative Later Migration Areas
 
 These are not authorized active phases. Their order must be reevaluated after Phase 1.
@@ -643,7 +680,7 @@ Do not treat this list as a fixed roadmap. Each completed phase must recommend t
 - `assets/preferences.ts` (Phase 3) mixes pure preference storage/normalization logic with ~25 `bind*` DOM-wiring functions, the same "mixed concerns migrated as one unit" pattern already accepted for `autoSave.ts` and `spireFloatingMenu.ts` in Phases 1–2, rather than being split into a pure-logic module plus a separate DOM-binding module. A future phase could split these if a pure-logic-only module becomes valuable for further testing, but doing so was out of scope here.
 - Two functions in `assets/preferences.ts` (`updateNotationPreviewDamage`'s `document.getElementById` call and `applySpireOptionsPlacementDom`'s `document.body` access) call the DOM directly without a `typeof document !== 'undefined'` guard, unlike most of the rest of the file. This is inherited unchanged from the original `.js` (not a defect introduced by the migration) but means these two paths would throw if ever invoked in a non-browser environment without a `document` global — the new unit tests work around this with a minimal `document` stub rather than fixing the underlying inconsistency, per the instruction to record rather than silently fix pre-existing quirks outside the phase's explicit scope.
 - (Phase 5A) `assets/state/spireResourceState.ts`'s `mergeBranch` helper unconditionally spreads a `generators: {}` field onto every branch it merges, including `lamed` and `tsadi`, whose nominal shape has no `generators` field at all. This is an artifact of the original JS reusing one shared merge helper across branches with different shapes; no current consumer reads the spurious field, so it was preserved unchanged rather than fixed. See the Phase 5 section above for detail.
-- (Phase 5A) The real serialization/deserialization schema for spire resource state is owned by `assets/spireResourcePersistence.js` (not `assets/state/spireResourceState.ts`), and that file also folds in powder/moteGem/tower-upgrade/Aleph-chain state into the same save payload. This is why `AutoSaveSnapshot`'s `getSpireResourceStateSnapshot`/`applySpireResourceStateSnapshot` hooks were **not** narrowed in Phase 5A — narrowing them honestly would require migrating `spireResourcePersistence.js` first. Flagged here so a future phase does not assume Phase 5A already covered autosave narrowing for the spire-resource save path.
+- **RESOLVED by Phase 6 (2026-07-15):** Phase 5A correctly deferred the Spire-resource autosave hooks because their schema belonged to `assets/spireResourcePersistence.js`, not `assets/state/spireResourceState.ts`. The live post-retirement module has now been migrated to `assets/spireResourcePersistence.ts`; both Spire-resource hooks and both tower/Aleph wrapper hooks in `assets/autoSave.ts` use its exported contracts. The underlying tower and Aleph sub-snapshots remain named external boundaries until their owner modules are migrated.
 - (Phase 5A) `assets/state/cognitiveRealmState.js` (622 lines) was fully unmigrated JavaScript as of Phase 5A — since migrated to TypeScript in Phase 5B (see that section above).
 - **RESOLVED (2026-07-13, post-Phase-5A):** the favicon smoke-test failure noted throughout every prior phase (`npm test` failing on a clean checkout because `assets/favicon/` doesn't exist) is no longer a pre-existing defect to track — the favicon directory and all its assets were removed intentionally, so the corresponding `<link>` tags in `index.html` and the `startupReferences` check in `scripts/smoke-test.cjs` were deleted to match. `npm test` now passes cleanly. This was a targeted cleanup, unrelated to any TS-migration phase's scope.
 - (Phase 5B) `assets/state/cognitiveRealmState.ts`'s legacy-save deserialization fallback (`deserializeCognitiveRealmState`) validates a saved territory's `owner` field only with `Number.isFinite`, not that it is actually `0`/`1`/`2` (`TERRITORY_NEUTRAL`/`_PLAYER`/`_ENEMY`). A malformed-but-finite saved `owner` value passes through unfiltered, exactly as in the original `.js` — preserved unchanged (not fixed) per the migration's behavior-preservation requirement. See the Phase 5B section above for detail.
@@ -653,29 +690,13 @@ Do not treat this list as a fixed roadmap. Each completed phase must recommend t
 
 ## Next Suggested Step
 
-**Recommended Phase 6: `assets/spireResourcePersistence.js` (Spire/Powder/Tower-Upgrade Save Persistence).**
+**Recommended Phase 7: `assets/alephUpgradeState.js` (Aleph-chain upgrade state and persistence contract).**
 
-Phase 5 (5A + 5B) completed all four files in `assets/state/`. The next highest-value, narrowly-scoped slice is `assets/spireResourcePersistence.js` — the file that Phase 5A discovered actually owns the real serialization/deserialization schema for `getSpireResourceStateSnapshot`/`applySpireResourceStateSnapshot` (rather than `assets/state/spireResourceState.ts`, which only models the in-memory factory shape). Migrating it would let a future session finally narrow those two `AutoSaveSnapshot`-typed hooks in `assets/autoSave.ts`, matching what Phase 5B just did for the cognitive-realm hooks. `spireResourcePersistence.js` was already partially characterized during Phase 5A (it "folds in powder/moteGem/tower-upgrade/Aleph-chain state into the same save payload") but was never read in full — this is a from-scratch inspection, not a re-use of that partial note.
+Phase 6 leaves one deliberately named external boundary around the Aleph-chain payload. The live owner is a focused 85-line module imported directly by `assets/main.js`; it exposes the mutable state, snapshot getter, validated update/apply functions, and reset function, and passes only a minimal optional playfield surface into the active Aleph-chain renderer. Migrating this owner next would replace `ExternalAlephChainUpgradeSnapshot` in `spireResourcePersistence.ts` with the real `{ x, y, z }` contract without entering tower simulations, `towerBlueprintPresenter.js`, or `main.js`.
 
-**Scope:** `assets/spireResourcePersistence.js` → `assets/spireResourcePersistence.ts` only. Do not expand into `assets/main.js` or any other consumer file.
+**Bounded scope:** Convert `assets/alephUpgradeState.js` to `assets/alephUpgradeState.ts`; add deterministic compiled-output tests for getter cloning, finite/positive normalization, unchanged-state no-op behavior, reset defaults, playfield synchronization, and apply/update return values; update `spireResourcePersistence.ts` to import and reuse the new Aleph snapshot/playfield types. Keep `scripts/features/towers/alephChain.js`, `assets/main.js`, the tower-upgrade subsystem, and unrelated persistence code unconverted.
 
-**Required before writing types (do not skip):**
-1. Read `assets/spireResourcePersistence.js` in full (not a sample) and enumerate every subsystem's data it folds into the save payload (powder, moteGem, tower-upgrade, Aleph-chain, spire-resource-state branches, Tsadi binding-agent counts, discovered-molecule normalization, etc., per the partial Phase 5A note) and the exact shape each one is serialized/deserialized as.
-2. Re-derive the actual importer list via `grep -rl "spireResourcePersistence" assets scripts index.html` (do not assume it is only `main.js`) and record, per importer, which exports it uses.
-3. Confirm which `AutoSaveDependencies` hooks in `assets/autoSave.ts` this file's exports are wired into (expected: `getSpireResourceStateSnapshot`/`applySpireResourceStateSnapshot`, but verify — there may be others given the multi-subsystem payload described above), and narrow those hooks from `AutoSaveSnapshot` to a real modeled type **only for the parts this file actually owns and validates**; any sub-shape still owned by a different unmigrated subsystem should stay a named opaque `unknown` boundary (not a blanket `Record<string, unknown>`) with a comment naming that subsystem, exactly as `spireResourceState.ts`'s `LamedSimulationSnapshot`/`FluidGeneratorMap`/`discoveredMolecules` fields already do.
-
-**Hard constraints (restated from the standing task, still binding):** behavior-preserving only; do not alter save compatibility, default values, or normalization logic; do not introduce `any`/`@ts-ignore`/`@ts-nocheck`/unexplained non-null assertions; do not weaken compiler strictness; do not convert a knowable shape to `Record<string, unknown>` merely to compile.
-
-**Acceptance criteria for Phase 6:**
-- The importer list and per-importer usage are re-derived fresh (not assumed from Phase 5A's partial note) and recorded in the plan update.
-- `spireResourcePersistence.ts` compiles under strict TypeScript with explicit interfaces/unions for every save-payload shape it actually owns and validates — no `any`, no unexplained non-null assertions, no `@ts-ignore`/`@ts-nocheck`.
-- `npm run typecheck` and `npm run build` clean; `npm run lint`/`npm test` show no new failures versus this document's Phase 5B baseline (smoke test passes cleanly with no favicon errors, per the already-resolved fix).
-- Every existing importer requires no changes beyond `tsconfig.json`'s existing glob-based `include`.
-- `assets/autoSave.ts`'s `getSpireResourceStateSnapshot`/`applySpireResourceStateSnapshot` (and any other hooks this file turns out to own) are narrowed away from generic `AutoSaveSnapshot` wherever the shape is genuinely modeled by this migration, with named opaque `unknown` boundaries (not blanket `Record<string, unknown>`) for any sub-shape still owned elsewhere.
-- `scripts/unit-test-core.cjs` (or a clearly-scoped sibling) gains deterministic tests covering the serialization/deserialization round trip for each subsystem this file persists, plus its legacy-save fallback branches (mirroring the rigor applied to `cognitiveRealmState.ts` in Phase 5B).
-- Any newly-discovered defect in the persistence/normalization logic is recorded under Known Issues, not silently fixed.
-- Manual/browser verification is attempted if a headless/automatable browser is available in that session; if not, this is recorded explicitly rather than assumed.
-- The plan document is updated in the same session, including an Implementation Log entry that does not erase any prior entry, and the Migration Ledger gains a Phase 6 row.
+**Acceptance criteria:** Re-derive all importers and consumers; preserve `ALEPH_CHAIN_DEFAULT_UPGRADES`, export names, snapshot cloning, x/y positive-only updates, z clamp/floor behavior, change detection, optional `playfield.alephChain.setUpgrades`, optional `syncAlephChainStats`, and reset semantics; no `any` or suppressions; typecheck/build/lint/unit/smoke checks pass; browser smoke is attempted; plans/counts/build number are updated once.
 
 ---
 
@@ -848,3 +869,22 @@ See the "Phase 5B — Cognitive Realm Territory State (`assets/state/cognitiveRe
 **Suspected pre-existing defects recorded, not fixed:** (1) `deserializeCognitiveRealmState`'s legacy-save fallback validates a saved territory's `owner` only via `Number.isFinite`, not that it is actually `0`/`1`/`2` — a malformed-but-finite value passes through unfiltered. (2) The same function trusts a saved territory's `id` verbatim with zero validation. Both preserved unchanged per the migration's behavior-preservation requirement; see Known Issues above and the Phase 5B section for detail.
 
 **Next suggested step:** See the "Next Suggested Step" section above (recommending Phase 6: `assets/spireResourcePersistence.js`, with a narrow bounded spec that finally lets the spire-resource `AutoSaveSnapshot` hooks be honestly narrowed).
+
+### 2026-07-15 — Revised Phase 6 executed
+
+**Status:** COMPLETE
+
+The session began from clean `main` at `230cd9c`, read all required root/assets/scripts/docs guidance and both migration plans, re-derived the live post-retirement dependency graph, and recorded a clean baseline: typecheck/build/lint passed, unit tests were 80/80 plus retired-Spire checks, and the smoke test passed.
+
+- Converted `assets/spireResourcePersistence.js` to strict `assets/spireResourcePersistence.ts`; the `.js` sibling is generated by the existing TypeScript synchronization step and all import specifiers/export names/return keys remain unchanged.
+- Replaced the historical multi-Spire assumption with the actual live scope: Well/Achievements story flags, mote-gem state, and the tower snapshot augmented with Aleph-chain upgrades. Retired save branches remain ignored.
+- Narrowed all four autosave hooks actually wired from this module and their two `readStorageJson<T>()` call sites in `assets/autoSave.ts`.
+- Added explicit owned snapshot/legacy-input/controller/dependency types plus named external tower/Aleph/playfield boundaries; introduced no `any`, suppressions, broad double assertions, or non-null assertions.
+- Added 17 deterministic compiled-output characterization tests. Core unit total is 97/97; retired-Spire checks and smoke tests pass.
+- Recalculated counts to 47 typed, 260 remaining JS without TS siblings, 241 active remaining after excluding 19 preserved legacy modules, and 288 active authored modules total.
+- Incremented the build number exactly once, from 729 to 730.
+- Browser smoke served the built app, confirmed Build 730, toggled Developer Mode through the UI, reloaded, confirmed that saved setting restored, and observed no console errors. The deterministic compiled-output tests provide the direct current/legacy Spire and tower/Aleph restore coverage; Electron and physical mobile/touch testing were not performed.
+
+**Deferred findings:** The tower-upgrade and Aleph-chain sub-schemas remain named external boundaries owned by `towerBlueprintPresenter.js` and `alephUpgradeState.js`. The inherited serialization/restore label asymmetry (empty string preserved on serialize, trimmed/fallback on restore) is unchanged. No production behavior defect was fixed.
+
+**Next suggested step:** See the bounded Phase 7 recommendation above: migrate `assets/alephUpgradeState.js` and replace the Aleph external boundary without entering simulations or broad persistence work.

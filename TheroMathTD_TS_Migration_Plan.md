@@ -15,13 +15,13 @@
 
 ## 1. Current State
 
-> **2026-07-13 retirement update:** The obsolete-Spire feature removal deleted active Bet, Lamed,
-> Tsadi, Shin, and Kuf modules and added `assets/saveCompatibility.ts`. Current inventory is 46
-> authored `.ts` modules and 261 authored `.js` modules without a `.ts` sibling. Nineteen of those
+> **2026-07-13 retirement update, refreshed after Phase 6 on 2026-07-15:** The obsolete-Spire feature removal deleted active Bet, Lamed,
+> Tsadi, Shin, and Kuf modules and added `assets/saveCompatibility.ts`. Current inventory is 47
+> authored `.ts` modules and 260 authored `.js` modules without a `.ts` sibling. Nineteen of those
 > JavaScript modules form the disabled legacy Achievements Terrarium/Bet Terrarium stack documented
 > at `assets/legacy/achievementsTerrarium/README.md`; they are preserved JavaScript, excluded from
 > the active application graph, and are not an active migration target. The active remaining backlog
-> is therefore 242 JavaScript modules. The obsolete typed `spireFloatingMenu` and
+> is therefore 241 JavaScript modules. The obsolete typed `spireFloatingMenu` and
 > `spireTabVisibility` managers were removed with the multi-Spire navigation. The surviving Aleph system is presented as the Well of
 > Inspiration, while compatibility-sensitive internal names remain unchanged. The Cognitive Realm
 > is outside this product change.
@@ -33,14 +33,15 @@
   `<script type="module">` imports and no dev server/bundler is required.
 - **`package.json`:** `devDependencies` has `typescript@^5.7.0`, `eslint@^10.2.0`, `electron@^42.2.0`.
   No `@types/*` packages installed. `npm run typecheck` (`tsc --noEmit`) and `npm run build` both exist.
-- **Files converted or authored so far (46 `.ts` files, all under strict mode, zero `any`):**
+- **Files converted or authored so far (47 `.ts` files, all under strict mode, zero `any`):**
   `assets/uiTabManager.ts`, `assets/tabLockManager.ts`, `assets/autoSave.ts`, `assets/preferences.ts`,
   `scripts/core/formatting.ts`, `scripts/core/mathText.ts` (Phases 1–3), plus all 33 files under
   `assets/data/towers/` (32 tower-definition modules + `index.ts`) and the new
   `assets/data/towers/types.ts` (Phase 4), plus `assets/state/resourceState.ts`,
   `assets/state/spireResourceState.ts`, `assets/state/monetizationState.ts` (Phase 5A), and
   `assets/state/cognitiveRealmState.ts` (Phase 5B, COMPLETE), and the product-retirement compatibility
-  boundary `assets/saveCompatibility.ts`. All four files under `assets/state/` are now migrated.
+  boundary `assets/saveCompatibility.ts`, and the revised Phase 6 persistence owner
+  `assets/spireResourcePersistence.ts`. All four files under `assets/state/` are now migrated.
 - **Migration count methodology (see `JavaToTypeScriptConversionPlan.md`'s "Documentation and Tooling
   Repair" section for full detail):** a *converted* module is an authored `.ts` file excluding
   `.d.ts`; a *remaining* module is an authored `.js` file with no same-path `.ts` sibling; `dist/`,
@@ -49,23 +50,23 @@
   document reported "358 remaining `.js` files" / "~366 total," which conflated the raw on-disk `.js`
   count with the true remaining count — the 8 Phase 1–3 modules' compiled `.js` siblings were being
   counted twice. That has been corrected below.)
-- **Remaining plain JavaScript:** **261 `.js` files** with no `.ts` sibling, outside `dist/`, `build/`,
+- **Remaining plain JavaScript:** **260 `.js` files** with no `.ts` sibling, outside `dist/`, `build/`,
   and `node_modules/`. This includes 19 explicitly disabled legacy Terrarium modules; the active
-  migration backlog is **242**. Dist is build output and should only be regenerated.
+  migration backlog is **241**. Dist is build output and should only be regenerated.
 - **Everything currently compiles/lints clean**: `npm run typecheck`, `npm run build`, `npm run lint`
   all pass. `npm test` (smoke test) passes cleanly (the favicon-related failures noted in every prior
   revision of this document were resolved by removing the stale favicon references, not a migration
-  change). `npm run test:unit` is 78/78.
+  change). `npm run test:unit` is 97/97 plus the separate retired-Spire checks.
 
-**Progress so far:** 46 typed modules among 288 active authored JS/TS source modules (~16%), plus 19
+**Progress so far:** 47 typed modules among 288 active authored JS/TS source modules (~16%), plus 19
 disabled legacy Terrarium modules that are intentionally not migration targets. Typed work remains concentrated in
 navigation, persistence primitives, user preferences (Phases 1–3), static tower-definition data
 (Phase 4), and all four `assets/state/*.js` game-state containers (Phase 5A + 5B, both COMPLETE) —
 deliberately the lowest-risk, most widely-imported utility/config tier, per the existing plan's own
-stated strategy. The next recommended slice is `assets/spireResourcePersistence.js` (see
-`JavaToTypeScriptConversionPlan.md`'s "Next Suggested Step"), which owns the real spire-resource save
-schema and would let `assets/autoSave.ts`'s remaining spire-resource `AutoSaveSnapshot` hooks finally
-be narrowed the same way Phase 5B just narrowed the cognitive-realm hooks.
+stated strategy. Revised Phase 6 migrated `assets/spireResourcePersistence.ts` and narrowed all four
+autosave hooks it actually supplies (Spire-resource plus tower/Aleph wrapper hooks). The next
+recommended slice is the focused 85-line owner `assets/alephUpgradeState.js`; see the authoritative
+ledger's "Next Suggested Step" for its bounded Phase 7 acceptance criteria.
 
 ---
 
@@ -166,14 +167,14 @@ means **file count alone cannot be used to check migration progress**; always cr
    TS `enum`), and possibly some prototype-based or dynamically-keyed object construction inside the
    older tower/enemy files that predate the current module structure. These will surface per-file
    during conversion, not detectable from a static grep pass.
-6. **Save-data schema is currently intentionally left untyped.** `AutoSaveSnapshot` was typed as
-   `Record<string, unknown>` by design in Phase 2 to avoid conflating "migrate the storage helpers"
-   with "design a full save schema." A full save-schema type is valuable but is its own project-sized
-   effort — do not fold it into a generic file-by-file phase; it should be a deliberately scoped
-   phase of its own once enough state-owning modules (Section 2's `assets/state/*.js` group) are typed.
+6. **Save-data typing is incremental by owner, not repository-wide.** `AutoSaveSnapshot` remains the
+   intentional opaque adapter for unrelated subsystem payloads. Phase 5B narrowed Cognitive Realm,
+   and revised Phase 6 narrowed the Spire-resource plus tower/Aleph wrapper hooks to contracts owned
+   by their migrated modules. The underlying tower and Aleph sub-snapshots remain named external
+   boundaries until their owners migrate; do not turn this into a project-wide save-schema redesign.
 7. **No automated test suite beyond a smoke test and a small hand-written unit-test script.**
    `scripts/smoke-test.cjs` checks file/asset presence; `scripts/unit-test-core.cjs` (framework-free,
-   `node:assert/strict`) currently covers only the 3 Phase 2/3 modules. Every future phase needs to
+   `node:assert/strict`) now contains 97 compiled-output tests spanning Phases 2–6. Every future phase needs to
    grow this file (or a sibling) rather than relying on manual browser verification alone — manual
    verification has already hit tooling limitations in-session (0×0 viewport) in every phase so far.
 
@@ -246,14 +247,33 @@ decision beyond what was already anticipated in the Phase 5A split rationale.
 **Risk:** Medium-high — highest-risk file in `assets/state/`, per the standing task's own designation;
 requires exhaustive inspection of serialization/deserialization fallback branches before typing.
 
-### Phase 6 — Tower Math & Equation Rendering
-**Scope:** `assets/towerEquations/**` (compute/render logic not already covered in Phase 4),
-`assets/towerEquationTooltip.js`, `assets/towerVariableDiscovery.js`.
-**Why now:** Depends on Phase 4's typed tower-definition schema and already-typed `mathText.ts`.
-Mostly pure functions (equation formatting/evaluation), low DOM coupling relative to file count.
-**Risk:** Low-medium.
+### Revised Phase 6 — Post-Retirement Spire Resource Persistence (COMPLETE, 2026-07-15)
+**Scope executed:** `assets/spireResourcePersistence.js` → `.ts`; compatibility-only type narrowing
+in `assets/autoSave.ts`; 17 deterministic compiled-output tests in `scripts/unit-test-core.cjs`.
+**Actual live ownership:** Well of Inspiration and Achievements story flags, mote-gem inventory and
+auto-collection state, and the base tower-upgrade snapshot augmented with Aleph-chain upgrades. The
+historical multi-Spire recommendation was superseded because retired Bet/Lamed/Tsadi/Shin/Kuf save
+branches are intentionally ignored by the current 93-line module.
+**Outcome:** All four hooks supplied by the returned controller are honestly narrowed in autosave;
+97/97 core unit tests pass; typecheck/build/lint/smoke checks pass; Build 730 browser smoke and save
+restoration produced no console errors. Counts are 47 typed, 260 remaining JS, and 241 active remaining.
 
-### Phase 7 — UI Tab Controllers, Menus, Overlays (root-level `assets/*.js`)
+### Phase 7 — Aleph-Chain Upgrade State (RECOMMENDED NEXT)
+**Scope:** `assets/alephUpgradeState.js` → `.ts`, deterministic compiled-output tests, and replacement
+of Phase 6's named `ExternalAlephChainUpgradeSnapshot`/playfield boundary with exported owner types.
+Keep `scripts/features/towers/alephChain.js`, `assets/main.js`, tower-upgrade presentation, simulations,
+and unrelated persistence modules out of scope.
+**Why now:** This focused 85-line owner is the smallest live dependency boundary left by Phase 6 and
+has one direct importer (`assets/main.js`). Typing it closes a real persisted schema without broadening
+into the 321-line tower-blueprint presenter or the high-risk simulation graph.
+**Risk:** Low-medium; normalization and optional playfield synchronization need characterization tests.
+
+### Later candidate — Tower Math & Equation Rendering
+**Scope:** `assets/towerEquations/**`, `assets/towerEquationTooltip.js`, and
+`assets/towerVariableDiscovery.js`; reassess after Phase 7 rather than treating the old Phase 6 order
+as fixed.
+
+### Later candidate — UI Tab Controllers, Menus, Overlays (root-level `assets/*.js`)
 **Scope:** The ~40 root-level `assets/*Tab.js` / `*Menu.js` / `*Controller.js` / `*Overlay.js` files
 not already migrated (e.g. `towersTab.js`, `achievementsTab.js`, `boostsSection.js`,
 `towerUpgradeOverlayController.js`, `variableLibraryController.js`, `waveEditorUI.js`, etc.).
@@ -264,7 +284,7 @@ boosts", "towers tab + upgrade overlay", "level editor + wave editor") rather th
 **Risk:** Medium — heavier DOM binding than Phases 4–6; expect the same "typed adapter, migrate mixed
 concerns as one unit" pattern used for `preferences.ts` to keep recurring here.
 
-### Phase 8 — Tower Simulations (`scripts/features/towers/**`)
+### Later candidate — Tower Simulations (`scripts/features/towers/**`)
 **Scope:** The ~70 files under `scripts/features/towers/`, including the `cardinalWarden/` and
 `graphTowers/` subdirectories. This is the largest cluster in the codebase.
 **Why now:** By this point tower definitions (4), state (5), and equation math (6) are typed, so
@@ -276,7 +296,7 @@ attempted as a single phase.
 Budget the most time-per-file here and insist on real particle/entity interfaces rather than
 type-erasing to `any[]`/`Record<string, unknown>[]`.
 
-### Phase 9 — Playfield Runtime (`assets/playfield/**`)
+### Later candidate — Playfield Runtime (`assets/playfield/**`)
 **Scope:** ~55 files: managers, `*System.js` (ECS-style), renderers, input controllers, and finally
 `assets/playfield.js` itself (4,118 lines) once everything it composes is typed.
 **Why last among subsystems:** Highest fan-in — nearly every other migrated subsystem (towers,
@@ -290,7 +310,7 @@ concentrated in developer-tools files that live alongside this cluster:
 `assets/playfield/services/DeveloperToolsService.js`). Establish the central `Window` augmentation
 `.d.ts` file during this phase, not per-file.
 
-### Phase 10 — `assets/main.js` Decomposition and Final Conversion
+### Later candidate — `assets/main.js` Decomposition and Final Conversion
 **Scope:** Extract remaining coordination-only responsibilities out of `assets/main.js` (4,569 lines)
 into owned modules (continuing the pattern already used for tab/navigation logic pre-Phase-1), type
 each extracted piece as part of whichever subsystem phase it belongs to, and only convert the
@@ -300,7 +320,7 @@ early would either force a mass-migration of everything `main.js` touches, or pr
 file full of `any`-typed imports — both against the plan's non-goals.
 **Risk:** Low once Phases 4–9 are done (mechanical); high if attempted early (see above).
 
-### Phase 11 — Strictness Hardening & Save-Schema Project (optional, post-completion)
+### Post-completion candidate — Strictness Hardening & Save-Schema Project
 Once file-by-file conversion is complete:
 - Consider replacing the remaining `AutoSaveSnapshot = Record<string, unknown>` opaque adapter (Risk
   #6) with a fully modeled save schema now that every state-owning module has real types.
@@ -321,8 +341,9 @@ Once file-by-file conversion is complete:
 navigation → core formatting/persistence → preferences → **tower data schemas
 (`assets/data/towers/*.ts`, COMPLETE)** → **game-state containers
 (`resourceState.ts`/`spireResourceState.ts`/`monetizationState.ts`/`cognitiveRealmState.ts`, Phases
-5A + 5B, both COMPLETE — all four `assets/state/*.ts` files now migrated)** → spire/powder/tower-
-upgrade save persistence (`assets/spireResourcePersistence.js`, next up) → tower equation math.
+5A + 5B, both COMPLETE — all four `assets/state/*.ts` files now migrated)** → **post-retirement
+Spire-resource persistence (`assets/spireResourcePersistence.ts`, revised Phase 6 COMPLETE)** →
+Aleph-chain upgrade state (`assets/alephUpgradeState.js`, recommended Phase 7) → tower equation math.
 
 **Middle:** UI tab/menu/overlay controllers (parallelizable in small batches).
 
@@ -338,8 +359,9 @@ earlier phases.
 
 ## 6. Blockers / Dependencies Needing Action
 
-- **No blockers currently prevent starting Phase 5.** Tooling, strict mode, and the build pipeline are
-  already working end-to-end for 43 files, and `tsconfig.json`/`scripts/sync-ts-output.cjs` now
+- **No blockers currently prevent starting Phase 7.** Tooling, strict mode, and the build pipeline are
+  already working end-to-end for 47 authored TypeScript modules, and
+  `tsconfig.json`/`scripts/sync-ts-output.cjs` now
   discover new `.ts` sources automatically via glob patterns rather than requiring a manual file-list
   edit per phase.
 - **No `@types` packages need installing today** — no typed third-party npm runtime dependency was
