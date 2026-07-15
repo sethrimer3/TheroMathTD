@@ -163,6 +163,11 @@ function importTowerBlueprintPresenterModule() {
   return import(pathToFileURL(presenterDest).href);
 }
 
+// Import the compiled dependency-free tower discovery owner as the browser loads it.
+function importTowerVariableDiscoveryModule() {
+  return importAsEsm('assets/towerVariableDiscovery.js');
+}
+
 // Build a fresh dependency-injected persistence controller for each test so
 // mutable story flags, inventory maps, and invocation logs never leak between cases.
 function createSpirePersistenceHarness(spirePersistence, options = {}) {
@@ -1543,6 +1548,200 @@ async function run() {
     controller.ensureTowerUpgradeState('authored').variables.power.level = 1;
     controller.clearTowerUpgradeState();
     assert.deepEqual(controller.getTowerUpgradeStateSnapshot(), {});
+  });
+
+  // --- assets/towerVariableDiscovery.js -----------------------------------
+  const towerDiscovery = await importTowerVariableDiscoveryModule();
+
+  function createTowerDiscoveryHarness(overrides = {}) {
+    const discoveredVariables = Object.prototype.hasOwnProperty.call(overrides, 'discoveredVariables')
+      ? overrides.discoveredVariables
+      : new Map();
+    const discoveredVariableListeners = Object.prototype.hasOwnProperty.call(overrides, 'discoveredVariableListeners')
+      ? overrides.discoveredVariableListeners
+      : new Set();
+    const definitions = overrides.definitions || {
+      alpha: { id: 'alpha', name: ' Alpha ', symbol: ' α ', tier: 1 },
+      beta: { id: 'beta', name: 'Beta', symbol: 'β', tier: 2 },
+      gamma: { id: 'gamma', name: 'Gamma', symbol: 'γ', tier: 3 },
+    };
+    const blueprints = overrides.blueprints || {
+      alpha: { variables: [{ key: ' attack ', libraryKey: 'atk' }] },
+      beta: { variables: [{ libraryKey: ' M ' }] },
+      gamma: { variables: [{ key: 'rate', tooltipName: 'Cadence' }] },
+    };
+    const orderedDefinitions = overrides.orderedDefinitions ?? [
+      definitions.beta,
+      definitions.alpha,
+      definitions.gamma,
+    ];
+    const towerOrderIndex = overrides.towerOrderIndex || new Map([
+      ['beta', 0],
+      ['alpha', 1],
+      ['gamma', 2],
+    ]);
+    const manager = towerDiscovery.createTowerVariableDiscoveryManager({
+      universalVariableLibrary: overrides.universalVariableLibrary || new Map([
+        ['atk', { symbol: 'Atk', name: 'Attack', description: 'Base damage.', units: 'damage' }],
+        ['m', { symbol: 'm', name: 'Range', description: 'Reach.', units: 'meters' }],
+      ]),
+      discoveredVariables,
+      discoveredVariableListeners,
+      getTowerDefinition: (towerId) => definitions[towerId] || null,
+      getOrderedTowerDefinitions: () => orderedDefinitions,
+      getTowerOrderIndex: () => towerOrderIndex,
+      getTowerEquationBlueprint: (towerId) => blueprints[towerId] || null,
+      getDefaultUnlockCollection: overrides.getDefaultUnlockCollection || (() => null),
+    });
+    return { manager, discoveredVariables, discoveredVariableListeners };
+  }
+
+  await test('tower discovery: invalid injected stores throw the exact construction errors', () => {
+    assert.throws(
+      () => towerDiscovery.createTowerVariableDiscoveryManager({ discoveredVariables: null }),
+      { message: 'createTowerVariableDiscoveryManager requires a Map for discoveredVariables.' },
+    );
+    assert.throws(
+      () => towerDiscovery.createTowerVariableDiscoveryManager({
+        discoveredVariables: new Map(),
+        discoveredVariableListeners: {},
+      }),
+      { message: 'createTowerVariableDiscoveryManager requires a Set for discoveredVariableListeners.' },
+    );
+  });
+
+  await test('tower discovery: lookup aliases normalize in libraryKey, key, symbol, equationSymbol order', () => {
+    const { manager } = createTowerDiscoveryHarness();
+    assert.equal(manager.getUniversalVariableMetadata(' ATK ').name, 'Attack');
+    assert.equal(manager.getUniversalVariableMetadata({ libraryKey: ' M ', key: 'atk' }).name, 'Range');
+    assert.equal(manager.getUniversalVariableMetadata({ key: ' ATK ', symbol: 'm' }).name, 'Attack');
+    assert.equal(manager.getUniversalVariableMetadata({ symbol: ' M ' }).name, 'Range');
+    assert.equal(manager.getUniversalVariableMetadata({ equationSymbol: ' ATK ' }).name, 'Attack');
+    assert.equal(manager.getUniversalVariableMetadata({}), null);
+  });
+
+  await test('tower discovery: compound ids prefer authored key, then normalized aliases, and reject blanks', () => {
+    const { manager } = createTowerDiscoveryHarness();
+    assert.equal(manager.buildDiscoveredVariableId('alpha', { key: ' Power ', libraryKey: 'atk' }), 'alpha::Power');
+    assert.equal(manager.buildDiscoveredVariableId('alpha', { libraryKey: ' ATK ' }), 'alpha::atk');
+    assert.equal(manager.buildDiscoveredVariableId('alpha', { equationSymbol: ' M ' }), 'alpha::m');
+    assert.equal(manager.buildDiscoveredVariableId('', { key: 'power' }), null);
+    assert.equal(manager.buildDiscoveredVariableId('alpha', {}), null);
+  });
+
+  await test('tower discovery: record fields preserve authored precedence and universal/tower fallbacks', () => {
+    const { manager } = createTowerDiscoveryHarness({
+      blueprints: {
+        alpha: {
+          variables: [
+            { key: 'first', libraryKey: 'atk', symbol: ' X ', name: 'Direct', description: 'Own', units: 'hits', glyphLabel: ' G1 ' },
+            { key: 'second', libraryKey: 'm' },
+          ],
+        },
+      },
+    });
+    assert.equal(manager.discoverTowerVariables('alpha'), true);
+    const [first, second] = manager.getDiscoveredVariables();
+    assert.deepEqual(first, {
+      id: 'alpha::first', towerId: 'alpha', towerName: 'Alpha', towerSymbol: 'α', towerTier: 1,
+      towerOrder: 1, key: 'first', libraryKey: 'atk', symbol: 'X', name: 'Direct',
+      description: 'Own', units: 'hits', glyphLabel: 'G1',
+    });
+    assert.equal(second.symbol, 'm');
+    assert.equal(second.name, 'Range');
+    assert.equal(second.description, 'Reach.');
+    assert.equal(second.units, 'meters');
+  });
+
+  await test('tower discovery: invalid blueprints and duplicate discoveries are no-ops', () => {
+    const { manager } = createTowerDiscoveryHarness({
+      blueprints: { alpha: { variables: [{ key: 'attack' }] }, invalid: { variables: null } },
+    });
+    assert.equal(manager.discoverTowerVariables(null), false);
+    assert.equal(manager.discoverTowerVariables('missing'), false);
+    assert.equal(manager.discoverTowerVariables('invalid'), false);
+    assert.equal(manager.discoverTowerVariables('alpha', { notify: false }), true);
+    assert.equal(manager.discoverTowerVariables('alpha'), false);
+    assert.equal(manager.getDiscoveredVariables().length, 1);
+  });
+
+  await test('tower discovery: snapshots sort by tower order/id/name and clone owned records', () => {
+    const { manager, discoveredVariables } = createTowerDiscoveryHarness();
+    manager.discoverTowerVariables('gamma', { notify: false });
+    manager.discoverTowerVariables('alpha', { notify: false });
+    manager.discoverTowerVariables('beta', { notify: false });
+    const snapshot = manager.getDiscoveredVariables();
+    assert.deepEqual(snapshot.map((entry) => entry.towerId), ['beta', 'alpha', 'gamma']);
+    snapshot[0].name = 'mutated';
+    assert.equal(discoveredVariables.get('beta::m').name, 'Range');
+    assert.notEqual(manager.getDiscoveredVariables()[0], snapshot[0]);
+  });
+
+  await test('tower discovery: listeners receive an immediate snapshot, notify on change, and unsubscribe', () => {
+    const { manager } = createTowerDiscoveryHarness();
+    const seen = [];
+    const unsubscribe = manager.addDiscoveredVariablesListener((snapshot) => seen.push(snapshot.map(({ id }) => id)));
+    assert.deepEqual(seen, [[]]);
+    manager.discoverTowerVariables('alpha');
+    assert.deepEqual(seen, [[], ['alpha::attack']]);
+    unsubscribe();
+    manager.discoverTowerVariables('beta');
+    assert.equal(seen.length, 2);
+    assert.equal(typeof manager.addDiscoveredVariablesListener(false), 'function');
+  });
+
+  await test('tower discovery: subscription and notification listener failures are isolated and warned', () => {
+    const warnings = [];
+    const originalWarn = console.warn;
+    console.warn = (...args) => warnings.push(args);
+    try {
+      const { manager } = createTowerDiscoveryHarness();
+      manager.addDiscoveredVariablesListener(() => { throw new Error('subscription'); });
+      manager.discoverTowerVariables('alpha');
+    } finally {
+      console.warn = originalWarn;
+    }
+    assert.deepEqual(warnings.map(([message]) => message), [
+      'Discovered variable listener failed during subscription.',
+      'Discovered variable listener failed.',
+    ]);
+  });
+
+  await test('tower discovery: Set, array, iterable, and object-key unlocks normalize identically', () => {
+    const inputs = [
+      new Set([' alpha ', 'beta']),
+      [' alpha ', 'beta', 3],
+      new Map([['alpha', true], ['beta', true]]).keys(),
+      { alpha: false, beta: true },
+    ];
+    for (const input of inputs) {
+      const { manager } = createTowerDiscoveryHarness();
+      manager.initializeDiscoveredVariablesFromUnlocks(input);
+      assert.deepEqual(manager.getDiscoveredVariables().map(({ towerId }) => towerId), ['beta', 'alpha']);
+    }
+  });
+
+  await test('tower discovery: initialization follows ordered definitions and emits one rebuilt snapshot', () => {
+    const { manager } = createTowerDiscoveryHarness();
+    const seen = [];
+    manager.addDiscoveredVariablesListener((snapshot) => seen.push(snapshot.map(({ towerId }) => towerId)));
+    manager.initializeDiscoveredVariablesFromUnlocks(['gamma', 'alpha', 'beta']);
+    assert.deepEqual(seen, [[], ['beta', 'alpha', 'gamma']]);
+  });
+
+  await test('tower discovery: empty input uses only a Set fallback and unordered mode follows unlock iteration', () => {
+    const withSetFallback = createTowerDiscoveryHarness({
+      orderedDefinitions: [],
+      getDefaultUnlockCollection: () => new Set(['gamma', ' alpha ']),
+    }).manager;
+    withSetFallback.initializeDiscoveredVariablesFromUnlocks(null);
+    assert.deepEqual(withSetFallback.getDiscoveredVariables().map(({ towerId }) => towerId), ['alpha', 'gamma']);
+
+    const withArrayFallback = createTowerDiscoveryHarness({
+      getDefaultUnlockCollection: () => ['alpha'],
+    }).manager;
+    withArrayFallback.initializeDiscoveredVariablesFromUnlocks([]);
+    assert.deepEqual(withArrayFallback.getDiscoveredVariables(), []);
   });
 
   // --- assets/spireResourcePersistence.js ----------------------------------

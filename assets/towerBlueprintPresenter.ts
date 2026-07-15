@@ -66,9 +66,15 @@ export interface TowerBlueprintFormatters {
 /** Variable fields consumed directly by the presenter and fallback blueprint. */
 export interface TowerEquationVariable {
   key?: string;
+  libraryKey?: string;
   symbol?: string;
+  equationSymbol?: string;
   name?: string;
+  tooltipName?: string;
   description?: string | null;
+  tooltipDescription?: string;
+  units?: string;
+  glyphLabel?: string;
   stat?: string;
   upgradable?: boolean;
   format?: (value: number) => string;
