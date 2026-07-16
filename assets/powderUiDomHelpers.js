@@ -16,29 +16,8 @@ const GOLD_NUMBER_SPRITE_PATH_PREFIX = 'assets/sprites/goldNumbers/Gold_';
  */
 export function createPowderUiDomHelpers(options = {}) {
   const {
-    getPowderElements,
     powderGlyphColumns = [],
-    moteGemState,
-    formatWholeNumber,
-    formatGameNumber: _formatGameNumber,
-    getMoteGemColor,
-    getGemSpriteAssetPath,
   } = options;
-
-  /**
-   * Resolve the latest powder panel elements so helpers can gracefully handle early invocations.
-   * @returns {Object|null}
-   */
-  const resolvePowderElements = () => {
-    if (typeof getPowderElements === 'function') {
-      try {
-        return getPowderElements() || null;
-      } catch (error) {
-        console.warn('Failed to resolve powder elements for UI helper.', error);
-      }
-    }
-    return null;
-  };
 
   /**
    * Render one Aleph wall glyph from the dedicated golden Aleph and golden digit sprites.
@@ -122,133 +101,7 @@ export function createPowderUiDomHelpers(options = {}) {
     root.style.setProperty('--mind-gate-glow-secondary', colorToRgbaString(secondaryStop, 0.3));
   }
 
-  // Refresh the mote gem inventory card so collected crystals mirror the latest drop ledger.
-  function updateMoteGemInventoryDisplay() {
-    if (!moteGemState) {
-      return;
-    }
-    const powderElements = resolvePowderElements();
-    const { gemInventoryList, gemInventoryEmpty, craftingButton } = powderElements || {};
-    if (!gemInventoryList || !moteGemState.inventory?.entries) {
-      return;
-    }
-
-    const entries = Array.from(moteGemState.inventory.entries())
-      .map(([typeKey, record = {}]) => {
-        const label = typeof record.label === 'string' && record.label.trim().length
-          ? record.label.trim()
-          : typeKey;
-        const total = Number.isFinite(record.total) ? Math.max(0, record.total) : 0;
-        const count = Number.isFinite(record.count) ? Math.max(0, Math.floor(record.count)) : 0;
-        return { typeKey, label, total, count };
-      })
-      .filter((entry) => entry.total > 0 || entry.count > 0)
-      .sort((a, b) => {
-        if (b.total !== a.total) {
-          return b.total - a.total;
-        }
-        if (b.count !== a.count) {
-          return b.count - a.count;
-        }
-        return a.label.localeCompare(b.label);
-      });
-
-    gemInventoryList.textContent = '';
-
-    if (!entries.length) {
-      gemInventoryList.setAttribute('aria-hidden', 'true');
-      gemInventoryList.hidden = true;
-      if (gemInventoryEmpty) {
-        gemInventoryEmpty.hidden = false;
-        gemInventoryEmpty.setAttribute('aria-hidden', 'false');
-      }
-      if (craftingButton) {
-        craftingButton.disabled = false;
-        craftingButton.removeAttribute('aria-disabled');
-      }
-      return;
-    }
-
-    const fragment = document.createDocumentFragment();
-    entries.forEach((entry) => {
-      const item = document.createElement('li');
-      item.className = 'powder-gem-inventory__item';
-      item.dataset.gemId = entry.typeKey;
-
-      const labelContainer = document.createElement('span');
-      labelContainer.className = 'powder-gem-inventory__label';
-
-      const swatch = document.createElement('span');
-      swatch.className = 'powder-gem-inventory__swatch';
-      const spritePath = typeof getGemSpriteAssetPath === 'function'
-        ? getGemSpriteAssetPath(entry.typeKey)
-        : null;
-      if (spritePath) {
-        // Embed the gem sprite so the inventory mirrors the drop art one-to-one.
-        swatch.classList.add('powder-gem-inventory__swatch--sprite');
-        const spriteImg = document.createElement('img');
-        spriteImg.className = 'powder-gem-inventory__sprite';
-        spriteImg.decoding = 'async';
-        spriteImg.loading = 'lazy';
-        spriteImg.alt = '';
-        spriteImg.src = spritePath;
-        swatch.appendChild(spriteImg);
-      } else if (typeof getMoteGemColor === 'function') {
-        // Fall back to the procedural color when the sprite asset is unavailable.
-        const color = getMoteGemColor(entry.typeKey);
-        if (color && typeof swatch.style?.setProperty === 'function') {
-          if (Number.isFinite(color.hue)) {
-            swatch.style.setProperty('--gem-hue', `${Math.round(color.hue)}`);
-          }
-          if (Number.isFinite(color.saturation)) {
-            swatch.style.setProperty('--gem-saturation', `${Math.round(color.saturation)}%`);
-          }
-          if (Number.isFinite(color.lightness)) {
-            swatch.style.setProperty('--gem-lightness', `${Math.round(color.lightness)}%`);
-          }
-        }
-      }
-
-      const nameEl = document.createElement('span');
-      nameEl.className = 'powder-gem-inventory__name';
-      nameEl.textContent = entry.label || entry.typeKey;
-
-      labelContainer.appendChild(swatch);
-      labelContainer.appendChild(nameEl);
-
-      const countEl = document.createElement('span');
-      countEl.className = 'powder-gem-inventory__count';
-      const clusterLabel = entry.count === 1 ? 'cluster' : 'clusters';
-      const moteLabel = entry.total === 1 ? 'Mote' : 'Motes';
-      const formatClusters = typeof formatWholeNumber === 'function'
-        ? formatWholeNumber(entry.count)
-        : `${entry.count}`;
-      // Display gem totals as whole numbers since gems come in whole-number parts.
-      const formatMotes = typeof formatWholeNumber === 'function'
-        ? formatWholeNumber(Math.floor(entry.total))
-        : `${Math.floor(entry.total)}`;
-      countEl.textContent = `${formatClusters} ${clusterLabel} · ${formatMotes} ${moteLabel}`;
-
-      item.appendChild(labelContainer);
-      item.appendChild(countEl);
-      fragment.appendChild(item);
-    });
-
-    gemInventoryList.hidden = false;
-    gemInventoryList.setAttribute('aria-hidden', 'false');
-    gemInventoryList.appendChild(fragment);
-
-    if (gemInventoryEmpty) {
-      gemInventoryEmpty.hidden = true;
-      gemInventoryEmpty.setAttribute('aria-hidden', 'true');
-    }
-
-    if (craftingButton) {
-      craftingButton.disabled = false;
-      craftingButton.removeAttribute('aria-disabled');
-    }
-  }
-
+  // Convert a normalized glyph height into its zero-based tier index.
   function createGlyphIndexNormalizer(base, spacing) {
     return (value) => {
       if (!Number.isFinite(value)) {
@@ -384,7 +237,6 @@ export function createPowderUiDomHelpers(options = {}) {
 
   return {
     applyMindGatePaletteToDom,
-    updateMoteGemInventoryDisplay,
     updatePowderGlyphColumns,
   };
 }

@@ -3,7 +3,6 @@ export function createVariableLibraryController({
   scheduleOverlayHide,
   getDiscoveredVariables,
   addDiscoveredVariablesListener,
-  openCraftingOverlay,
 }) {
   let variableLibraryButton = null;
   let variableLibraryOverlay = null;
@@ -182,14 +181,6 @@ export function createVariableLibraryController({
     };
 
     removeVariableListener = addDiscoveredVariablesListener(handleVariablesChanged);
-
-    const equipmentButton = document.getElementById('tower-equipment-button');
-    if (equipmentButton) {
-      equipmentButton.addEventListener('click', (event) => {
-        event.preventDefault();
-        openCraftingOverlay();
-      });
-    }
 
     updateVariableLibraryButton();
   }

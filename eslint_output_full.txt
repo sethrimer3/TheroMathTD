@@ -102,8 +102,6 @@
 
 /home/runner/work/Thero_Idle_TD/Thero_Idle_TD/assets/playfield/managers/CombatStateManager.js
    6:3  warning  'getEnemyCodexEntry' is defined but never used. Allowed unused vars must match /^_/u             no-unused-vars
-   9:3  warning  'spawnMoteGemDrop' is defined but never used. Allowed unused vars must match /^_/u               no-unused-vars
-  10:3  warning  'resolveEnemyGemDropMultiplier' is defined but never used. Allowed unused vars must match /^_/u  no-unused-vars
   53:7  warning  'enemyDeathParticles' is assigned a value but never used. Allowed unused vars must match /^_/u   no-unused-vars
   54:7  warning  'enemySwirlImpacts' is assigned a value but never used. Allowed unused vars must match /^_/u     no-unused-vars
   55:7  warning  'gammaStarBursts' is assigned a value but never used. Allowed unused vars must match /^_/u       no-unused-vars

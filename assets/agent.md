@@ -308,9 +308,8 @@ Individual JSON files in `data/towers/` for complex tower configurations
 
 ### `sprites/` - PNG Sprites
 - Particle effects
-- Equipment icons
 - Glyph symbols
-- Resource icons (gems, glyphs)
+- Resource icons
 
 ### Font Files (`fonts/`)
 - Cormorant Garamond (scholarly serif)

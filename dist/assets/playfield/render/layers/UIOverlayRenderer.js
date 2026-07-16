@@ -38,13 +38,6 @@ const VIEWPORT_CULL_MARGIN = 100;
 
 // ─── Utility helpers ──────────────────────────────────────────────────────────
 
-function getNowTimestamp() {
-  if (typeof performance !== 'undefined' && typeof performance.now === 'function') {
-    return performance.now();
-  }
-  return Date.now();
-}
-
 /**
  * Calculate the visible viewport bounds in world coordinates.
  * Duplicated from CanvasRenderer.js to avoid a circular import.
@@ -289,14 +282,6 @@ export function drawDamageNumbers() {
   });
 
   ctx.restore();
-}
-
-export function drawFloatingFeedback() {
-  if (!this.floatingFeedback || typeof this.floatingFeedback.update !== 'function') {
-    return;
-  }
-  const now = this._frameCache?.timestamp || getNowTimestamp();
-  this.floatingFeedback.update(now);
 }
 
 export function drawWaveTallies() {

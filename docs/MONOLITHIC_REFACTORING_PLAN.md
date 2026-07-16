@@ -87,7 +87,7 @@ Before any refactoring begins, establish these baseline metrics:
 - Input handling (touch/mouse, tower placement, gesture recognition)
 - Tower lifecycle (spawn, upgrade, targeting, ability execution)
 - Developer tools (crystal manager, debug overlays)
-- UI notifications (gem drops, codex encounters, floating feedback)
+- UI notifications (codex encounters and transient feedback)
 - Level flow control (start, pause, restart, exit)
 
 **Refactoring Plan:**
@@ -1207,8 +1207,6 @@ Track these metrics to measure progress:
 - TowerDispatchSystem.js created in `assets/playfield/systems/`: 436 lines (Phase 1 - tower update, targeting, fire routing, and visual emission extracted from SimplePlayfield)
   - Moved: updateTowers, findTarget, resolveTowerShotDamage, emitTowerAttackVisuals, fireAtTarget (5 methods)
   - playfield.js reduced from 7,561 to 7,047 lines (514-line reduction)
-- MoteGemSystem.js created in `assets/playfield/systems/`: 137 lines (Phase 1 - mote gem flight animation extracted)
-  - Moved: updateMoteGems (1 method)
 - ProjectileSpawnSystem.js created in `assets/playfield/systems/`: 259 lines (Phase 1 - projectile spawn helpers extracted)
   - Moved: spawnSupplyProjectile, spawnBetaTriangleProjectile, spawnGammaStarProjectile, spawnOmegaWave, spawnPolygonShard (5 methods)
 - LevelResetSystem.js created in `assets/playfield/systems/`: 489 lines (Phase 1 - level lifecycle methods extracted)
@@ -1337,9 +1335,8 @@ Track these metrics to measure progress:
 
 **Progress Notes (Build 509):**
 - betSpireForgeSystem.js created in `assets/`: 516 lines (Phase 4.1.1 continuation - all forge crunch state management and forge draw methods extracted from BetSpireRender)
-  - Moved: checkForgeCreunch, startForgeCrunch, updateForgeCrunch, getForgeRotationSpeedMultiplier, getSmallEquivalentForSize, completeForgeCrunch, drawForgeCrunch, drawCrunchGemAwards, drawForge, drawForgeInfluenceRing (10 methods)
+  - Moved: checkForgeCreunch, startForgeCrunch, updateForgeCrunch, getForgeRotationSpeedMultiplier, getSmallEquivalentForSize, completeForgeCrunch, drawForgeCrunch, drawForge, drawForgeInfluenceRing (9 methods)
   - betSpireRender.js reduced from 2,208 to 1,751 lines (457-line reduction); forge methods replaced with thin `.call(this)` delegates
-  - betSpireForgeSystem.js imports moteGemState, resolveGemDefinition from enemies.js; PI, TWO_PI, PI_OVER_SIX, HALF, FORGE_RADIUS, MAX_FORGE_ATTRACTION_DISTANCE, PARTICLE_FACTOR_EXPONENT_INCREMENT, PARTICLE_TIERS, SMALL_SIZE_INDEX, MEDIUM_SIZE_INDEX, LARGE_SIZE_INDEX, EXTRA_LARGE_SIZE_INDEX, SIZE_SMALL_EQUIVALENTS from betSpireConfig.js
   - Removed 5 now-exclusive imports from betSpireRender.js: PI, FORGE_RADIUS, MAX_FORGE_ATTRACTION_DISTANCE, PARTICLE_FACTOR_EXPONENT_INCREMENT, SIZE_SMALL_EQUIVALENTS; removed enemies.js import entirely
 
 **Progress Notes (Build 508):**

@@ -128,7 +128,6 @@ combatManager.updateEnemies(deltaTime, {
 // Handle enemy death
 combatManager.handleEnemyDeath(enemy, {
   spawnDeathParticles: (enemy) => { /* visuals */ },
-  dropGems: (enemy) => { /* loot */ }
 });
 
 // Query state

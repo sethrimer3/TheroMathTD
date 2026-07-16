@@ -33,7 +33,6 @@ export function spawnRelayEnemy(relay, spawnTypeId) {
     x: pos.x,
     y: pos.y,
     hpExponent: this.calculateHealthExponent ? this.calculateHealthExponent(1) : 0,
-    gemDropMultiplier: 1,
     moteFactor: 1,
     symbol: spawnTypeId[0] || 'ε',
     polygonSides: 0,

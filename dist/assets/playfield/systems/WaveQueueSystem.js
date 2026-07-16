@@ -148,9 +148,6 @@ export function buildActiveEnemyEntries() {
       if (Number.isFinite(enemy.baseSpeed) && Math.abs(enemy.baseSpeed - enemy.speed) > 0.0001) {
         rows.push({ label: 'Base Speed', value: this.formatEnemySpeed(enemy.baseSpeed) });
       }
-      if (Number.isFinite(enemy.gemDropMultiplier)) {
-        rows.push({ label: 'Gem Multiplier', value: `×${enemy.gemDropMultiplier.toFixed(2)}` });
-      }
       if (Number.isFinite(enemy.moteFactor)) {
         rows.push({ label: 'Mote Yield', value: formatCombatNumber(enemy.moteFactor) });
       }

@@ -1,5 +1,4 @@
 import { samplePaletteGradient } from '../../colorSchemeUtils.js';
-import { moteGemState, getGemSpriteImage } from '../../enemies.js';
 import { colorToRgbaString } from '../../../scripts/features/towers/powderTower.js';
 import {
   drawChiThralls as drawChiThrallsHelper,
@@ -52,7 +51,6 @@ import {
 } from './layers/EnemyRenderer.js';
 import {
   drawDamageNumbers,
-  drawFloatingFeedback,
   drawWaveTallies,
   drawTowerMenu,
 } from './layers/UIOverlayRenderer.js';
@@ -75,12 +73,9 @@ import {
 const TWO_PI = Math.PI * 2;
 const HALF = 0.5;
 
-const GEM_MOTE_BASE_RATIO = 0.02;
-
 // Viewport culling margin: buffer zone beyond visible area to prevent pop-in
 const VIEWPORT_CULL_MARGIN = 100;
 // Entity culling radii
-const MOTE_GEM_CULL_RADIUS = 50;
 
 // ─── Developer layer visibility flags ────────────────────────────────────────
 // These flags control which render layers are drawn when developer mode is active.
@@ -176,30 +171,6 @@ function getViewportBounds() {
     minY: viewCenter.y - halfHeight,
     maxY: viewCenter.y + halfHeight,
   };
-}
-
-/**
- * Check if a position is within the visible viewport.
- * @param {Object} position - Object with x, y coordinates
- * @param {Object} bounds - Viewport bounds from getViewportBounds
- * @param {number} radius - Optional radius for circular objects
- * @returns {boolean} True if visible (or if bounds unavailable), false if position invalid or not visible
- */
-function isInViewport(position, bounds, radius = 0) {
-  if (!position) {
-    return false; // No position means nothing to render
-  }
-  if (!bounds) {
-    return true; // Can't determine visibility, so render everything to be safe
-  }
-  const x = position.x || 0;
-  const y = position.y || 0;
-  return (
-    x + radius >= bounds.minX &&
-    x - radius <= bounds.maxX &&
-    y + radius >= bounds.minY &&
-    y - radius <= bounds.maxY
-  );
 }
 
 function _clamp(value, min, max) {
@@ -322,8 +293,6 @@ function draw() {
     this.drawIotaFieldOverlays();
   }
   if (devLayerFlags.enemies) {
-    // Mote gems are collectible world entities that share the enemy render pass.
-    this.drawMoteGems();
     this.drawEnemies();
     // Hypernode shield polygon renders above enemies so the prismatic zone is visible.
     this.drawHypernodeShield();
@@ -344,7 +313,6 @@ function draw() {
   }
   if (devLayerFlags.uiOverlay) {
     this.drawDamageNumbers();
-    this.drawFloatingFeedback();
     this.drawWaveTallies();
     this.drawChiLightTrails();
     this.drawChiThralls();
@@ -354,86 +322,6 @@ function draw() {
   
   // Clear frame cache after rendering
   this._frameCache = null;
-}
-
-function drawMoteGems() {
-  if (!this.ctx || !moteGemState.active.length) {
-    return;
-  }
-  const ctx = this.ctx;
-  ctx.save();
-  
-  // Use cached frame values to reduce redundant calculations
-  const width = this._frameCache?.width || (this.renderWidth || (this.canvas ? this.canvas.clientWidth : 0) || 0);
-  const height = this._frameCache?.height || (this.renderHeight || (this.canvas ? this.canvas.clientHeight : 0) || 0);
-  const minDimension = this._frameCache?.minDimension || (() => {
-    const dimensionCandidates = [];
-    if (Number.isFinite(width) && width > 0) {
-      dimensionCandidates.push(width);
-    }
-    if (Number.isFinite(height) && height > 0) {
-      dimensionCandidates.push(height);
-    }
-    return Math.max(1, dimensionCandidates.length ? Math.min(...dimensionCandidates) : 320);
-  })();
-  
-  const moteUnit = Math.max(6, minDimension * GEM_MOTE_BASE_RATIO);
-  const pulseMagnitude = moteUnit * 0.35;
-
-  // Calculate viewport bounds once for all mote gems
-  const viewportBounds = this._frameCache?.viewportBounds || getViewportBounds.call(this);
-
-  moteGemState.active.forEach((gem) => {
-    // Skip rendering mote gems outside viewport
-    if (viewportBounds && !isInViewport({ x: gem.x, y: gem.y }, viewportBounds, MOTE_GEM_CULL_RADIUS)) {
-      return;
-    }
-    
-    const hue = gem.color?.hue ?? 48;
-    const saturation = gem.color?.saturation ?? 68;
-    const lightness = gem.color?.lightness ?? 56;
-    const moteSize = Number.isFinite(gem.moteSize) ? Math.max(1, gem.moteSize) : Math.max(1, gem.value);
-    const size = moteSize * moteUnit;
-    const pulse = Math.sin((gem.pulse || 0) * 0.6) * pulseMagnitude;
-    const rotation = Math.sin((gem.pulse || 0) * 0.35) * 0.45;
-    const opacity = Number.isFinite(gem.opacity) ? Math.max(0, Math.min(1, gem.opacity)) : 1;
-    const alphaFill = Math.max(0, Math.min(0.9, 0.6 + opacity * 0.3));
-    const alphaStroke = Math.max(0, Math.min(0.9, 0.5 + opacity * 0.35));
-    const fill = `hsla(${hue}, ${saturation}%, ${lightness}%, ${alphaFill})`;
-    const stroke = `hsla(${hue}, ${Math.max(24, saturation - 18)}%, ${Math.max(18, lightness - 28)}%, ${alphaStroke})`;
-    const sparkle = `hsla(${hue}, ${Math.max(34, saturation - 22)}%, 92%, ${Math.max(0, opacity * 0.65)})`;
-    const sprite = getGemSpriteImage(gem.typeKey);
-
-    ctx.save();
-    ctx.translate(gem.x, gem.y);
-    ctx.rotate(rotation);
-    if (sprite) {
-      const baseSize = Math.max(moteUnit * 0.6, size + pulse);
-      const reference = Math.max(1, Math.max(sprite.width || 1, sprite.height || 1));
-      const renderSize = baseSize;
-      const scale = renderSize / reference;
-      const spriteWidth = (sprite.width || reference) * scale;
-      const spriteHeight = (sprite.height || reference) * scale;
-      ctx.globalAlpha = opacity;
-      ctx.drawImage(sprite, -spriteWidth * HALF, -spriteHeight * HALF, spriteWidth, spriteHeight);
-    } else {
-      const squareSize = Math.max(moteUnit * 0.6, size + pulse);
-      const half = squareSize * HALF;
-      ctx.fillStyle = fill;
-      ctx.strokeStyle = stroke;
-      ctx.lineWidth = Math.max(moteUnit * 0.12, 1.2);
-      ctx.beginPath();
-      ctx.rect(-half, -half, squareSize, squareSize);
-      ctx.fill();
-      ctx.stroke();
-
-      const sparkleSize = Math.max(moteUnit * 0.3, squareSize * 0.38);
-      ctx.fillStyle = sparkle;
-      ctx.fillRect(-sparkleSize * 0.5, -sparkleSize * 0.8, sparkleSize, sparkleSize);
-    }
-    ctx.restore();
-  });
-  ctx.restore();
 }
 
 function drawDeltaCommandPreview() {
@@ -812,7 +700,6 @@ export {
   drawChapter1Vermiculate,
   drawSketches,
   drawFloaters,
-  drawMoteGems,
   drawPath,
   drawDeltaCommandPreview,
   drawArcLight,
@@ -840,7 +727,6 @@ export {
   drawSwarmClouds,
   drawDecimalSwarmParticles,
   drawDamageNumbers,
-  drawFloatingFeedback,
   drawWaveTallies,
   drawProjectiles,
   drawIotaPhaseEffects,

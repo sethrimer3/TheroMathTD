@@ -23,13 +23,13 @@ Last Updated: Build 605
   ```
 
 #### Replace per-entity `ctx.save()`/`ctx.restore()` with manual `setTransform()`
-- **Files:** `assets/playfield/render/CanvasRenderer.js` (`drawMoteGems()`), `assets/playfield/render/layers/BackgroundRenderer.js` (`drawSketchesOnContext()`)
+- **Files:** `assets/playfield/render/layers/BackgroundRenderer.js` (`drawSketchesOnContext()`)
 - **Problem:** Each save/restore pushes and pops the entire canvas state (transform, clip, styles). With 50+ entities, the state-stack overhead is measurable on mobile.
 - **Fix:** Replace with manual transform math:
   ```javascript
   const cos = Math.cos(rotation);
   const sin = Math.sin(rotation);
-  ctx.setTransform(cos, sin, -sin, cos, gem.x, gem.y);
+  ctx.setTransform(cos, sin, -sin, cos, entity.x, entity.y);
   ```
   Then restore the camera transform once after the loop.
 

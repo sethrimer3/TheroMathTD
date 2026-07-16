@@ -4,7 +4,7 @@
 import { getOmegaWaveVisualConfig, getTowerTierValue } from '../../colorSchemeUtils.js';
 import { computeTowerVariableValue, calculateTowerEquationResult } from '../../towersTab.js';
 import { metersToPixels } from '../../gameUnits.js';
-import { assignRandomShell, resolveEnemyGemDropMultiplier } from '../../enemies.js';
+import { assignRandomShell } from '../../enemies.js';
 
 // Preserve β triangle speed constant from playfield.js
 const BETA_TRIANGLE_SPEED = 144;
@@ -247,7 +247,6 @@ export function spawnPolygonShard(parent, options = {}) {
     symbol,
     polygonSides: nextSides,
     hpExponent: this.calculateHealthExponent(shardHp),
-    gemDropMultiplier: resolveEnemyGemDropMultiplier(shardConfig),
   };
   if (parent.isBoss) {
     shard.isBoss = true;

@@ -13,15 +13,6 @@ import {
   metersToCanvasFraction,
   DEFAULT_TOWER_DIAMETER_METERS,
 } from './gameUnits.js'; // Provide unit conversion helpers so tower data can use meters.
-import {
-  getCraftedEquipment,
-  getEquipmentAssignment,
-  getTowerEquipmentId,
-  getTowerEquipment,
-  assignEquipmentToTower,
-  clearTowerEquipment,
-  addEquipmentListener as addEquipmentStateListener,
-} from './equipment.js';
 import { formatCombatNumber } from './playfield/utils/formatting.js'; // Format tower costs with the same notation used in combat messaging.
 import { initializeBlueprintContext } from './towerEquations/blueprintContext.js'; // Initialize context for tower blueprints.
 import { generateMasterEquationText } from './towerEquations/masterEquationUtils.js';
@@ -30,7 +21,6 @@ import { createTowerUpgradeOverlayController } from './towerUpgradeOverlayContro
 import { createTowerBlueprintPresenter } from './towerBlueprintPresenter.js';
 import { createTowerVariableDiscoveryManager } from './towerVariableDiscovery.js';
 import { createTowerLoadoutController } from './towerLoadoutController.js';
-import { createTowerEquipmentBindings } from './towerEquipmentBindings.js';
 import { getTowerVisualConfig } from './colorSchemeUtils.js';
 import { T2_FUNC_CONFIG } from '../scripts/features/towers/t2Tower.js';
 
@@ -200,13 +190,6 @@ const towerTabState = {
     element: null, // Cache the tooltip element so we only build it once per session.
     currentTarget: null, // Track which variable currently anchors the tooltip for cleanup.
     hideTimeoutId: null, // Delay hiding briefly to prevent flicker between adjacent variables.
-  },
-  equipmentUi: {
-    slots: new Map(),
-    activeTowerId: null,
-    unsubscribe: null,
-    closeHandlersBound: false,
-    documentListenerBound: false,
   },
   activeTowerUpgradeId: null,
   activeTowerUpgradeBaseEquation: '',
@@ -1034,17 +1017,6 @@ function composeTowerDisplayLabel(definition, fallback = '') {
   return fallback;
 }
 
-function getTowerSourceLabel(towerId) {
-  const definition = getTowerDefinition(towerId);
-  if (definition) {
-    return composeTowerDisplayLabel(definition, towerId || 'tower');
-  }
-  if (typeof towerId === 'string' && towerId.trim()) {
-    return towerId.trim();
-  }
-  return 'tower';
-}
-
 export function getNextTowerId(towerId) {
   const definition = getTowerDefinition(towerId);
   return definition?.nextTierId || null;
@@ -1096,21 +1068,6 @@ const {
 });
 
 export { setLoadoutElements, pruneLockedTowersFromLoadout, refreshTowerLoadoutDisplay, startTowerDrag, cancelTowerDrag, closeLoadoutWheel };
-
-const { initializeTowerEquipmentInterface, getEquipmentSlotRecord } = createTowerEquipmentBindings({
-  equipmentUiState: towerTabState.equipmentUi,
-  towerCardSelector: TOWER_CARD_SELECTOR,
-  getTowerSourceLabel,
-  getTowerEquipment,
-  getTowerEquipmentId,
-  getCraftedEquipment,
-  getEquipmentAssignment,
-  assignEquipmentToTower,
-  clearTowerEquipment,
-  addEquipmentStateListener,
-});
-
-export { initializeTowerEquipmentInterface };
 
 export function unlockTower(towerId, { silent = false } = {}) {
   if (!towerId || !towerTabState.towerDefinitionMap.has(towerId)) {
@@ -1674,11 +1631,6 @@ export function updateTowerCardVisibility() {
       card.setAttribute('aria-hidden', unlocked ? 'false' : 'true');
     }
 
-    const slot = getEquipmentSlotRecord(towerId);
-    if (slot) {
-      slot.button.disabled = !unlocked;
-      slot.container.dataset.locked = unlocked ? 'false' : 'true';
-    }
   });
 }
 

@@ -49,7 +49,7 @@ This document outlines the strategy for refactoring `assets/main.js` (originally
 
 ### `assets/styles.css` – Layered stylesheet plan
 
-**Why it matters:** The primary stylesheet now exceeds 8,000 lines and intermixes global tokens, palette swaps (e.g., `body.color-scheme-fractal-bloom`), utility selectors, and component-specific rules (panels, overlays, level paths). The cascade is difficult to reason about, and the `body.mouse-cursor-gem` overrides illustrate how hard it is to scope single-surface experiments.
+**Why it matters:** The primary stylesheet now exceeds 8,000 lines and intermixes global tokens, palette swaps (e.g., `body.color-scheme-fractal-bloom`), utility selectors, and component-specific rules (panels, overlays, level paths). The cascade is difficult to reason about, and one-off overrides illustrate how hard it is to scope single-surface experiments.
 
 **Refactor goals:**
 
@@ -63,7 +63,7 @@ This document outlines the strategy for refactoring `assets/main.js` (originally
 2. **Create layered partials.** Split the file into `styles/base.css` (custom properties, global reset, cursor tokens), `styles/themes.css` (all `body.color-scheme-*` variants and cursor overrides), `styles/components/` (HUD, overlays, panels, powder basins), and `styles/utilities.css` (helpers such as `.screen-reader-only` and `[data-drag-scroll]`). Each partial wraps rules in CSS `@layer base|theme|components|utilities` so import order stays predictable even though the browser loads multiple `<link>` tags.
 3. **Map imports in `index.html`.** Replace the single `<link rel="stylesheet" href="./assets/styles.css">` with chained imports (base → themes → utilities → components). Because there is no build step, we rely on native CSS `@import url('./themes.css') layer(theme);` inside `styles/base.css` to keep HTTP requests minimal.
 4. **Modularize components incrementally.** As we touch each UI surface (e.g., `.overlay-panel`, `.powder-ledger`, `.level-path-node`), move it into its own file under `styles/components/` and gate it behind matching data attributes. This enables future UI refactors to delete or replace an entire file without disturbing unrelated selectors.
-5. **Regression verification.** Use a manual visual diff checklist (main menu, playfield, towers tab, powder tab, overlays) plus existing cursor toggles (`body.mouse-cursor-gem`) to ensure layered imports did not change specificity. The cascade remains stable because `@layer` sorts by declaration order, so record the canonical order in `docs/PLATFORM_SUPPORT.md` once confirmed.
+5. **Regression verification.** Use a manual visual diff checklist (main menu, playfield, towers tab, powder tab, overlays) to ensure layered imports did not change specificity. The cascade remains stable because `@layer` sorts by declaration order, so record the canonical order in `docs/PLATFORM_SUPPORT.md` once confirmed.
 
 ### `assets/playfield.js` – Split SimplePlayfield responsibilities
 
@@ -73,16 +73,16 @@ This document outlines the strategy for refactoring `assets/main.js` (originally
 
 1. Turn `SimplePlayfield` into a thin orchestrator that composes explicit controllers instead of hoarding methods (e.g., `drawGammaBursts`, `drawTowerMenu`) and dependency state.
 2. Make developer tooling optional by migrating the current `Object.assign(SimplePlayfield.prototype, DeveloperCrystalManager)` mixin into a dedicated service so production builds can skip it entirely.
-3. Decouple gem drop + codex notifications from the render loop so those systems can be unit tested without a canvas.
+3. Decouple codex notifications from the render loop so the system can be unit tested without a canvas.
 
 **Plan:**
 
-1. **Define controller boundaries.** Group existing methods into domains: (a) lifecycle + wave flow (`startLevel`, `handleVictory`, `handleDefeat`), (b) placement & targeting (`handleSlotSelect`, `spawnTower`, tower upgrade helpers), (c) rendering + effects (`drawAlphaBursts`, `drawTowerMenu`, gem particle draws), and (d) developer/diagnostic helpers. Document these clusters in `docs/main_refactor_contexts.md` so later contributors know where each method moved.
+1. **Define controller boundaries.** Group existing methods into domains: (a) lifecycle + wave flow (`startLevel`, `handleVictory`, `handleDefeat`), (b) placement & targeting (`handleSlotSelect`, `spawnTower`, tower upgrade helpers), (c) rendering + effects (`drawAlphaBursts`, `drawTowerMenu`), and (d) developer/diagnostic helpers. Document these clusters in `docs/main_refactor_contexts.md` so later contributors know where each method moved.
 2. **Introduce composition layer.** Create `assets/playfield/controllers/PlayfieldLifecycle.js`, `PlayfieldPlacementController.js`, and `PlayfieldEffectsController.js`. Each module exports a factory that receives the dependencies already passed into `configurePlayfieldSystem` (tower defs, codex callbacks, palette helpers) and returns a set of functions. `SimplePlayfield` stores references to these controllers instead of re-declaring every helper.
 3. **Migrate mixins into services.** Convert `DeveloperCrystalManager` into `createDeveloperTools(playfield)` so developer hooks register themselves only when the flag is on. Similarly, move orientation helpers (`determinePreferredOrientation`, `applyContainerOrientationClass`, etc.) into `playfield/orientationController.js` (already imported) by exposing an object so we can delete the trailing `Object.assign(SimplePlayfield.prototype, ...)` block.
 4. **Isolate DOM/event binding.** Build a `PlayfieldDomBindings` helper that hydrates canvas + HUD references and provides strongly typed accessors. The constructor then consumes this helper, which simplifies testing and allows future Reactivity (observers) to reuse the bindings.
 5. **Rewrite update loop glue.** Wrap the animation loop (`shouldAnimate`, `update` etc.) in a dedicated scheduler module so the class simply calls `this.scheduler.start()`/`stop()`. This also opens the door to deterministic replays or off-thread simulations.
-6. **Regression suite.** After each extraction, run the existing manual loop: load a level, place towers, trigger developer tools, and ensure enemy codex and gem drops still flow through `registerEnemyEncounter` and `collectMoteGemDrop`. Because the controllers only change structure, no balance data should move.
+6. **Regression suite.** After each extraction, run the existing manual loop: load a level, place towers, trigger developer tools, and ensure enemy codex encounters still flow through `registerEnemyEncounter`. Because the controllers only change structure, no balance data should move.
 
 ### `assets/main.js` – Next extraction wave
 
@@ -318,7 +318,6 @@ Following this plan will shrink the single-source files, align them with the dis
 - DOM rendering for the glossary list, including empty-state messaging and accessible titles
 - Overlay presentation helpers that animate show/hide sequences and restore focus to the invoking button
 - Event binding for the glossary trigger, close button, background click dismissal, and discovered-variable listener wiring
-- Equipment button handler that routes directly to `openCraftingOverlay()`
 
 **Integration approach:**
 - Added `createVariableLibraryController()` which accepts overlay helpers plus the discovery APIs via dependency injection
@@ -562,7 +561,7 @@ Following this plan will shrink the single-source files, align them with the dis
 **Result:**
 - Blueprint math and glyph persistence are isolated from the 2,300-line Towers tab UI, trimming another ~500 lines from the monolith
 - Shared helpers (`calculateTowerEquationResult`, `computeTowerVariableValue`, etc.) now sit in a dedicated module that can be unit tested without DOM scaffolding
-- Explicit dependencies make future blueprint presenters (equipment bindings, blueprint narration) easier to author without re-threading global state
+- Explicit dependencies make future blueprint presenters and narration easier to author without re-threading global state
 
 ### powderUiDomHelpers.js (powder and fluid overlay DOM helpers)
 
@@ -571,7 +570,6 @@ Following this plan will shrink the single-source files, align them with the dis
 **What was extracted:**
 - `bindFluidControls()` - Collects Bet Spire DOM references for simulation hydration
 - `applyMindGatePaletteToDom()` - Updates the Mind Gate emblem gradient for the active powder palette
-- `updateMoteGemInventoryDisplay()` - Renders the mote gem inventory list with sprites and counters
 - `updatePowderGlyphColumns()` - Manages Aleph wall glyph DOM recycling and progress indicators
 - `updateFluidGlyphColumns()` - Mirrors Bet glyph columns on the Bet Spire Terrarium wall with right-side exclusivity
 
@@ -766,7 +764,7 @@ Following this plan will shrink the single-source files, align them with the dis
 
 **What was extracted:**
 - Normalization helpers for blueprint variable metadata (library keys, symbols, and tooltip text)
-- Discovered variable snapshot/listener bookkeeping so other systems (e.g., Codex, crafting) can react to unlocks
+- Discovered variable snapshot/listener bookkeeping so other systems (e.g., Codex) can react to unlocks
 - `discoverTowerVariables()`, `getDiscoveredVariables()`, `addDiscoveredVariablesListener()`, and `initializeDiscoveredVariablesFromUnlocks()`
 
 **Integration approach:**
@@ -795,28 +793,9 @@ Following this plan will shrink the single-source files, align them with the dis
 - The controller reads DOM caches through injected getters, meaning other systems that touch `towerTabState.loadoutElements` continue to function without modification
 
 **Result:**
-- Roughly 500 lines of loadout-specific DOM/drag code moved out of the 1,900-line `towersTab.js`, keeping the file focused on unlocks, equipment, and blueprint math
+- Roughly 500 lines of loadout-specific DOM/drag code moved out of the 1,900-line `towersTab.js`, keeping the file focused on unlocks and blueprint math
 - Drag behavior, preview plumbing, and affordability labels now live in a cohesive module that can be unit tested without booting the entire Towers tab controller
 - Future loadout enhancements (e.g., multi-slot presets) can evolve inside the dedicated controller without reopening the monolithic Towers tab orchestrator
-
-### towerEquipmentBindings.js (tower equipment slot UI)
-
-**Status:** ✅ Complete
-
-**What was extracted:**
-- DOM scaffolding for the tower equipment slot (button, icon, caption, dropdown list) that previously bloated `assets/towersTab.js`
-- Menu population logic that lists crafted equipment, renders the "empty slot" sentinel, and annotates assignments with `getTowerSourceLabel()`
-- Pointer/keyboard listeners that close the dropdown when clicking elsewhere or pressing Escape, plus the subscription that reacts to `addEquipmentStateListener`
-
-**Integration approach:**
-- Introduced `assets/towerEquipmentBindings.js` with a `createTowerEquipmentBindings()` factory that receives the Towers tab equipment state bucket, selector constants, and helpers from `equipment.js`
-- `assets/towersTab.js` instantiates the factory once and re-exports `initializeTowerEquipmentInterface()` so `main.js` keeps the exact same wiring API
-- The factory injects unlock events via `document.addEventListener('tower-unlocked', …)` instead of relying on the Towers tab closure, keeping the dropdown logic self-contained
-
-**Result:**
-- Roughly 300 lines of equipment-specific DOM code left `assets/towersTab.js`, shrinking the file before the remaining blueprint refactors land
-- Equipment menu behavior now lives in a cohesive module that can be unit tested or reused without importing the entire Towers tab orchestrator
-- Future work (e.g., multi-slot equipment, rarity badges) can iterate inside `towerEquipmentBindings.js` without touching loadout, blueprint, or unlock logic
 
 ### towerUpgradeOverlayController.js (upgrade overlay renderer + glyph spending)
 
@@ -833,9 +812,9 @@ Following this plan will shrink the single-source files, align them with the dis
 - Tooltip management continues to flow through the shared `createTowerEquationTooltipSystem()` helpers, keeping hover behavior consistent across the new module.
 
 **Result:**
-- `assets/towersTab.js` drops nearly 1,000 lines of tightly coupled overlay logic, leaving the module focused on loadout management and equipment UI.
+- `assets/towersTab.js` drops nearly 1,000 lines of tightly coupled overlay logic, leaving the module focused on loadout management.
 - Glyph math, equation formatting, and overlay transitions live in a cohesive file that can be unit tested or iterated without spelunking the entire Towers tab controller.
-- Future refactors (e.g., blueprint presenters or equipment bindings) can follow the same factory pattern to keep dependencies explicit and avoid circular imports.
+- Future refactors (e.g., blueprint presenters) can follow the same factory pattern to keep dependencies explicit and avoid circular imports.
 
 ### orientationController.js (playfield orientation + normalized geometry)
 
@@ -932,11 +911,10 @@ Following this plan will shrink the single-source files, align them with the dis
 
 ### assets/towersTab.js (112 KB, upgrade + blueprint UI)
 
-**Why it matters:** Towers tab logic currently handles UI binding, blueprint math evaluation, equipment integration, and formatting concerns. These responsibilities span formatting, data flow, and state orchestration, increasing the chance of circular dependencies and slowing blueprint refactors.
+**Why it matters:** Towers tab logic currently handles UI binding, blueprint math evaluation, and formatting concerns. These responsibilities span formatting, data flow, and state orchestration, increasing the chance of circular dependencies and slowing blueprint refactors.
 
 **Suggested plan:**
 - Extract blueprint preparation into `towerBlueprintPresenter.js`, consuming math tokenizers and returning immutable presentation models for the tab to render.
-- Move equipment binding into `towerEquipmentBindings.js` so loadout state changes can be unit-tested without rendering the full tab.
 - Convert the UI event wiring (scroll, hover, selection) into a `createTowersTabController()` factory that receives DOM nodes and collaborators, mirroring the successful level editor refactor pattern.
 - Continue using existing formatting utilities by injecting them into the controller to avoid re-importing `formatCombatNumber` deep inside view helpers.
 

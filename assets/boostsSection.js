@@ -6,84 +6,11 @@ import {
   loadMonetizationState,
   getMonetizationState,
   unlockPremium,
-  triggerGemBoost,
-  getBoostCooldown,
-  addMonetizationListener,
 } from './state/monetizationState.js';
 
 let boostsContainer = null;
 let dropdownContent = null;
 let isDropdownOpen = false;
-let updateInterval = null;
-
-// Dependencies injected from main
-let dependencies = {
-  grantRandomGems: null,
-};
-
-/**
- * Configure dependencies for the boosts section.
- * @param {Object} deps - Dependencies object
- */
-export function configureBoostsSection(deps) {
-  Object.assign(dependencies, deps);
-}
-
-/**
- * Format remaining cooldown time as a human-readable string.
- * @param {number} remainingMs - Remaining time in milliseconds
- * @returns {string} Formatted time string
- */
-function formatCooldown(remainingMs) {
-  if (remainingMs <= 0) {
-    return 'Ready';
-  }
-  
-  const seconds = Math.ceil(remainingMs / 1000);
-  const minutes = Math.floor(seconds / 60);
-  const hours = Math.floor(minutes / 60);
-  
-  if (hours > 0) {
-    const mins = minutes % 60;
-    return `${hours}h ${mins}m`;
-  } else if (minutes > 0) {
-    const secs = seconds % 60;
-    return `${minutes}m ${secs}s`;
-  } else {
-    return `${seconds}s`;
-  }
-}
-
-/**
- * Update button states based on cooldowns.
- */
-function updateBoostButtons() {
-  if (!boostsContainer) {
-    return;
-  }
-  
-  // Update gem boost button
-  const gemButton = boostsContainer.querySelector('[data-boost-type="gems"]');
-  if (gemButton) {
-    const cooldown = getBoostCooldown('gems');
-    const statusEl = gemButton.querySelector('.boost-button__status');
-    
-    if (cooldown.onCooldown) {
-      gemButton.disabled = true;
-      gemButton.classList.add('boost-button--cooldown');
-      if (statusEl) {
-        statusEl.textContent = formatCooldown(cooldown.remainingMs);
-      }
-    } else {
-      gemButton.disabled = false;
-      gemButton.classList.remove('boost-button--cooldown');
-      if (statusEl) {
-        statusEl.textContent = 'Ready';
-      }
-    }
-  }
-}
-
 /**
  * Handle premium unlock button click.
  */
@@ -104,53 +31,6 @@ async function handlePremiumUnlock() {
     premiumButton.disabled = true;
     premiumButton.textContent = '✓ Premium Unlocked';
     premiumButton.classList.add('boost-button--unlocked');
-  }
-}
-
-/**
- * Handle gem boost button click.
- */
-async function handleGemBoost() {
-  const button = boostsContainer?.querySelector('[data-boost-type="gems"]');
-  if (!button) {
-    return;
-  }
-  
-  // Disable button during processing
-  button.disabled = true;
-  const originalText = button.querySelector('.boost-button__label')?.textContent || '';
-  const labelEl = button.querySelector('.boost-button__label');
-  if (labelEl) {
-    labelEl.textContent = 'Watching ad...';
-  }
-  
-  try {
-    const result = await triggerGemBoost(dependencies.grantRandomGems);
-    
-    if (result.success) {
-      if (labelEl) {
-        labelEl.textContent = `✓ ${result.gemsGranted || 100} gems granted!`;
-      }
-      setTimeout(() => {
-        if (labelEl) {
-          labelEl.textContent = originalText;
-        }
-        updateBoostButtons();
-      }, 2000);
-    } else {
-      alert(`Boost failed: ${result.error}`);
-      if (labelEl) {
-        labelEl.textContent = originalText;
-      }
-      button.disabled = false;
-    }
-  } catch (error) {
-    console.error('Gem boost error:', error);
-    alert('Boost failed. Please try again.');
-    if (labelEl) {
-      labelEl.textContent = originalText;
-    }
-    button.disabled = false;
   }
 }
 
@@ -228,35 +108,6 @@ function createBoostsUI() {
   premiumSection.appendChild(premiumButton);
   dropdown.appendChild(premiumSection);
   
-  // Divider
-  const divider = document.createElement('hr');
-  divider.className = 'boosts-divider';
-  dropdown.appendChild(divider);
-  
-  // Gem boost section
-  const gemHeader = document.createElement('h4');
-  gemHeader.className = 'boosts-section-header';
-  gemHeader.textContent = 'Resource Boosts';
-  dropdown.appendChild(gemHeader);
-  
-  const gemButton = document.createElement('button');
-  gemButton.className = 'boost-button boost-button--gems action-button';
-  gemButton.type = 'button';
-  gemButton.setAttribute('data-boost-type', 'gems');
-  
-  const gemLabel = document.createElement('span');
-  gemLabel.className = 'boost-button__label';
-  gemLabel.textContent = '💎 100 Random Gems';
-  gemButton.appendChild(gemLabel);
-  
-  const gemStatus = document.createElement('span');
-  gemStatus.className = 'boost-button__status';
-  gemStatus.textContent = 'Ready';
-  gemButton.appendChild(gemStatus);
-  
-  gemButton.addEventListener('click', handleGemBoost);
-  dropdown.appendChild(gemButton);
-  
   container.appendChild(dropdown);
   
   return container;
@@ -287,30 +138,12 @@ export function initializeBoostsSection() {
     achievementsPanel.insertBefore(boostsContainer, achievementsPanel.firstChild);
   }
   
-  // Update button states
-  updateBoostButtons();
-  
-  // Set up periodic updates for cooldown timers
-  if (updateInterval) {
-    clearInterval(updateInterval);
-  }
-  updateInterval = setInterval(updateBoostButtons, 1000);
-  
-  // Listen to state changes
-  addMonetizationListener(() => {
-    updateBoostButtons();
-  });
 }
 
 /**
  * Clean up the boosts section.
  */
 export function cleanupBoostsSection() {
-  if (updateInterval) {
-    clearInterval(updateInterval);
-    updateInterval = null;
-  }
-  
   if (boostsContainer && boostsContainer.parentNode) {
     boostsContainer.parentNode.removeChild(boostsContainer);
   }

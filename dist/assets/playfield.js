@@ -16,9 +16,6 @@ import {
   getTowerEquationBlueprint,
   computeTowerVariableValue,
 } from './towersTab.js';
-import {
-  spawnMoteGemDrop,
-} from './enemies.js';
 import { levelConfigs } from './levels.js';
 import { metersToPixels } from './gameUnits.js'; // Allow playfield interactions to convert standardized meters into pixels.
 import { formatCombatNumber } from './playfield/utils/formatting.js';
@@ -33,7 +30,6 @@ import * as TowerGlyphTransitionSystem from './playfield/systems/TowerGlyphTrans
 import * as BackgroundSwimmerSystem from './playfield/systems/BackgroundSwimmerSystem.js';
 import * as ProjectileUpdateSystem from './playfield/systems/ProjectileUpdateSystem.js';
 import * as TowerDispatchSystem from './playfield/systems/TowerDispatchSystem.js';
-import * as MoteGemSystem from './playfield/systems/MoteGemSystem.js';
 import * as EnemyUpdateSystem from './playfield/systems/EnemyUpdateSystem.js';
 import * as ProjectileSpawnSystem from './playfield/systems/ProjectileSpawnSystem.js';
 import * as LevelResetSystem from './playfield/systems/LevelResetSystem.js';
@@ -56,7 +52,6 @@ import * as EnemyMetadataSystem from './playfield/systems/EnemyMetadataSystem.js
 import * as HudBindings from './playfield/ui/HudBindings.js';
 import { WaveTallyOverlayManager } from './playfield/ui/WaveTallyOverlays.js';
 import * as TowerSelectionWheel from './playfield/ui/TowerSelectionWheel.js';
-import { createFloatingFeedbackController } from './playfield/ui/FloatingFeedback.js';
 import * as TowerManager from './playfield/managers/TowerManager.js';
 import { createCombatStatsManager } from './playfield/managers/CombatStatsManager.js';
 import { createLevelLifecycleManager } from './playfield/managers/LevelLifecycleManager.js';
@@ -549,7 +544,6 @@ export class SimplePlayfield {
       this.attachResizeObservers();
       this.attachCanvasInteractions();
       this.createEnemyTooltip();
-      this.initializeFloatingFeedback();
 
       this.disableSlots(true);
       this.updateHud();
@@ -907,19 +901,6 @@ export class SimplePlayfield {
     return HudBindings.createEnemyTooltip.call(this);
   }
 
-  initializeFloatingFeedback() {
-    if (!this.canvas || !this.ctx) {
-      return;
-    }
-    this.floatingFeedback = createFloatingFeedbackController({
-      canvas: this.canvas,
-      ctx: this.ctx,
-      getCanvasPosition: (worldPos) => {
-        return worldPos; // Gems are already in canvas coordinates
-      },
-    });
-  }
-
   ensureLoop() {
     this.renderCoordinator.startRenderLoop();
   }
@@ -1081,11 +1062,6 @@ export class SimplePlayfield {
 
   handleCanvasPointerLeave() {
     return InputController.handleCanvasPointerLeave.call(this);
-  }
-
-  // Attempt to gather any mote gems located near the pointer position.
-  collectMoteGemsNear(position) {
-    return InputController.collectMoteGemsNear.call(this, position);
   }
 
   handleCanvasClick(event) {
@@ -3024,15 +3000,6 @@ export class SimplePlayfield {
       finishProjectileSegment();
     }
 
-    // Keep mote animation costs visible when drops flood the field.
-    const finishMoteSegment = beginPerformanceSegment('update:motes');
-    try {
-      // Animate mote gems so they pulse gently while waiting to be collected.
-      this.updateMoteGems(speedDelta);
-    } finally {
-      finishMoteSegment();
-    }
-
     // Track HUD refresh costs while combat is active.
     const finishHudSegment = beginPerformanceSegment('update:hud');
     try {
@@ -3399,18 +3366,6 @@ export class SimplePlayfield {
     this.scheduleStatsPanelRefresh();
   }
 
-  // Create a mote gem at the fallen enemy's position so it can be collected later.
-  spawnMoteGemFromEnemy(enemy) {
-    if (!enemy) {
-      return;
-    }
-    const position = this.getEnemyPosition(enemy);
-    if (!position) {
-      return;
-    }
-    spawnMoteGemDrop(enemy, position);
-  }
-
   // Spawn progressively simpler polygon shards when a polygonal splitter collapses.
   handlePolygonSplitOnDefeat(enemy) {
     if (!enemy || enemy.typeId !== 'polygon-splitter') {
@@ -3547,11 +3502,6 @@ export class SimplePlayfield {
 
   drawSketches() {
     return CanvasRenderer.drawSketches.call(this);
-  }
-
-  // Render each mote gem using its sprite when available so drops mirror the inventory art.
-  drawMoteGems() {
-    return CanvasRenderer.drawMoteGems.call(this);
   }
 
   drawPath() {
@@ -3769,10 +3719,6 @@ export class SimplePlayfield {
 
   drawDamageNumbers() {
     return CanvasRenderer.drawDamageNumbers.call(this);
-  }
-
-  drawFloatingFeedback() {
-    return CanvasRenderer.drawFloatingFeedback.call(this);
   }
 
   drawWaveTallies() {
@@ -4060,11 +4006,6 @@ Object.assign(SimplePlayfield.prototype, {
   resolveTowerShotDamage: TowerDispatchSystem.resolveTowerShotDamage,
   emitTowerAttackVisuals: TowerDispatchSystem.emitTowerAttackVisuals,
   fireAtTarget: TowerDispatchSystem.fireAtTarget,
-});
-
-// Mote gem system methods
-Object.assign(SimplePlayfield.prototype, {
-  updateMoteGems: MoteGemSystem.updateMoteGems,
 });
 
 // Projectile spawn system methods

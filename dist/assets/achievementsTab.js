@@ -1,6 +1,5 @@
 import { formatGameNumber, formatWholeNumber } from '../scripts/core/formatting.js';
 import { fetchJsonWithFallback } from './gameplayConfigLoaders.js';
-import { GEM_DEFINITIONS } from './enemies.js';
 
 // Achievements tab logic extracted from the main script to keep state and rendering scoped here.
 
@@ -491,58 +490,6 @@ function generateSpireAchievements(spireId, spireName, spireIcon) {
   return achievements;
 }
 
-// Map gem hints by ID for better maintainability
-const GEM_HINTS = new Map([
-  ['quartz', 'Quartz whispers in the shadows...'],
-  ['ruby', 'Ruby gleams in darkness...'],
-  ['sunstone', 'Sunstone radiates mystery...'],
-  ['citrine', 'Citrine hides its golden secret...'],
-  ['emerald', 'Emerald\'s verdant enigma awaits...'],
-  ['sapphire', 'Sapphire\'s azure mystery beckons...'],
-  ['iolite', 'Iolite\'s violet puzzle unfolds...'],
-  ['amethyst', 'Amethyst conceals its purple truth...'],
-  ['diamond', 'Diamond\'s crystalline riddle persists...'],
-  ['nullstone', 'Nullstone\'s void mystery endures...'],
-]);
-
-// Generate secret achievements for gem collection
-function generateSecretAchievements() {
-  const achievements = [];
-  const categoryId = 'secret';
-
-  GEM_DEFINITIONS.forEach((gem, index) => {
-    const hint = GEM_HINTS.get(gem.id) || 'A secret awaits...';
-
-    achievements.push({
-      id: `secret-gem-${gem.id}`,
-      categoryId,
-      title: `${SECRET_PLACEHOLDER_TEXT} ${gem.name}`,
-      subtitle: gem.name,
-      icon: '?',
-      rewardFlux: ACHIEVEMENT_REWARD_FLUX * (index + 1),
-      description: `Obtain a ${gem.name} gem. ${hint}`,
-      condition: () => {
-        const { moteGemInventory } = getContext();
-        if (!moteGemInventory) {
-          return false;
-        }
-        return (moteGemInventory.get(gem.id) || 0) > 0;
-      },
-      progress: () => {
-        const { moteGemInventory } = getContext();
-        if (!moteGemInventory) {
-          return `Locked — ${hint}`;
-        }
-        const count = moteGemInventory.get(gem.id) || 0;
-        return count > 0 ? 'Unlocked — Secret revealed!' : `Locked — ${hint}`;
-      },
-      secret: true,
-    });
-  });
-
-  return achievements;
-}
-
 // Generate special story achievements (like prologue completion)
 function generateStoryAchievements() {
   const { isLevelCompleted } = getContext();
@@ -598,9 +545,6 @@ export async function generateLevelAchievements() {
       definitions.push(...spireAchievements);
     });
 
-    // Generate secret achievements
-    const secretAchievements = generateSecretAchievements();
-    definitions.push(...secretAchievements);
 
     // Generate story achievements (prologue, etc.)
     const storyAchievements = generateStoryAchievements();

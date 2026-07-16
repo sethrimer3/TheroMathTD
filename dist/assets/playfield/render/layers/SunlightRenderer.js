@@ -7,7 +7,6 @@
  * Features:
  * - Warm radial glow centered on the Mind Gate
  * - Trapezoidal shadow quads cast by towers and enemies
- * - Simple offset circle shadows for mote gems
  * - Lit-edge shine arc on the gate-facing side of each tower
  *
  * All exported functions are designed to be called with `.call(renderer)` where
@@ -15,7 +14,6 @@
  * established calling convention in CanvasRenderer.js.
  */
 
-import { moteGemState } from '../../../enemies.js';
 import { ALPHA_BASE_RADIUS_FACTOR } from '../../../gameUnits.js';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -65,22 +63,6 @@ const ENEMY_SHADOW_NEAR_ALPHA = 0.18;
 const ENEMY_SHADOW_RADIUS_FACTOR = 0.5;
 const ENEMY_SHADOW_RADIUS_MIN = 3.5;
 const ENEMY_SHADOW_RADIUS_MAX = 7;
-// Mote gem circle shadow is very subtle.
-const GEM_SHADOW_ALPHA = 0.12;
-
-// Gem unit scale: fraction of the min viewport dimension used to size gem visuals,
-// mirroring the GEM_MOTE_BASE_RATIO calculation in CanvasRenderer's drawMoteGems.
-const GEM_UNIT_SCALE_FACTOR = 0.02;
-// Minimum gem radius in pixels so shadow circles remain visible at any zoom level.
-const MIN_GEM_RADIUS = 3;
-// Scale factor applied to gem unit * moteSize to produce the gem's rendered radius.
-const GEM_RADIUS_SCALE = 0.45;
-// How far (as a multiple of gemRadius) the shadow circle is displaced away from
-// the gate relative to the gem centre so it peeks out from behind the gem.
-const GEM_SHADOW_OFFSET_FACTOR = 1.2;
-// Shadow circle is slightly smaller than the gem itself for a natural look.
-const GEM_SHADOW_RADIUS_FACTOR = 0.85;
-
 // Shine arc angular half-width in radians (~37° either side = ~75° total arc).
 const SHINE_ARC_HALF_ANGLE = Math.PI / 5;
 
@@ -437,46 +419,6 @@ function drawSunlightShadowsToContext(ctx, gate, viewportBounds, sunlightRadius,
     });
   }
 
-  // ── Mote gem circle shadows ────────────────────────────────────────────────
-  const gemUnit = Math.max(6, (this._frameCache?.minDimension || 1) * GEM_UNIT_SCALE_FACTOR);
-  if (Array.isArray(moteGemState.active) && moteGemState.active.length) {
-    // Gem shadows are reduced in low-graphics mode to preserve clarity on smaller devices.
-    const gemShadowAlpha = lowGraphicsEnabled ? GEM_SHADOW_ALPHA * 0.7 : GEM_SHADOW_ALPHA;
-    ctx.fillStyle = `rgba(${SHADOW_COLOR_R},${SHADOW_COLOR_G},${SHADOW_COLOR_B},${gemShadowAlpha})`;
-    // Batch all gem shadow circles into a single path to reduce per-gem beginPath/fill overhead.
-    ctx.beginPath();
-    for (let i = 0; i < moteGemState.active.length; i += 1) {
-      const gem = moteGemState.active[i];
-      if (!gem || !Number.isFinite(gem.x) || !Number.isFinite(gem.y)) {
-        continue;
-      }
-
-      const dx = gem.x - gate.x;
-      const dy = gem.y - gate.y;
-      const distSquared = dx * dx + dy * dy;
-      if (distSquared > sunlightRadiusSquared) {
-        continue;
-      }
-      if (!isInViewport({ x: gem.x, y: gem.y }, viewportBounds, 30)) {
-        continue;
-      }
-
-      const dist = Math.sqrt(distSquared);
-      // Resolve gem radius from its moteSize property, mirroring drawMoteGems
-      const moteSize = Math.max(1, Number.isFinite(gem.moteSize) ? gem.moteSize : gem.value);
-      const gemRadius = Math.max(MIN_GEM_RADIUS, moteSize * gemUnit * GEM_RADIUS_SCALE);
-
-      // Offset the shadow circle away from the gate
-      const invDist = dist > 0 ? 1 / dist : 0;
-      const offsetX = dx * invDist * gemRadius * GEM_SHADOW_OFFSET_FACTOR;
-      const offsetY = dy * invDist * gemRadius * GEM_SHADOW_OFFSET_FACTOR;
-      const shadowRadius = gemRadius * GEM_SHADOW_RADIUS_FACTOR;
-      // moveTo before each arc avoids unintended line segments between disjoint circles.
-      ctx.moveTo(gem.x + offsetX + shadowRadius, gem.y + offsetY);
-      ctx.arc(gem.x + offsetX, gem.y + offsetY, shadowRadius, 0, TWO_PI);
-    }
-    ctx.fill();
-  }
 }
 
 /**
@@ -591,7 +533,7 @@ export function drawMindGateSunlight() {
 }
 
 /**
- * Draw soft shadow quads cast by towers, enemies, and mote gems.
+ * Draw soft shadow quads cast by towers and enemies.
  *
  * Called immediately after `drawMindGateSunlight()` so shadows sit above
  * the glow but beneath the tower/enemy sprites.
