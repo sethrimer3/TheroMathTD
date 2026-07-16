@@ -173,6 +173,11 @@ function importTowerEquationTooltipModule() {
   return importAsEsm('assets/towerEquationTooltip.js');
 }
 
+// Import the compiled dependency-free master-equation derivation utility.
+function importMasterEquationUtilsModule() {
+  return importAsEsm('assets/towerEquations/masterEquationUtils.js');
+}
+
 // Install a deterministic minimal DOM, timer, and animation-frame surface for tooltip tests.
 function withFakeTooltipDom(callback) {
   const savedDescriptors = new Map(
@@ -1353,6 +1358,220 @@ async function run() {
     controller.ensureTowerUpgradeState('authored').variables.power.level = 1;
     controller.clearTowerUpgradeState();
     assert.deepEqual(controller.getTowerUpgradeStateSnapshot(), {});
+  });
+
+  // --- assets/towerEquations/masterEquationUtils.js ----------------------
+  const masterEquationUtils = await importMasterEquationUtilsModule();
+
+  await test('master equation utils: omitted calls preserve empty structure and fallback output', () => {
+    const emptyStructure = { symbol: { plain: '', latex: '' }, terms: [] };
+    assert.deepEqual(masterEquationUtils.deriveMasterEquationStructure(), emptyStructure);
+    assert.deepEqual(masterEquationUtils.deriveMasterEquationStructure(undefined), emptyStructure);
+    assert.equal(masterEquationUtils.generateMasterEquationText(), '');
+    assert.equal(masterEquationUtils.generateMasterEquationText(undefined), '');
+  });
+
+  await test('master equation utils: null keeps the inherited destructuring error', () => {
+    assert.throws(() => masterEquationUtils.deriveMasterEquationStructure(null), TypeError);
+    assert.throws(() => masterEquationUtils.generateMasterEquationText(null), TypeError);
+  });
+
+  await test('master equation utils: primitive, array, and malformed inputs retain safe defaults', () => {
+    for (const input of [0, 1, true, false, 'tower', Symbol('tower'), []]) {
+      assert.deepEqual(masterEquationUtils.deriveMasterEquationStructure(input), {
+        symbol: { plain: '', latex: '' },
+        terms: [],
+      });
+      assert.equal(masterEquationUtils.generateMasterEquationText(input), '');
+    }
+    assert.deepEqual(masterEquationUtils.deriveMasterEquationStructure({
+      blueprint: { variables: [null, 0, 'bad', [], {}, () => 'bad'] },
+      definition: 3,
+      towerId: 4,
+    }), { symbol: { plain: '', latex: '' }, terms: [] });
+  });
+
+  await test('master equation utils: plain variable candidates preserve precedence and order', () => {
+    const structure = masterEquationUtils.deriveMasterEquationStructure({
+      blueprint: {
+        masterEquationSymbol: 'M',
+        variables: [
+          {
+            masterEquationSymbol: ' master ', masterEquationLabel: 'label',
+            equationSymbol: 'equation', symbol: 'symbol', name: 'name', key: 'key',
+          },
+          { masterEquationSymbol: '   ', masterEquationLabel: ' label ' },
+          { equationSymbol: ' equation ' },
+          { symbol: ' symbol ' },
+          { name: ' name ' },
+          { key: ' key ' },
+        ],
+      },
+    });
+    assert.deepEqual(structure.terms.map((term) => term.plain), [
+      'master', 'label', 'equation', 'symbol', 'name', 'key',
+    ]);
+  });
+
+  await test('master equation utils: plain labels preserve trimming and wrapper normalization', () => {
+    const structure = masterEquationUtils.deriveMasterEquationStructure({
+      blueprint: {
+        masterEquationSymbol: 'M',
+        variables: [
+          { masterEquationSymbol: '  \\text{ Alpha }  ' },
+          { masterEquationLabel: '  \\( beta \\)  ' },
+          { masterEquationSymbol: 3, masterEquationLabel: '   ', name: ' Gamma ' },
+          { masterEquationSymbol: '', masterEquationLabel: null, key: ' Delta ' },
+          { masterEquationSymbol: '   ', masterEquationLabel: '\t', key: ' Epsilon ' },
+        ],
+      },
+    });
+    assert.deepEqual(structure.terms.map((term) => term.plain), [
+      'Alpha', 'beta', 'Gamma', 'Delta', 'Epsilon',
+    ]);
+  });
+
+  await test('master equation utils: LaTeX variable candidates and fallbacks preserve quirks', () => {
+    const structure = masterEquationUtils.deriveMasterEquationStructure({
+      blueprint: {
+        masterEquationSymbol: 'M',
+        variables: [
+          { masterEquationLatex: ' \\alpha ', equationSymbol: '\\ignored' },
+          { masterEquationLatex: 'plain-is-ignored', equationSymbol: ' \\beta ' },
+          { symbol: ' \\gamma ' },
+          { name: ' Delta ' },
+          { masterEquationLatex: ' \\(epsilon\\) ', key: 'epsilon' },
+          { equationSymbol: ' q ' },
+        ],
+      },
+    });
+    assert.deepEqual(structure.terms.map((term) => term.latex), [
+      '\\alpha', '\\beta', '\\gamma', '\\text{Delta}', '\\(epsilon\\)', '\\text{q}',
+    ]);
+  });
+
+  await test('master equation utils: attachments and explicit false are excluded exactly', () => {
+    const structure = masterEquationUtils.deriveMasterEquationStructure({
+      blueprint: {
+        masterEquationSymbol: 'M',
+        variables: [
+          { key: 'attached-string', attachedToVariable: ' parent ' },
+          { key: 'attached-category', category: 'attachment' },
+          { key: 'excluded', includeInMasterEquation: false },
+          { key: 'whitespace-attachment', attachedToVariable: '   ' },
+          { key: 'numeric-attachment', attachedToVariable: 1 },
+          { key: 'zero', includeInMasterEquation: 0 },
+          { key: 'empty', includeInMasterEquation: '' },
+          { key: 'null', includeInMasterEquation: null },
+          { key: 'true', includeInMasterEquation: true },
+        ],
+      },
+    });
+    assert.deepEqual(structure.terms.map((term) => term.plain), [
+      'whitespace-attachment', 'numeric-attachment', 'zero', 'empty', 'null', 'true',
+    ]);
+  });
+
+  await test('master equation utils: plain master-symbol precedence and fallbacks are exact', () => {
+    const derivePlain = (params) => masterEquationUtils.deriveMasterEquationStructure(params).symbol.plain;
+    assert.equal(derivePlain({
+      blueprint: { masterEquationSymbol: ' Master ', mathSymbol: '\\Math' },
+      definition: { symbol: 'Definition', name: 'Name' },
+      towerId: 'id',
+    }), 'Master');
+    assert.equal(derivePlain({ blueprint: {}, definition: { symbol: ' Definition ' }, towerId: 'id' }), 'Definition');
+    assert.equal(derivePlain({ blueprint: { mathSymbol: ' \\Theta ' }, definition: { name: 'Name' }, towerId: 'id' }), 'Theta');
+    assert.equal(derivePlain({ blueprint: { mathSymbol: 'Theta' }, definition: { name: ' Name ' }, towerId: 'id' }), 'Name');
+    assert.equal(derivePlain({ blueprint: {}, definition: {}, towerId: ' id ' }), 'id');
+  });
+
+  await test('master equation utils: LaTeX master-symbol precedence and derived fallback are exact', () => {
+    const deriveSymbols = (params) => masterEquationUtils.deriveMasterEquationStructure(params).symbol;
+    assert.deepEqual(deriveSymbols({
+      blueprint: { masterEquationSymbol: 'Plain', masterEquationLatex: ' L ', mathSymbol: '\\Math' },
+      definition: { symbol: 'Definition' },
+    }), { plain: 'Plain', latex: 'L' });
+    assert.deepEqual(deriveSymbols({ blueprint: { mathSymbol: ' \\Phi ' } }), { plain: 'Phi', latex: '\\Phi' });
+    assert.deepEqual(deriveSymbols({ blueprint: { masterEquationSymbol: ' S ' } }), { plain: 'S', latex: '\\text{S}' });
+    assert.deepEqual(deriveSymbols({ blueprint: { masterEquationSymbol: ' \\Psi ' } }), { plain: '\\Psi', latex: '\\Psi' });
+  });
+
+  await test('master equation utils: missing symbols return fallback without coercion', () => {
+    assert.equal(masterEquationUtils.generateMasterEquationText({ fallback: 'unavailable' }), 'unavailable');
+    assert.equal(masterEquationUtils.generateMasterEquationText({ fallback: 7 }), 7);
+    assert.equal(masterEquationUtils.generateMasterEquationText({
+      blueprint: { variables: [{ key: 'term' }] }, fallback: 'missing-left',
+    }), 'missing-left');
+  });
+
+  await test('master equation utils: zero-term equations preserve exact plain and LaTeX spacing', () => {
+    const params = { blueprint: { masterEquationSymbol: 'M', variables: [] } };
+    assert.equal(masterEquationUtils.generateMasterEquationText(params), 'M = 0');
+    assert.equal(masterEquationUtils.generateMasterEquationText({ ...params, format: 'latex' }),
+      '\\( \\text{M} = 0 \\)');
+  });
+
+  await test('master equation utils: multiple terms preserve exact multiplication output', () => {
+    const params = {
+      blueprint: {
+        masterEquationSymbol: 'M',
+        variables: [{ name: 'Alpha' }, { equationSymbol: '\\beta' }, { key: 'Gamma' }],
+      },
+    };
+    assert.equal(masterEquationUtils.generateMasterEquationText(params), 'M = Alpha × \\beta × Gamma');
+    assert.equal(masterEquationUtils.generateMasterEquationText({ ...params, format: 'latex' }),
+      '\\( \\text{M} = \\text{Alpha} \\times \\beta \\times \\text{Gamma} \\)');
+  });
+
+  await test('master equation utils: symbol and term representations retain cross-format fallbacks', () => {
+    const latexOnlySymbol = {
+      blueprint: { masterEquationLatex: '\\Lambda', variables: [{ name: 'Rate' }] },
+    };
+    assert.equal(masterEquationUtils.generateMasterEquationText(latexOnlySymbol), '\\Lambda = Rate');
+    assert.equal(masterEquationUtils.generateMasterEquationText({ ...latexOnlySymbol, format: 'latex' }),
+      '\\( \\Lambda = \\text{Rate} \\)');
+  });
+
+  await test('master equation utils: only exact lowercase latex selects LaTeX formatting', () => {
+    const base = {
+      blueprint: { masterEquationSymbol: 'M', variables: [{ key: 'A' }, { key: 'B' }] },
+    };
+    for (const format of ['plain', 'LATEX', 'Latex', '', null, false, 0, {}]) {
+      assert.equal(masterEquationUtils.generateMasterEquationText({ ...base, format }), 'M = A × B');
+    }
+    assert.equal(masterEquationUtils.generateMasterEquationText({ ...base, format: 'latex' }),
+      '\\( \\text{M} = \\text{A} \\times \\text{B} \\)');
+  });
+
+  await test('master equation utils: derivation preserves variable order without mutation', () => {
+    const deepFreeze = (value) => {
+      if (value && typeof value === 'object' && !Object.isFrozen(value)) {
+        Object.freeze(value);
+        for (const child of Object.values(value)) {
+          deepFreeze(child);
+        }
+      }
+      return value;
+    };
+    const params = deepFreeze({
+      blueprint: {
+        masterEquationSymbol: 'M',
+        variables: [
+          { key: 'first' },
+          { key: 'excluded', includeInMasterEquation: false },
+          { key: 'second' },
+        ],
+      },
+      definition: { symbol: 'D', name: 'Definition' },
+      towerId: 'tower',
+    });
+    const before = JSON.stringify(params);
+    assert.deepEqual(masterEquationUtils.deriveMasterEquationStructure(params).terms, [
+      { plain: 'first', latex: '\\text{first}' },
+      { plain: 'second', latex: '\\text{second}' },
+    ]);
+    assert.equal(masterEquationUtils.generateMasterEquationText(params), 'M = first × second');
+    assert.equal(JSON.stringify(params), before);
   });
 
   // --- assets/towerEquationTooltip.js ------------------------------------

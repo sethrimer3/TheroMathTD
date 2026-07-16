@@ -3,6 +3,7 @@ import { TOWER_EQUATION_BLUEPRINTS } from './towerEquations/index.js';
 /** Minimal enriched tower definition surface read by equation presentation. */
 export interface TowerEquationDefinition {
   symbol?: unknown;
+  name?: unknown;
   [stat: string]: unknown;
 }
 
@@ -69,12 +70,18 @@ export interface TowerEquationVariable {
   libraryKey?: string;
   symbol?: string;
   equationSymbol?: string;
+  masterEquationSymbol?: unknown;
+  masterEquationLabel?: unknown;
+  masterEquationLatex?: unknown;
   name?: string;
   tooltipName?: string;
   description?: string | null;
   tooltipDescription?: string;
   units?: string;
   glyphLabel?: string;
+  attachedToVariable?: unknown;
+  category?: unknown;
+  includeInMasterEquation?: unknown;
   stat?: string;
   upgradable?: boolean;
   format?: (value: number) => string;
@@ -98,6 +105,8 @@ export interface GoldenEquationFormatContext {
 /** Minimal authored/fallback blueprint contract owned by this presenter. */
 export interface TowerEquationBlueprint {
   mathSymbol?: unknown;
+  masterEquationSymbol?: unknown;
+  masterEquationLatex?: unknown;
   baseEquation?: string;
   variables?: readonly TowerEquationVariable[];
   computeResult?: (
