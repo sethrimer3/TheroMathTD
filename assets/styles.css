@@ -325,318 +325,6 @@ body.graphics-mode-low .control-button {
   }
 }
 
-/* Cognitive Realm Territories Map */
-.cognitive-realm-section {
-  margin-top: clamp(24px, 5vw, 36px);
-  margin-bottom: clamp(24px, 5vw, 36px);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.subsection-title--cognitive-realm {
-  margin-bottom: 12px;
-  text-align: center;
-  font-size: clamp(1.1rem, 2.5vw, 1.4rem);
-  letter-spacing: 0.12em;
-  color: var(--accent);
-  text-shadow: 0 0 14px rgba(139, 247, 255, 0.35);
-}
-
-.cognitive-realm-hint {
-  text-align: center;
-  font-size: 0.75rem;
-  color: var(--muted);
-  margin-bottom: 16px;
-  font-style: italic;
-  letter-spacing: 0.05em;
-}
-
-.cognitive-realm-container {
-  position: relative;
-  /* Maintain the shared 3:4 portrait ratio used by other spire renders. */
-  aspect-ratio: 3 / 4;
-  /* Expand until the viewport width or height limit is encountered. */
-  width: min(100%, calc(100vw - 48px));
-  max-width: min(720px, calc((var(--stable-vh) - 220px) * 0.75));
-  max-height: calc(var(--stable-vh) - 220px);
-  background: #000000;
-  border: 1px solid rgba(139, 247, 255, 0.2);
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.6), var(--shadow);
-  margin: 0 auto;
-}
-
-.cognitive-realm-canvas {
-  display: block;
-  width: 100%;
-  height: 100%;
-  cursor: var(--cursor-grab);
-  touch-action: none;
-  user-select: none;
-}
-
-.cognitive-realm-canvas:active {
-  cursor: var(--cursor-grabbing);
-}
-
-/* Lock overlay for Cognitive Realm */
-.cognitive-realm-lock-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0, 10, 20, 0.92);
-  backdrop-filter: blur(8px);
-  z-index: 10;
-  pointer-events: auto;
-}
-
-.cognitive-realm-lock-overlay[hidden] {
-  display: none;
-}
-
-.cognitive-realm-lock-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
-  text-align: center;
-  padding: 32px;
-}
-
-.cognitive-realm-lock-icon {
-  font-size: 64px;
-  opacity: 0.7;
-  filter: grayscale(100%);
-}
-
-.cognitive-realm-lock-text {
-  font-family: 'Cormorant Garamond', serif;
-  font-size: 32px;
-  font-weight: 600;
-  letter-spacing: 0.15em;
-  color: rgba(247, 247, 245, 0.4);
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
-}
-
-.cognitive-realm-lock-hint {
-  font-family: 'Cormorant Garamond', serif;
-  font-size: 16px;
-  color: rgba(247, 247, 245, 0.5);
-  letter-spacing: 0.05em;
-  max-width: 280px;
-}
-
-@media (max-width: 640px) {
-  /* cognitive-realm-container uses aspect-ratio, no height override needed */
-  
-  .cognitive-realm-hint {
-    font-size: 0.7rem;
-  }
-  
-  .cognitive-realm-lock-icon {
-    font-size: 48px;
-  }
-  
-  .cognitive-realm-lock-text {
-    font-size: 24px;
-  }
-  
-  .cognitive-realm-lock-hint {
-    font-size: 14px;
-  }
-}
-
-/* Cognitive Realm Modal for Archetype Descriptions */
-.cognitive-realm-modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 10000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  pointer-events: all;
-}
-
-.cognitive-realm-modal[hidden] {
-  display: none;
-}
-
-.cognitive-realm-modal__backdrop {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.85);
-  backdrop-filter: blur(4px);
-}
-
-.cognitive-realm-modal__content {
-  position: relative;
-  max-width: 90%;
-  width: 480px;
-  background: rgba(0, 0, 0, 0.95);
-  border: 2px solid rgba(139, 247, 255, 0.3);
-  border-radius: 12px;
-  padding: clamp(24px, 5vw, 36px);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8), 0 0 48px rgba(139, 247, 255, 0.15);
-  font-family: 'Cormorant Garamond', serif;
-  color: rgba(247, 247, 245, 0.9);
-}
-
-.cognitive-realm-modal__content.modal-player {
-  border-color: rgba(139, 247, 255, 0.6);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8), 0 0 48px rgba(139, 247, 255, 0.3);
-}
-
-.cognitive-realm-modal__content.modal-enemy {
-  border-color: rgba(255, 125, 235, 0.6);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8), 0 0 48px rgba(255, 125, 235, 0.3);
-}
-
-.cognitive-realm-modal__close {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  width: 32px;
-  height: 32px;
-  background: transparent;
-  border: 1px solid rgba(247, 247, 245, 0.3);
-  border-radius: 50%;
-  color: rgba(247, 247, 245, 0.8);
-  font-size: 24px;
-  line-height: 1;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
-}
-
-.cognitive-realm-modal__close:hover {
-  background: rgba(247, 247, 245, 0.1);
-  border-color: rgba(247, 247, 245, 0.5);
-  color: rgba(247, 247, 245, 1);
-}
-
-.cognitive-realm-modal__title {
-  font-size: clamp(1.2rem, 3vw, 1.6rem);
-  font-weight: 600;
-  margin: 0 0 16px 0;
-  letter-spacing: 0.05em;
-  line-height: 1.3;
-}
-
-.modal-player .cognitive-realm-modal__title {
-  color: rgba(139, 247, 255, 0.95);
-  text-shadow: 0 0 12px rgba(139, 247, 255, 0.4);
-}
-
-.modal-enemy .cognitive-realm-modal__title {
-  color: rgba(255, 125, 235, 0.95);
-  text-shadow: 0 0 12px rgba(255, 125, 235, 0.4);
-}
-
-.cognitive-realm-modal__description {
-  font-size: clamp(0.95rem, 2vw, 1.1rem);
-  line-height: 1.6;
-  margin: 0;
-  white-space: pre-line;
-  color: rgba(247, 247, 245, 0.85);
-}
-
-@media (max-width: 640px) {
-  .cognitive-realm-modal__content {
-    max-width: 95%;
-    padding: 20px;
-  }
-  
-  .cognitive-realm-modal__title {
-    font-size: 1.1rem;
-    margin-bottom: 12px;
-  }
-  
-  .cognitive-realm-modal__description {
-    font-size: 0.9rem;
-  }
-}
-
-/* Cognitive Realm Territory Statistics */
-.cognitive-realm-stats {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: clamp(16px, 4vw, 32px);
-  margin-top: 16px;
-  margin-bottom: 16px;
-  padding: 12px;
-  background: rgba(0, 10, 20, 0.5);
-  border: 1px solid rgba(139, 247, 255, 0.15);
-  border-radius: 8px;
-  font-family: 'Cormorant Garamond', serif;
-}
-
-.cognitive-realm-stat {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-}
-
-.cognitive-realm-stat-label {
-  font-size: clamp(0.85rem, 2vw, 1rem);
-  font-weight: 500;
-  letter-spacing: 0.05em;
-}
-
-.cognitive-realm-stat-label--player {
-  color: rgba(139, 247, 255, 0.9);
-}
-
-.cognitive-realm-stat-label--enemy {
-  color: rgba(255, 125, 235, 0.9);
-}
-
-.cognitive-realm-stat-label--neutral {
-  color: rgba(247, 247, 245, 0.6);
-}
-
-.cognitive-realm-stat-value {
-  font-size: clamp(1rem, 2.2vw, 1.2rem);
-  font-weight: 600;
-  color: rgba(247, 247, 245, 0.95);
-  min-width: 2ch;
-  text-align: right;
-}
-
-/* Cognitive Realm Options Button */
-/* Keep the Cognitive Realm options trigger slim and aligned beside the menu when expanded. */
-.cognitive-realm-options-wrapper {
-  margin-top: 24px;
-  margin-bottom: 24px;
-}
-
-@media (max-width: 640px) {
-  .cognitive-realm-stats {
-    gap: 12px;
-    padding: 10px;
-    margin-top: 12px;
-    margin-bottom: 12px;
-  }
-  
-  .cognitive-realm-stat {
-    gap: 6px;
-  }
-}
 
 .status-bar {
   display: grid;
@@ -7371,21 +7059,6 @@ body.playfield-fullscreen .playfield canvas {
   padding: 0;
 }
 
-/* Collective Unconscious (Cognitive Realm) overlap styles */
-#cognitive-realm-section {
-  --cognitive-realm-overlap-inline-left: 0px;
-  --cognitive-realm-overlap-inline-right: 0px;
-  --cognitive-realm-overlap-top: 0px;
-}
-
-#cognitive-realm-section[data-overlap-level]:not([data-overlap-level='0']) {
-  padding-inline: 0;
-  margin-top: calc(-1 * var(--cognitive-realm-overlap-top));
-  width: calc(100% + var(--cognitive-realm-overlap-inline-left) + var(--cognitive-realm-overlap-inline-right));
-  margin-left: calc(-1 * var(--cognitive-realm-overlap-inline-left));
-  margin-right: calc(-1 * var(--cognitive-realm-overlap-inline-right));
-}
-
 /* Playfield overlap styles */
 #playfield {
   --playfield-overlap-inline-left: 0px;
@@ -12440,7 +12113,6 @@ body.show-glyph-equations .tower-upgrade-variable-equations {
   margin: 0 auto;
 }
 
-.cognitive-realm-options-wrapper,
 .lamed-spire-options-card,
 .spire-options-card {
   display: flex;
@@ -12448,15 +12120,13 @@ body.show-glyph-equations .tower-upgrade-variable-equations {
   gap: 12px;
 }
 
-.options-open.cognitive-realm-options-wrapper,
 .options-open.lamed-spire-options-card,
 .options-open.spire-options-card {
   flex-direction: row;
 }
 
 .lamed-spire-options-trigger,
-.spire-options-trigger,
-.cognitive-realm-options-trigger {
+.spire-options-trigger {
   width: 100%;
   min-width: 220px;
   display: inline-flex;
@@ -12471,8 +12141,7 @@ body.show-glyph-equations .tower-upgrade-variable-equations {
 }
 
 .options-open .lamed-spire-options-trigger,
-.options-open .spire-options-trigger,
-.options-open .cognitive-realm-options-trigger {
+.options-open .spire-options-trigger {
   min-width: 12px;
   width: 12px;
   padding: 0;
@@ -12481,8 +12150,7 @@ body.show-glyph-equations .tower-upgrade-variable-equations {
 }
 
 .options-open .lamed-spire-options-trigger span,
-.options-open .spire-options-trigger span,
-.options-open .cognitive-realm-options-trigger span {
+.options-open .spire-options-trigger span {
   opacity: 0;
   width: 0;
   overflow: hidden;
@@ -12631,7 +12299,6 @@ body[data-spire-options-placement='footer'] .spire-options-trigger--corner {
 }
 
 @media (max-width: 720px) {
-  .cognitive-realm-options-wrapper,
   .lamed-spire-options-card,
   .spire-options-card {
     flex-direction: column;

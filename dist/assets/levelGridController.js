@@ -46,7 +46,6 @@ export function createLevelGridController({
   // ── Callbacks ───────────────────────────────────────────────────────
   onLevelSelect = () => {},
   onMenuSelectSfx = () => {},
-  onStoryCampaignExpand = () => {},
 } = {}) {
   // Resolve blueprints lazily because levels.js replaces the exported array after config load.
   const readLevelBlueprints = () => {
@@ -261,12 +260,6 @@ export function createLevelGridController({
     updateCampaignExpandedHeight(element.getBoundingClientRect().height);
     expandedCampaign = element;
 
-    // Notify main.js when the Story campaign is opened so cognitive realm
-    // visibility can be updated without introducing a circular dependency.
-    const campaignName = element.dataset.campaign;
-    if (campaignName === 'Story') {
-      onStoryCampaignExpand();
-    }
   }
 
   // ── Document-level event handlers ───────────────────────────────────

@@ -87,7 +87,7 @@ function repositionMenuForContext(menu, clickedToggle, toggles) {
   // If using footer placement with a footer button, move menu to footer card
   if (useInline && isFooterToggle) {
     // Find the footer card that contains the clicked button
-    const footerCard = clickedToggle.closest('.spire-options-card, .lamed-spire-options-card, .cognitive-realm-options-wrapper');
+    const footerCard = clickedToggle.closest('.spire-options-card, .lamed-spire-options-card');
     console.log('Footer card found:', footerCard?.className, 'contains menu:', footerCard?.contains(menu));
     if (footerCard && !footerCard.contains(menu)) {
       // Move the menu into the footer card
@@ -112,7 +112,7 @@ function repositionMenuForContext(menu, clickedToggle, toggles) {
   
   // Return the current container if no repositioning occurred
   return menu.closest(
-    '.spire-options-popover, .spire-options-card, .lamed-spire-options-card, .cognitive-realm-options-wrapper',
+    '.spire-options-popover, .spire-options-card, .lamed-spire-options-card',
   );
 }
 
@@ -141,7 +141,7 @@ export function bindSpireOptionsDropdown(config) {
   }
   // Use the menu container so overlays stay aligned even when a secondary toggle is used.
   const container = menu.closest(
-    '.spire-options-popover, .spire-options-card, .lamed-spire-options-card, .cognitive-realm-options-wrapper',
+    '.spire-options-popover, .spire-options-card, .lamed-spire-options-card',
   );
   // Track the active container so the options-open state follows the menu after it moves.
   let activeContainer = container;

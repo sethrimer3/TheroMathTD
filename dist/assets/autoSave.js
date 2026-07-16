@@ -1,22 +1,3 @@
-// Autosave orchestration utilities extracted from the main bootstrap module.
-// The helpers defined here coordinate scheduled persistence of powder currency,
-// player statistics, and interface preferences so that progress survives browser
-// interruptions without manual saves.
-//
-// Typing note (Phase 2 of JavaToTypeScriptConversionPlan.md): the storage
-// primitives (readStorage/writeStorage/readStorageJson/writeStorageJson) and the
-// *_STORAGE_KEY constants below are the "core, dependency-light" surface this
-// phase targets and are typed precisely. The `dependencies`/`configureAutoSave`
-// injection object and the scheduling/persist* functions below it are kept as a
-// typed-but-behavior-unchanged adapter: injected snapshot payloads are treated
-// as opaque `Record<string, unknown>` shapes (not modeled game-state schemas),
-// because designing a full save-state type system is explicitly out of scope
-// for this phase.
-//
-// Phase 5B narrowed the cognitive-realm hooks to the schema owned by
-// `assets/state/cognitiveRealmState.ts`. Phase 6 likewise narrows the Spire-resource
-// and tower/Aleph hooks to the post-retirement contracts now owned by
-// `assets/spireResourcePersistence.ts`; unrelated subsystem snapshots remain opaque.
 export const GRAPHICS_MODE_STORAGE_KEY = 'glyph-defense-idle:graphics-mode';
 export const NOTATION_STORAGE_KEY = 'glyph-defense-idle:notation';
 // Storage key used to persist the glyph equation visibility toggle.
@@ -59,10 +40,6 @@ export const POWDER_VISUAL_SETTINGS_STORAGE_KEY = 'glyph-defense-idle:powder-vis
 export const FRAME_RATE_LIMIT_STORAGE_KEY = 'glyph-defense-idle:frame-rate-limit';
 // Storage key used to persist the FPS counter visibility toggle.
 export const FPS_COUNTER_TOGGLE_STORAGE_KEY = 'glyph-defense-idle:fps-counter-enabled';
-// Storage key used to persist cognitive realm territories state.
-export const COGNITIVE_REALM_STORAGE_KEY = 'glyph-defense-idle:cognitive-realm';
-// Storage key used to persist cognitive realm visual preferences.
-export const COGNITIVE_REALM_VISUAL_SETTINGS_KEY = 'glyph-defense-idle:cognitive-realm-visual-settings';
 // Retired storage key for the former particle visual preference.
 export const BET_SPIRE_VISUAL_SETTINGS_STORAGE_KEY = 'glyph-defense-idle:bet-spire-visual-settings';
 // Storage key used to persist playfield enemy particle visibility.
@@ -108,8 +85,6 @@ const dependencies = {
     applySpireResourceStateSnapshot: null,
     getLevelProgressSnapshot: null,
     applyLevelProgressSnapshot: null,
-    getCognitiveRealmStateSnapshot: null,
-    applyCognitiveRealmStateSnapshot: null,
 };
 let statKeys = [];
 let powderSaveHandle = null;
@@ -250,12 +225,6 @@ export function loadPersistentState() {
         const storedProgress = readStorageJson(LEVEL_PROGRESS_STORAGE_KEY);
         if (storedProgress && typeof storedProgress === 'object') {
             dependencies.applyLevelProgressSnapshot(storedProgress);
-        }
-    }
-    if (typeof dependencies.applyCognitiveRealmStateSnapshot === 'function') {
-        const storedCognitiveRealm = readStorageJson(COGNITIVE_REALM_STORAGE_KEY);
-        if (storedCognitiveRealm && typeof storedCognitiveRealm === 'object') {
-            dependencies.applyCognitiveRealmStateSnapshot(storedCognitiveRealm);
         }
     }
     if (dependencies.audioStorageKey && typeof dependencies.applyStoredAudioSettings === 'function') {
@@ -405,16 +374,6 @@ function persistLevelProgress() {
     }
     writeStorageJson(LEVEL_PROGRESS_STORAGE_KEY, snapshot);
 }
-function persistCognitiveRealmState() {
-    if (typeof dependencies.getCognitiveRealmStateSnapshot !== 'function') {
-        return;
-    }
-    const snapshot = dependencies.getCognitiveRealmStateSnapshot();
-    if (!snapshot || typeof snapshot !== 'object') {
-        return;
-    }
-    writeStorageJson(COGNITIVE_REALM_STORAGE_KEY, snapshot);
-}
 function performAutoSave() {
     savePowderCurrency();
     if (powderBasinSaveHandle) {
@@ -427,7 +386,6 @@ function performAutoSave() {
     persistTowerUpgrades();
     persistSpireResourceState();
     persistLevelProgress();
-    persistCognitiveRealmState();
 }
 /**
  * Starts the recurring autosave timer so progress snapshots are refreshed on a

@@ -1,6 +1,6 @@
 # Thero Idle – Progression Notes
 
-> Current product note (2026-07-13): Bet, Lamed, Tsadi, Shin, and Kuf Spires are retired. Aleph is presented as the **Well of Inspiration**. Achievements remains active, while the Achievements Terrarium is disabled legacy JavaScript. Older sections below describe historical designs and are not active progression. The Cognitive Realm is unchanged.
+> Current product note (2026-07-15): Bet, Lamed, Tsadi, Shin, and Kuf Spires are retired. Aleph is presented as the **Well of Inspiration**. Achievements remains active, while the Achievements Terrarium is disabled legacy JavaScript. The former Collective Unconscious/Cognitive Realm map is also retired and removed. Older sections below describe historical designs and are not active progression.
 
 ## Level Structure
 - The game now features **30 total levels** grouped into six five-level sets.

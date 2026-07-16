@@ -12,4 +12,4 @@ The Achievements system still initializes, evaluates proofs, and applies its pow
 
 ## Explicitly out of scope
 
-The Collective Unconscious/Cognitive Realm map is unchanged. Its state, rendering, navigation within the existing game surfaces, and persistence are not part of this retirement. Tower, enemy, level, currency, and progression balance outside dependencies on the retired Spires is likewise unchanged.
+Tower, enemy, level, currency, and progression balance outside dependencies on the retired Spires is unchanged. The former Collective Unconscious/Cognitive Realm map was retired separately on 2026-07-15 and is no longer part of the active game or repository runtime.

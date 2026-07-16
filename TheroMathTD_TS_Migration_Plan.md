@@ -16,15 +16,14 @@
 ## 1. Current State
 
 > **2026-07-13 retirement update, refreshed after Phase 10 on 2026-07-15:** The obsolete-Spire feature removal deleted active Bet, Lamed,
-> Tsadi, Shin, and Kuf modules and added `assets/saveCompatibility.ts`. Current inventory is 51
-> authored `.ts` modules and 256 authored `.js` modules without a `.ts` sibling. Nineteen of those
+> Tsadi, Shin, and Kuf modules and added `assets/saveCompatibility.ts`. The later Collective Unconscious/Cognitive Realm retirement removed its state, map, and preference modules. Current inventory is 50
+> authored `.ts` modules and 254 authored `.js` modules without a `.ts` sibling. Nineteen of those
 > JavaScript modules form the disabled legacy Achievements Terrarium/Bet Terrarium stack documented
 > at `assets/legacy/achievementsTerrarium/README.md`; they are preserved JavaScript, excluded from
 > the active application graph, and are not an active migration target. The active remaining backlog
-> is therefore 237 JavaScript modules. The obsolete typed `spireFloatingMenu` and
+> is therefore 235 JavaScript modules. The obsolete typed `spireFloatingMenu` and
 > `spireTabVisibility` managers were removed with the multi-Spire navigation. The surviving Aleph system is presented as the Well of
-> Inspiration, while compatibility-sensitive internal names remain unchanged. The Cognitive Realm
-> is outside this product change.
+> Inspiration, while compatibility-sensitive internal names remain unchanged.
 
 - **Build tooling:** Plain `tsc` (no bundler). `tsconfig.json` is `strict: true`, `allowJs: true`,
   `checkJs: false`, target `ES2022`, module `ES2022`/`Bundler` resolution, `outDir: ./build/ts-out`,
@@ -33,19 +32,18 @@
   `<script type="module">` imports and no dev server/bundler is required.
 - **`package.json`:** `devDependencies` has `typescript@^5.7.0`, `eslint@^10.2.0`, `electron@^42.2.0`.
   No `@types/*` packages installed. `npm run typecheck` (`tsc --noEmit`) and `npm run build` both exist.
-- **Files converted or authored so far (51 `.ts` files, all under strict mode, zero `any`):**
+- **Files converted or authored so far (50 `.ts` files, all under strict mode, zero `any`):**
   `assets/uiTabManager.ts`, `assets/tabLockManager.ts`, `assets/autoSave.ts`, `assets/preferences.ts`,
   `scripts/core/formatting.ts`, `scripts/core/mathText.ts` (Phases 1–3), plus all 33 files under
   `assets/data/towers/` (32 tower-definition modules + `index.ts`) and the new
   `assets/data/towers/types.ts` (Phase 4), plus `assets/state/resourceState.ts`,
-  `assets/state/spireResourceState.ts`, `assets/state/monetizationState.ts` (Phase 5A), and
-  `assets/state/cognitiveRealmState.ts` (Phase 5B, COMPLETE), and the product-retirement compatibility
+  `assets/state/spireResourceState.ts`, `assets/state/monetizationState.ts` (Phase 5A), and the product-retirement compatibility
   boundary `assets/saveCompatibility.ts`, the revised Phase 6 persistence owner
   `assets/spireResourcePersistence.ts`, and the Phase 7 Aleph-chain state owner
   `assets/alephUpgradeState.ts`, and the Phase 8 base tower-upgrade owner
   `assets/towerBlueprintPresenter.ts`, the Phase 9 tower-variable discovery owner
   `assets/towerVariableDiscovery.ts`, and the Phase 10 tooltip owner
-  `assets/towerEquationTooltip.ts`. All four files under `assets/state/` are now migrated.
+  `assets/towerEquationTooltip.ts`. The former Phase 5B Cognitive Realm module was later removed with that retired feature.
 - **Migration count methodology (see `JavaToTypeScriptConversionPlan.md`'s "Documentation and Tooling
   Repair" section for full detail):** a *converted* module is an authored `.ts` file excluding
   `.d.ts`; a *remaining* module is an authored `.js` file with no same-path `.ts` sibling; `dist/`,
@@ -402,7 +400,7 @@ earlier phases.
 ## 6. Blockers / Dependencies Needing Action
 
 - **No blockers currently prevent starting Phase 11.** Tooling, strict mode, and the build pipeline are
-  already working end-to-end for 51 authored TypeScript modules, and
+  already working end-to-end for 50 authored TypeScript modules, and
   `tsconfig.json`/`scripts/sync-ts-output.cjs` now
   discover new `.ts` sources automatically via glob patterns rather than requiring a manual file-list
   edit per phase.

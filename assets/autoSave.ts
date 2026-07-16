@@ -13,12 +13,8 @@
 // because designing a full save-state type system is explicitly out of scope
 // for this phase.
 //
-// Phase 5B narrowed the cognitive-realm hooks to the schema owned by
-// `assets/state/cognitiveRealmState.ts`. Phase 6 likewise narrows the Spire-resource
-// and tower/Aleph hooks to the post-retirement contracts now owned by
+// Phase 6 narrows the Spire-resource and tower/Aleph hooks to the post-retirement contracts now owned by
 // `assets/spireResourcePersistence.ts`; unrelated subsystem snapshots remain opaque.
-
-import type { CognitiveRealmStateSnapshot } from './state/cognitiveRealmState.js';
 import type {
   SpireResourceStateSnapshot,
   SpireResourceStateSnapshotInput,
@@ -68,10 +64,6 @@ export const POWDER_VISUAL_SETTINGS_STORAGE_KEY = 'glyph-defense-idle:powder-vis
 export const FRAME_RATE_LIMIT_STORAGE_KEY = 'glyph-defense-idle:frame-rate-limit';
 // Storage key used to persist the FPS counter visibility toggle.
 export const FPS_COUNTER_TOGGLE_STORAGE_KEY = 'glyph-defense-idle:fps-counter-enabled';
-// Storage key used to persist cognitive realm territories state.
-export const COGNITIVE_REALM_STORAGE_KEY = 'glyph-defense-idle:cognitive-realm';
-// Storage key used to persist cognitive realm visual preferences.
-export const COGNITIVE_REALM_VISUAL_SETTINGS_KEY = 'glyph-defense-idle:cognitive-realm-visual-settings';
 // Retired storage key for the former particle visual preference.
 export const BET_SPIRE_VISUAL_SETTINGS_STORAGE_KEY = 'glyph-defense-idle:bet-spire-visual-settings';
 // Storage key used to persist playfield enemy particle visibility.
@@ -156,8 +148,6 @@ export interface AutoSaveDependencies {
   applySpireResourceStateSnapshot: ((snapshot: SpireResourceStateSnapshotInput) => void) | null;
   getLevelProgressSnapshot: (() => AutoSaveSnapshot) | null;
   applyLevelProgressSnapshot: ((snapshot: AutoSaveSnapshot) => void) | null;
-  getCognitiveRealmStateSnapshot: (() => CognitiveRealmStateSnapshot) | null;
-  applyCognitiveRealmStateSnapshot: ((snapshot: CognitiveRealmStateSnapshot) => void) | null;
 }
 
 /**
@@ -198,8 +188,6 @@ const dependencies: AutoSaveDependencies = {
   applySpireResourceStateSnapshot: null,
   getLevelProgressSnapshot: null,
   applyLevelProgressSnapshot: null,
-  getCognitiveRealmStateSnapshot: null,
-  applyCognitiveRealmStateSnapshot: null,
 };
 
 let statKeys: string[] = [];
@@ -350,13 +338,6 @@ export function loadPersistentState(): void {
     const storedProgress = readStorageJson<AutoSaveSnapshot>(LEVEL_PROGRESS_STORAGE_KEY);
     if (storedProgress && typeof storedProgress === 'object') {
       dependencies.applyLevelProgressSnapshot(storedProgress);
-    }
-  }
-
-  if (typeof dependencies.applyCognitiveRealmStateSnapshot === 'function') {
-    const storedCognitiveRealm = readStorageJson<CognitiveRealmStateSnapshot>(COGNITIVE_REALM_STORAGE_KEY);
-    if (storedCognitiveRealm && typeof storedCognitiveRealm === 'object') {
-      dependencies.applyCognitiveRealmStateSnapshot(storedCognitiveRealm);
     }
   }
 
@@ -520,17 +501,6 @@ function persistLevelProgress(): void {
   writeStorageJson(LEVEL_PROGRESS_STORAGE_KEY, snapshot);
 }
 
-function persistCognitiveRealmState(): void {
-  if (typeof dependencies.getCognitiveRealmStateSnapshot !== 'function') {
-    return;
-  }
-  const snapshot = dependencies.getCognitiveRealmStateSnapshot();
-  if (!snapshot || typeof snapshot !== 'object') {
-    return;
-  }
-  writeStorageJson(COGNITIVE_REALM_STORAGE_KEY, snapshot);
-}
-
 function performAutoSave(): void {
   savePowderCurrency();
   if (powderBasinSaveHandle) {
@@ -543,7 +513,6 @@ function performAutoSave(): void {
   persistTowerUpgrades();
   persistSpireResourceState();
   persistLevelProgress();
-  persistCognitiveRealmState();
 }
 
 /**

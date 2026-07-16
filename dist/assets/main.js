@@ -182,21 +182,6 @@ import {
   loadMonetizationState,
 } from './state/monetizationState.js';
 import {
-  isCognitiveRealmUnlocked,
-  isCognitiveRealmLocked,
-  unlockCognitiveRealm,
-  unlockCognitiveRealmRendering,
-  updateTerritoriesForLevel,
-  serializeCognitiveRealmState,
-  deserializeCognitiveRealmState,
-} from './state/cognitiveRealmState.js';
-import {
-  initializeCognitiveRealmMap,
-  showCognitiveRealmMap,
-  hideCognitiveRealmMap,
-  updateCognitiveRealmLockState,
-} from './cognitiveRealmMap.js';
-import {
   configureFieldNotesOverlay,
   initializeFieldNotesOverlay,
   openFieldNotesOverlay,
@@ -300,7 +285,6 @@ import {
   updatePowderRenderSizeControlsVisibility,
 } from './powderSpirePreferences.js';
 import { bindSpireOptionsDropdown, closeAllSpireDropdowns } from './spireOptionsDropdowns.js';
-import { bindCognitiveRealmOptions, initializeCognitiveRealmPreferences } from './cognitiveRealmPreferences.js';
 import { bindPlayfieldOptions, initializePlayfieldPreferences } from './playfield/playfieldPreferences.js';
 import { createDeveloperModeManager } from './developerModeManager.js';
 import {
@@ -1134,14 +1118,6 @@ import { createSpireCameraController } from './spireCameraController.js';
     updateLayoutVisibility,
     notifyLevelVictory,
     commitAutoSave,
-    isCognitiveRealmUnlocked,
-    isCognitiveRealmLocked,
-    unlockCognitiveRealmRendering,
-    updateCognitiveRealmLockState,
-    updateTerritoriesForLevel,
-    showCognitiveRealmMap,
-    hideCognitiveRealmMap,
-    getActiveTabId,
     stopAllIdleRuns,
     beginIdleLevelRun,
     updateIdleLevelDisplay,
@@ -1160,7 +1136,6 @@ import { createSpireCameraController } from './spireCameraController.js';
   const confirmPendingLevel = levelCombatCtrl.confirmPendingLevel;
   const _startLevel = levelCombatCtrl.startLevel;
   const leaveActiveLevel = levelCombatCtrl.leaveActiveLevel;
-  const updateCognitiveRealmVisibility = levelCombatCtrl.updateCognitiveRealmVisibility;
   const _focusLeaveLevelButton = levelCombatCtrl.focusLeaveLevelButton;
 
   // Allow the overlay confirmation gesture to begin levels through the shared controller.
@@ -1273,9 +1248,6 @@ import { createSpireCameraController } from './spireCameraController.js';
     getObservedPowderResizeElements,
     updateTabLockStates,
     isTutorialCompleted,
-    unlockCognitiveRealm,
-    unlockCognitiveRealmRendering,
-    updateCognitiveRealmVisibility: (...args) => levelCombatCtrl.updateCognitiveRealmVisibility(...args),
   });
 
   // ── Level Grid Controller ───────────────────────────────────────────
@@ -1309,12 +1281,6 @@ import { createSpireCameraController } from './spireCameraController.js';
     onMenuSelectSfx: () => {
       if (audioManager) {
         audioManager.playSfx('menuSelect');
-      }
-    },
-    onStoryCampaignExpand: () => {
-      if (!isCognitiveRealmUnlocked()) {
-        unlockCognitiveRealm();
-        updateCognitiveRealmVisibility();
       }
     },
   });
@@ -1517,11 +1483,6 @@ import { createSpireCameraController } from './spireCameraController.js';
     }),
     getSpireResourceStateSnapshot,
     applySpireResourceStateSnapshot,
-    getCognitiveRealmStateSnapshot: serializeCognitiveRealmState,
-    applyCognitiveRealmStateSnapshot: (snapshot) => {
-      deserializeCognitiveRealmState(snapshot);
-      updateCognitiveRealmVisibility();
-    },
   });
 
   levelOverlayController = createLevelOverlayController({
@@ -2081,19 +2042,6 @@ import { createSpireCameraController } from './spireCameraController.js';
     initializeLevelEditorElements();
     initializeDeveloperMapElements();
 
-    // Initialize cognitive realm map
-    const cognitiveRealmContainer = document.getElementById('cognitive-realm-container');
-    const cognitiveRealmCanvas = document.getElementById('cognitive-realm-canvas');
-    if (cognitiveRealmContainer && cognitiveRealmCanvas) {
-      initializeCognitiveRealmPreferences();
-      bindCognitiveRealmOptions();
-      initializeCognitiveRealmMap(cognitiveRealmContainer, cognitiveRealmCanvas, {
-        getDeveloperModeActive: () => developerModeActive,
-      });
-      // Ensure visibility and render state line up with the current tab and level status.
-      updateCognitiveRealmVisibility();
-    }
-
     // Apply the preferred graphics fidelity before other controls render.
     initializeGraphicsMode();
     initializeTrackRenderMode();
@@ -2156,11 +2104,6 @@ import { createSpireCameraController } from './spireCameraController.js';
       extraToggleIds: ['powder-options-toggle-button'],
       // Close the Well of Inspiration popover when clicking outside.
       closeOnOutside: true,
-    });
-    bindSpireOptionsDropdown({
-      toggleId: 'cognitive-realm-options-toggle',
-      menuId: 'cognitive-realm-options-menu',
-      spireId: 'cognitive-realm',
     });
     initializePowderSpirePreferences();
     bindPowderSpireOptions();
@@ -2258,20 +2201,6 @@ import { createSpireCameraController } from './spireCameraController.js';
             sandSimulation.handleResize();
           }
           initializePowderViewInteraction();
-        }
-
-        // Update cognitive realm map visibility based on tab and level state
-        // Hide the map if not on Defense tab OR if player is inside a level
-        if (isCognitiveRealmUnlocked()) {
-          const isDefenseTab = tabId === 'tower';
-          const isInsideLevel = Boolean(activeLevelId);
-          const shouldShowMap = isDefenseTab && !isInsideLevel;
-
-          if (shouldShowMap) {
-            showCognitiveRealmMap();
-          } else {
-            hideCognitiveRealmMap();
-          }
         }
 
         // Handle achievements tab visibility for sparkle management

@@ -67,16 +67,6 @@ export function createLevelCombatController(deps) {
     notifyLevelVictory,
     commitAutoSave,
 
-    // ── Cognitive realm ──────────────────────────────────────────────
-    isCognitiveRealmUnlocked,
-    isCognitiveRealmLocked,
-    unlockCognitiveRealmRendering,
-    updateCognitiveRealmLockState,
-    updateTerritoriesForLevel,
-    showCognitiveRealmMap,
-    hideCognitiveRealmMap,
-    getActiveTabId,
-
     // ── Idle level runs ──────────────────────────────────────────────
     stopAllIdleRuns,
     beginIdleLevelRun,
@@ -156,11 +146,6 @@ export function createLevelCombatController(deps) {
       updateResourceRates();
       updatePowderLedger();
       
-      // Unlock cognitive realm rendering when Chapter 3, level 5 is completed
-      if (levelId === '3 - 5' && isCognitiveRealmLocked()) {
-        unlockCognitiveRealmRendering();
-        updateCognitiveRealmLockState();
-      }
     } else {
       updateStatusDisplays();
       updatePowderLedger();
@@ -168,11 +153,6 @@ export function createLevelCombatController(deps) {
 
     updateActiveLevelBanner();
     updateLevelCards();
-    
-    // Update cognitive realm territories on level victory
-    if (isCognitiveRealmUnlocked()) {
-      updateTerritoriesForLevel(levelId, true);
-    }
     
     commitAutoSave();
 
@@ -216,11 +196,6 @@ export function createLevelCombatController(deps) {
     updateActiveLevelBanner();
     updateLevelCards();
     
-    // Update cognitive realm territories on level defeat
-    if (isCognitiveRealmUnlocked()) {
-      updateTerritoriesForLevel(levelId, false);
-    }
-    
     commitAutoSave();
 
     const playfield = getPlayfield();
@@ -256,35 +231,6 @@ export function createLevelCombatController(deps) {
         secondaryLabel,
         onSecondary: secondaryAction,
       });
-    }
-  }
-
-  // Update cognitive realm map visibility based on unlock status, tab, and level state
-  function updateCognitiveRealmVisibility() {
-    const cognitiveRealmSection = document.getElementById('cognitive-realm-section');
-    if (!cognitiveRealmSection) {
-      return;
-    }
-
-    if (isCognitiveRealmUnlocked()) {
-      cognitiveRealmSection.hidden = false;
-      cognitiveRealmSection.setAttribute('aria-hidden', 'false');
-      
-      // Only show map if on Defense tab AND not inside a level
-      const activeTabId = getActiveTabId();
-      const isDefenseTab = activeTabId === 'tower';
-      const isInsideLevel = Boolean(getActiveLevelId());
-      const shouldShowMap = isDefenseTab && !isInsideLevel;
-      
-      if (shouldShowMap) {
-        showCognitiveRealmMap();
-      } else {
-        hideCognitiveRealmMap();
-      }
-    } else {
-      cognitiveRealmSection.hidden = true;
-      cognitiveRealmSection.setAttribute('aria-hidden', 'true');
-      hideCognitiveRealmMap();
     }
   }
 
@@ -494,11 +440,6 @@ export function createLevelCombatController(deps) {
     updateActiveLevelBanner();
     updateLevelCards();
 
-    // Hide cognitive realm map whenever a level begins so rendering pauses inside encounters
-    if (isCognitiveRealmUnlocked()) {
-      hideCognitiveRealmMap();
-    }
-
     const playfield = getPlayfield();
     if (playfield) {
       // Show a brief loading overlay while the level initialises its canvas and state.
@@ -584,13 +525,6 @@ export function createLevelCombatController(deps) {
     updateLayoutVisibility();
     updateTowerSelectionButtons();
     
-    // Show cognitive realm map when leaving a level if on Defense tab
-    if (isCognitiveRealmUnlocked()) {
-      const activeTabId = getActiveTabId();
-      if (activeTabId === 'tower') {
-        showCognitiveRealmMap();
-      }
-    }
     const playfieldMenuController = getPlayfieldMenuController();
     if (playfieldMenuController) {
       playfieldMenuController.updateMenuState();
@@ -613,7 +547,6 @@ export function createLevelCombatController(deps) {
     handlePlayfieldCombatStart,
     handlePlayfieldVictory,
     handlePlayfieldDefeat,
-    updateCognitiveRealmVisibility,
     handleLevelSelection,
     cancelPendingLevel,
     confirmPendingLevel,

@@ -89,9 +89,6 @@ export function createDeveloperModeManager(options = {}) {
     getObservedPowderResizeElements: _getObservedPowderResizeElements,
     updateTabLockStates,
     isTutorialCompleted,
-    unlockCognitiveRealm,
-    unlockCognitiveRealmRendering,
-    updateCognitiveRealmVisibility,
   } = options;
 
   const developerModeElements = {
@@ -247,11 +244,6 @@ export function createDeveloperModeManager(options = {}) {
     }
 
     refreshPowderWallDecorations?.();
-
-    // Unlock the cognitive realm map so it is visible in developer mode.
-    unlockCognitiveRealm?.();
-    unlockCognitiveRealmRendering?.();
-    updateCognitiveRealmVisibility?.();
 
     persistDeveloperModeState(true);
   }
