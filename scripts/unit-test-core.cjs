@@ -201,6 +201,30 @@ async function importMindGateEquationModule() {
   return { mindGate: mindGateModule.mindGate, formatCalls: formattingModule.formatCalls };
 }
 
+// Import the compiled Shadow Gate blueprint with a mutable Codex stub so tests
+// can observe dynamic getter timing, lookup order, and symbol filtering.
+async function importShadowGateEquationModule() {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thero-unit-test-shadow-gate-'));
+  fs.writeFileSync(path.join(tmpDir, 'package.json'), JSON.stringify({ type: 'module' }));
+  const equationDest = path.join(tmpDir, 'assets', 'towerEquations', 'shadowGate.js');
+  const codexDest = path.join(tmpDir, 'assets', 'codex.js');
+  fs.mkdirSync(path.dirname(equationDest), { recursive: true });
+  fs.copyFileSync(path.join(rootDir, 'assets', 'towerEquations', 'shadowGate.js'), equationDest);
+  fs.writeFileSync(
+    codexDest,
+    `export const codexState = { encounteredEnemies: new Set() };
+     export const codexEntries = new Map();
+     export const lookupCalls = [];
+     export function getEnemyCodexEntry(id) {
+       lookupCalls.push(id);
+       return codexEntries.get(id);
+     }`,
+  );
+  const shadowGateModule = await import(pathToFileURL(equationDest).href);
+  const codexModule = await import(pathToFileURL(codexDest).href);
+  return { shadowGate: shadowGateModule.shadowGate, ...codexModule };
+}
+
 // Import a fresh compiled shared-context module for each state-sensitive test.
 function importBlueprintContextModule() {
   return importAsEsm('assets/towerEquations/blueprintContext.js');
@@ -1514,6 +1538,50 @@ async function run() {
     });
     assert.equal(golden, String.raw`\( R = LIFE \times RECOVERY \)`);
     assert.deepEqual(calls, ['result', 'life', 'recovery']);
+  });
+
+  // --- assets/towerEquations/shadowGate.js -------------------------------
+  await test('Shadow Gate equation: authored metadata and passive outputs remain exact', async () => {
+    const { shadowGate } = await importShadowGateEquationModule();
+    assert.equal(shadowGate.mathSymbol, String.raw`\wp`);
+    assert.equal(shadowGate.baseEquation, String.raw`\( \wp = x \)`);
+    assert.equal(shadowGate.variables.length, 1);
+    assert.equal(shadowGate.variables[0].key, 'enemies');
+    assert.equal(shadowGate.variables[0].symbol, 'x');
+    assert.equal(shadowGate.variables[0].upgradable, false);
+    assert.equal(shadowGate.computeResult(), 0);
+    assert.equal(shadowGate.formatGoldenEquation(), String.raw`\( \wp = x \)`);
+  });
+
+  await test('Shadow Gate equation: dynamic name preserves Set and Codex lookup order', async () => {
+    const { shadowGate, codexState, codexEntries, lookupCalls } =
+      await importShadowGateEquationModule();
+    codexState.encounteredEnemies.add('prime');
+    codexState.encounteredEnemies.add('divisor');
+    codexState.encounteredEnemies.add('prime');
+    codexEntries.set('prime', { symbol: 'ℙ' });
+    codexEntries.set('divisor', { symbol: '𝔻' });
+    assert.equal(shadowGate.variables[0].name, 'ℙ, 𝔻');
+    assert.deepEqual(lookupCalls, ['prime', 'divisor']);
+  });
+
+  await test('Shadow Gate equation: every name read uses current entries and filters falsey symbols', async () => {
+    const { shadowGate, codexState, codexEntries, lookupCalls } =
+      await importShadowGateEquationModule();
+    for (const id of ['missing', 'blank', 'zero', 'valid']) {
+      codexState.encounteredEnemies.add(id);
+    }
+    codexEntries.set('blank', { symbol: '' });
+    codexEntries.set('zero', { symbol: 0 });
+    codexEntries.set('valid', { symbol: 'V' });
+    assert.equal(shadowGate.variables[0].name, 'V');
+    codexEntries.set('missing', { symbol: 'M' });
+    codexEntries.set('valid', { symbol: 'V2' });
+    assert.equal(shadowGate.variables[0].name, 'M, V2');
+    assert.deepEqual(lookupCalls, [
+      'missing', 'blank', 'zero', 'valid',
+      'missing', 'blank', 'zero', 'valid',
+    ]);
   });
 
   // --- assets/towerEquations/index.js ------------------------------------

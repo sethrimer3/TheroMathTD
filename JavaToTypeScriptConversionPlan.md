@@ -90,7 +90,7 @@ Before reporting completion, update this document in the same branch or commit s
 
 The obsolete-Spire retirement is an intentional product change, not a general migration phase. It removed active Bet, Lamed, Tsadi, Shin, and Kuf modules and added one typed compatibility boundary, `assets/saveCompatibility.ts`. The Aleph experience remains active under the user-facing name **Well of Inspiration**; compatibility-sensitive `powder`/`aleph` identifiers remain unchanged.
 
-Using the established count method, the current tree contains **54 authored `.ts` modules** and **231 authored `.js` modules without a same-path `.ts` sibling** (**285 total**). Phase 14 converted `assets/towerEquations/mindGate.js`, moving the live post-retirement baseline from 53 to 54 typed modules and from 232 to 231 remaining JavaScript modules without changing the total. The disabled Achievements Terrarium/Bet Terrarium files referenced by older ledger entries are no longer present in the live tree, so there is no separate preserved-legacy subtraction in the current count. The retired `spireFloatingMenu` and `spireTabVisibility` TypeScript modules and the orphaned retired idle/developer controllers were removed because the one-Well navigation no longer imports or needs those multi-Spire managers. The former Collective Unconscious/Cognitive Realm runtime was removed after Phase 10, including its typed state module and two JavaScript UI modules; its earlier migration entries remain below as historical records.
+Using the established count method, the current tree contains **55 authored `.ts` modules** and **230 authored `.js` modules without a same-path `.ts` sibling** (**285 total**). Phase 15 converted `assets/towerEquations/shadowGate.js`, moving the live post-retirement baseline from 54 to 55 typed modules and from 231 to 230 remaining JavaScript modules without changing the total. That is **19.3% converted by module count**. A supplemental authored-line snapshot counts 6,841 TypeScript lines and 103,058 remaining JavaScript lines, or approximately **6.2% converted by source lines**; this lower figure reflects the large JavaScript integration modules still ahead. The disabled Achievements Terrarium/Bet Terrarium files referenced by older ledger entries are no longer present in the live tree, so there is no separate preserved-legacy subtraction in the current count. The retired `spireFloatingMenu` and `spireTabVisibility` TypeScript modules and the orphaned retired idle/developer controllers were removed because the one-Well navigation no longer imports or needs those multi-Spire managers. The former Collective Unconscious/Cognitive Realm runtime was removed after Phase 10, including its typed state module and two JavaScript UI modules; its earlier migration entries remain below as historical records.
 
 **Plan created:** 2026-07-13  
 **Repository:** `sethrimer3/TheroMathTD`  
@@ -141,6 +141,7 @@ No TypeScript conversion phase is recorded as complete in this plan.
 | 12 | Tower-blueprint shared dependency context (`assets/towerEquations/blueprintContext.js`) | COMPLETE | See Phase 12 section and Implementation Log entry below |
 | 13 | Tower-equation registry and lookup (`assets/towerEquations/index.js`) | COMPLETE | See Phase 13 section and Implementation Log entry below |
 | 14 | Mind Gate authored equation definition (`assets/towerEquations/mindGate.js`) | COMPLETE | See Phase 14 section and Implementation Log entry below |
+| 15 | Shadow Gate authored equation definition (`assets/towerEquations/shadowGate.js`) | COMPLETE | See Phase 15 section and Implementation Log entry below |
 
 ---
 
@@ -828,6 +829,25 @@ Suite total: **78/78 passing** (58 pre-existing from Phases 2–5A + 20 new).
 
 ---
 
+## Phase 15 — Shadow Gate Authored Equation Definition (COMPLETE)
+
+**Status:** COMPLETE (2026-07-16)
+**Migration type:** Behavior-preserving migration
+
+**Verified starting point and baseline:** Phase 15 branched as `codex/phase-15-shadow-gate-equation` directly from completed local Phase 14 commit `3acc3672c4ded200428a37f07452152ea64f87ff`. A fresh fetch showed the stacked branch six commits ahead and zero behind `origin/main`, so no upstream divergence required resolution. The worktree was clean at Build 740, and pre-edit typecheck/build/lint, 158/158 core tests plus retired-Spire checks, and recursive smoke tests all passed.
+
+**Live imports and consumers:** Shadow Gate retains its sole runtime dependency on `assets/codex.js` and remains consumed through the typed equation registry. Its variable `name` getter reads the live encountered-enemy Set on every access and resolves current Codex entries. No Codex owner, grouped definition, Towers-tab, simulation, playfield, or main-integration implementation was edited.
+
+**Files and types:** The sole authored implementation became strict `assets/towerEquations/shadowGate.ts`; its `.js` sibling remains generated at the same path with the same named export and Codex import. The definition reuses `TowerEquationBlueprint` through a type-only import. A local `ShadowGateCodexEntry` and two narrow assignments describe only the encountered-enemy Set and optional symbol lookup used at this JavaScript-owned boundary.
+
+**Behavior characterized and preserved:** The exact blueprint/variable shape, strings, `String.raw` LaTeX, non-upgradable flag, zero result, and symbolic golden equation remain unchanged. Each getter access still snapshots the current Set with `Array.from`, preserves insertion order and Set deduplication, performs one lookup per encountered ID, uses optional symbol access, filters all falsey symbols with `filter(Boolean)`, stringifies retained values through `join`, and joins them with comma-space separators.
+
+**Tests, validation, and counts:** Three deterministic tests load generated `assets/towerEquations/shadowGate.js` against a mutable recording Codex stub, raising the core suite from 158 to **161 tests**. They cover exact metadata/passive output, order/deduplication/lookup count, later getter reads, changed entry values, missing entries, falsey symbols, and exact joins. Counts moved from 54 to **55 authored TypeScript modules** and from 231 to **230 remaining JavaScript modules**; total authored modules remain **285**. This is **19.3% by module count** and approximately **6.2% by authored source lines**. Build 740 advanced exactly once to Build 741.
+
+**Browser/manual verification:** No browser, Electron, touch, or physical-device verification was performed or claimed. This definition has no DOM behavior; generated-output tests directly cover its dynamic Codex contract, and recursive smoke validation covers the real import graph.
+
+---
+
 ## Tentative Later Migration Areas
 
 These are not authorized active phases. Their order must be reevaluated after Phase 1.
@@ -898,13 +918,13 @@ Do not treat this list as a fixed roadmap. Each completed phase must recommend t
 
 ## Next Suggested Step
 
-**Recommended Phase 15: `assets/towerEquations/shadowGate.js` (second authored equation definition).**
+**Recommended Phase 16: `assets/towerEquations/advancedTowers.js` (advanced-equation barrel).**
 
-Phase 14 establishes the typed authored-definition and sub-equation boundary. The next smallest meaningful inward step is the 39-line Shadow Gate blueprint: one Codex state dependency, one dynamic variable-name getter, one passive zero result, and one symbolic golden equation. It is far smaller than the 400–1,600-line grouped definition files and can type the first dynamic definition without entering combat or rendering systems.
+Phase 15 completes both standalone special definitions. The next smallest live equation module is the 22-line advanced-equation barrel, which re-exports 15 authored definitions and feeds the typed registry. Converting this aggregation seam before individual advanced formulas is low risk and establishes generated-output identity/order coverage for that module cluster.
 
-**Bounded scope:** Convert only `assets/towerEquations/shadowGate.js` to strict TypeScript. Reuse the presenter blueprint contract and introduce only the narrow Codex-facing set/entry shape required by the dynamic getter. Add deterministic compiled-output tests against a stub Codex dependency for initial and later getter reads, insertion order, duplicate handling inherited from `Set`, missing/falsey symbols, exact lookup order/count, joins, metadata, zero result, and exact golden equation. Do not convert `codex.js`, grouped/basic/Greek/advanced definitions, the registry, Towers tab, simulations, playfield systems, or main integration.
+**Bounded scope:** Convert only `assets/towerEquations/advancedTowers.js` to strict TypeScript while preserving all 15 direct `.js` re-export specifiers, export names, and source identities. Add an isolated generated-output test with identity-marked advanced-definition stubs that verifies the exact named-export set and every re-exported identity. Do not convert any file under `advanced/`, Infinity/basic/Greek definitions, the registry, Towers tab, simulations, playfield systems, or main integration.
 
-**Acceptance criteria:** Preserve the exact exported `shadowGate` object shape and strings, live getter timing, `Array.from` insertion order, one lookup per encountered id, optional-symbol access, `filter(Boolean)` semantics, comma-space joining, passive zero result, and exact symbolic formatter output; add no `any` or suppressions; generated sibling keeps the Codex `.js` import and registry compatibility; typecheck/build/lint/unit/smoke pass; update counts/build number once and record browser availability honestly.
+**Acceptance criteria:** Preserve the exact 15 export names, source paths, live bindings, and imported object identities with no runtime wrapper or presenter dependency; generated sibling remains registry-compatible; typecheck/build/lint/unit/smoke pass; update counts/build number once and record browser availability honestly.
 
 ---
 
@@ -1226,3 +1246,18 @@ Phase 14 branched as `codex/phase-14-mind-gate-equation` from verified local Pha
 - No browser, Electron, touch, or physical-device verification was performed or claimed. Generated-output tests and the recursive real-graph smoke test cover this DOM-free definition boundary.
 
 **Next suggested step:** Execute the bounded Phase 15 recommendation above for `assets/towerEquations/shadowGate.js`; keep `codex.js`, grouped definitions, Towers tab, simulations, playfield systems, and main integration out of scope.
+
+### 2026-07-16 — Phase 15 executed
+
+**Status:** COMPLETE
+
+Phase 15 branched as `codex/phase-15-shadow-gate-equation` from verified local Phase 14 commit `3acc3672c4ded200428a37f07452152ea64f87ff`. A fresh fetch confirmed the stacked migration branch was six commits ahead and zero behind `origin/main`. The Codex dependency, dynamic getter timing, Set/lookup/filter/join behavior, registry consumer, and exact passive outputs were characterized before editing; pre-edit typecheck/build/lint/158-test/retired-Spire/smoke validation passed.
+
+- Converted `assets/towerEquations/shadowGate.js` to strict `assets/towerEquations/shadowGate.ts`; its generated sibling retains the same Codex `.js` import, named export, getter, strings, and passive outputs.
+- Reused the presenter blueprint contract through a type-only import and added only a local optional-symbol entry surface plus narrow Set/lookup assignments for the JavaScript-owned Codex boundary.
+- Added three isolated generated-output tests with a mutable recording Codex stub, increasing the core suite from 158/158 to 161/161. Coverage includes exact metadata/output, insertion order and Set deduplication, lookup order/count, live rereads, changed/missing entries, falsey filtering, and exact joining.
+- Final `npm run typecheck`, `npm run build`, `npm run lint`, `npm run test:unit` (161/161 plus retired-Spire checks), and `npm test` passed. `git diff --check`, generated-sibling/dist hashes, Codex-import/registry-specifier inspection, scoped forbidden-pattern checks, and the no-TypeScript-in-`dist` audit passed.
+- Recalculated counts by the documented full-tree method: 54 to **55** authored TypeScript modules, 231 to **230** remaining JavaScript modules, and **285** authored modules total. Completion is **19.3% by module count** and approximately **6.2% by authored source lines**. Build 740 advanced exactly once to Build 741.
+- No browser, Electron, touch, or physical-device verification was performed or claimed. Generated-output tests and recursive smoke validation cover this DOM-free definition boundary.
+
+**Next suggested step:** Execute the bounded Phase 16 recommendation above for `assets/towerEquations/advancedTowers.js`; keep individual advanced definitions, Infinity/basic/Greek definitions, Towers tab, simulations, playfield systems, and main integration out of scope.
