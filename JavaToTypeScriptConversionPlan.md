@@ -90,7 +90,7 @@ Before reporting completion, update this document in the same branch or commit s
 
 The obsolete-Spire retirement is an intentional product change, not a general migration phase. It removed active Bet, Lamed, Tsadi, Shin, and Kuf modules and added one typed compatibility boundary, `assets/saveCompatibility.ts`. The Aleph experience remains active under the user-facing name **Well of Inspiration**; compatibility-sensitive `powder`/`aleph` identifiers remain unchanged.
 
-Using the established count method, the current tree contains **50 authored `.ts` modules** and **254 authored `.js` modules without a same-path `.ts` sibling** (304 total). Of those 254 JavaScript modules, **19 are explicitly disabled legacy Achievements Terrarium/Bet Terrarium files** documented at `assets/legacy/achievementsTerrarium/README.md`; they are preserved for possible restoration and are not part of the active migration backlog. The active remaining JavaScript backlog is therefore **235 modules**. Phase 10 added `assets/towerEquationTooltip.ts` and reused the Phase 8 variable plus Phase 9 universal-metadata contracts without changing the total authored-module count. The retired `spireFloatingMenu` and `spireTabVisibility` TypeScript modules and the orphaned retired idle/developer controllers were removed because the one-Well navigation no longer imports or needs those multi-Spire managers. The former Collective Unconscious/Cognitive Realm runtime was removed after Phase 10, including its typed state module and two JavaScript UI modules; its earlier migration entries remain below as historical records.
+Using the established count method, the current tree contains **51 authored `.ts` modules** and **234 authored `.js` modules without a same-path `.ts` sibling** (**285 total**). Phase 11 converted `assets/towerEquations/masterEquationUtils.js`, moving the live post-retirement baseline from 50 to 51 typed modules and from 235 to 234 remaining JavaScript modules without changing the total. The disabled Achievements Terrarium/Bet Terrarium files referenced by older ledger entries are no longer present in the live tree, so there is no separate preserved-legacy subtraction in the current count. The retired `spireFloatingMenu` and `spireTabVisibility` TypeScript modules and the orphaned retired idle/developer controllers were removed because the one-Well navigation no longer imports or needs those multi-Spire managers. The former Collective Unconscious/Cognitive Realm runtime was removed after Phase 10, including its typed state module and two JavaScript UI modules; its earlier migration entries remain below as historical records.
 
 **Plan created:** 2026-07-13  
 **Repository:** `sethrimer3/TheroMathTD`  
@@ -137,6 +137,7 @@ No TypeScript conversion phase is recorded as complete in this plan.
 | 8 | Tower equation presenter and base tower-upgrade persistence owner (`assets/towerBlueprintPresenter.js`) | COMPLETE | See Phase 8 section and Implementation Log entry below |
 | 9 | Tower-variable discovery state owner (`assets/towerVariableDiscovery.js`) | COMPLETE | See Phase 9 section and Implementation Log entry below |
 | 10 | Tower-equation tooltip DOM owner (`assets/towerEquationTooltip.js`) | COMPLETE | See Phase 10 section and Implementation Log entry below |
+| 11 | Master-equation derivation utility (`assets/towerEquations/masterEquationUtils.js`) | COMPLETE | See Phase 11 section and Implementation Log entry below |
 
 ---
 
@@ -724,6 +725,27 @@ Suite total: **78/78 passing** (58 pre-existing from Phases 2–5A + 20 new).
 
 ---
 
+## Phase 11 — Master-Equation Derivation Utility (COMPLETE)
+
+**Status:** COMPLETE (2026-07-15)
+**Migration type:** Behavior-preserving migration
+
+**Verified live scope and continuation baseline:** The live plan still identified this module as the next bounded phase. This continuation resumed from clean `codex/phase-11-master-equation-utils` at `e672bab40b40138c1daff35fc77299758fb47a8a` (the recovered auto-sync checkpoint stacked on `64ebc5e`) with Build 736. Before the remaining edits, `git status --short` was clean and `npm run typecheck`, `npm run build`, `npm run lint`, `npm run test:unit` (142/142 plus retired-Spire checks), and `npm test` all passed. The original owner was re-read from the branch base and compared with the generated output rather than relying on the older plan's approximate line count.
+
+**Files converted and compatibility-edited:** `assets/towerEquations/masterEquationUtils.js` was converted to strict `assets/towerEquations/masterEquationUtils.ts`; the `.js` sibling remains build-generated at the same path. `assets/towerBlueprintPresenter.ts` narrowly added only the master-equation metadata already read from blueprint variables and blueprints. `scripts/unit-test-core.cjs` gained compiled-output characterization coverage. `assets/towersTab.js`, `assets/towerUpgradeOverlayController.js`, `assets/towerEquations/blueprintContext.js`, equation registries and authored definitions, simulations, playfield systems, and `assets/main.js` were not converted or substantially edited. The static build refreshed the corresponding generated files under `dist/`.
+
+**Types/interfaces introduced or extended:** Phase 11 introduced `MasterEquationFormat`, `MasterEquationTerm`, `MasterEquationSymbolPair`, `DerivedMasterEquationStructure`, `MasterEquationDerivationParameters`, and `MasterEquationTextParameters`, plus private property-source, untrusted-variable, and raw-parameter narrowing contracts. It reused `TowerEquationBlueprint`, `TowerEquationVariable`, and `TowerEquationDefinition` through a type-only import; the shared variable contract was extended only with `masterEquationSymbol`, `masterEquationLabel`, `masterEquationLatex`, `attachedToVariable`, `category`, and `includeInMasterEquation`, while the blueprint contract gained its existing `masterEquationSymbol` and `masterEquationLatex` fields. JavaScript-originated parameters remain `unknown` until runtime checks preserve their actual behavior. No `any`, suppression, broad double assertion, unexplained non-null assertion, or runtime type import was added.
+
+**Behavior characterized and preserved:** No-argument defaults and null's inherited TypeError class; primitive/array/function/malformed input handling; attachment detection from trimmed `attachedToVariable` strings or exact `category === 'attachment'`; explicit-false exclusion with all other inclusion values retained; exact plain and LaTeX variable-label candidate precedence; trimming and the inherited `\\text{...}`/`\\(...\\)` wrapper behavior; exact plain and LaTeX master-symbol fallback order; variable order; malformed/label-less omission; non-mutation; fallback return timing and non-string fallback passthrough; zero-term equations; exact plain multiplication and LaTeX wrapping/`\\times` spacing; representation fallbacks; and the rule that only `format === 'latex'` selects LaTeX output. Suspicious wrapper-branch ordering and fallback behavior were documented and tested rather than corrected.
+
+**Tests added:** 15 deterministic tests run against generated `assets/towerEquations/masterEquationUtils.js`, increasing the live post-retirement core suite from 127 to **142 tests**. Coverage includes omitted/null/primitive/array/function/malformed calls; every plain and LaTeX label candidate and precedence; whitespace and both wrapper normalizations; both attachment paths; explicit-false and other truthy/falsy inclusion values; all master-symbol fallbacks; missing-symbol fallback passthrough; exact zero/multi-term plain and LaTeX output; cross-representation behavior; non-`latex` formats; order preservation; and deep-frozen non-mutation fixtures.
+
+**Validation and counts:** Final typecheck/build/lint/unit/retired-Spire/smoke validation and generated-output audits are recorded in the Implementation Log. Counts moved from 50 to **51 authored TypeScript modules** and from 235 to **234 remaining JavaScript modules**; the current active authored total remains **285**. Build 736 advanced exactly once to Build 737.
+
+**Browser/manual verification:** No live browser, Electron, touch, or physical-device verification was performed or claimed. The module is pure and DOM-free, so deterministic tests against generated JavaScript are the direct behavioral verification; the recursive smoke test covers unchanged `.js` import specifiers. No requested behavior remained unverifiable within that boundary.
+
+---
+
 ## Tentative Later Migration Areas
 
 These are not authorized active phases. Their order must be reevaluated after Phase 1.
@@ -794,13 +816,13 @@ Do not treat this list as a fixed roadmap. Each completed phase must recommend t
 
 ## Next Suggested Step
 
-**Recommended Phase 11: `assets/towerEquations/masterEquationUtils.js` (pure master-equation derivation).**
+**Recommended Phase 12: `assets/towerEquations/blueprintContext.js` (shared equation-helper context).**
 
-Phase 10 completes the small tooltip owner at the equation/UI boundary. The next useful inward step is the 250-line, DOM-free master-equation utility, which derives plain and LaTeX symbols/terms from blueprint variables and is consumed by `assets/towersTab.js`, `assets/towerUpgradeOverlayController.js`, and multiple equation modules. Phase 8 already owns the core blueprint/variable contracts, so this module can extend only the master-equation metadata it actually reads while adding broad deterministic coverage before larger equation registries are attempted.
+Phase 11 completes the pure master-equation utility. The next smallest live owner at this boundary is the 30-line, DOM-free context module that breaks the `towersTab.js`/blueprint circular dependency. It exports one stable mutable object with seven injected helper slots and one `Object.assign` initializer; that shared object is imported by 18 equation-definition modules while `assets/towersTab.js` performs initialization. Typing this boundary before the much larger authored definition files gives those later phases one owner-defined helper contract without changing equation formulas.
 
-**Bounded scope:** Convert only `assets/towerEquations/masterEquationUtils.js` to strict TypeScript, reusing and narrowly extending `TowerEquationBlueprint`, `TowerEquationVariable`, and `TowerEquationDefinition`; model plain/LaTeX master-equation structure, format options, attachment/category flags, inclusion controls, master labels/symbols, and untrusted/default parameters. Add deterministic compiled-output tests for label normalization, attachment exclusion, inclusion overrides, every symbol fallback, empty/zero equations, plain multiplication, LaTeX wrapping and multiplication, malformed inputs, and caller fallback preservation. Keep `blueprintContext.js`, equation registries/definitions, Towers tab, overlay, main integration, and simulations unconverted.
+**Bounded scope:** Convert only `assets/towerEquations/blueprintContext.js` to strict TypeScript. Define the seven real helper call surfaces from live call sites and keep initializer input honest for JavaScript callers. Preserve the exported object's identity, null initial slots, direct mutability, `Object.assign` enumeration/overwrite semantics, partial initialization, and unchanged `.js` import path. Add compiled-output tests for initial shape/identity, pre-initialization values, partial and repeated initialization, replacement timing, omitted/null/primitive/malformed helper inputs, enumerable own string/symbol properties, ignored inherited/non-enumerable properties, and caller-visible live updates. Do not convert equation definitions, registries, Towers tab, overlays, simulations, playfield systems, or main integration.
 
-**Acceptance criteria:** Preserve exact candidate precedence and trimming; attachment/category and explicit-exclusion behavior; wrapped `\\text{}`/`\\(...)` normalization; symbol/name/id fallbacks; zero-term output; plain ` × ` and LaTeX ` \\times ` formatting; fallback return timing; no mutation of blueprints/variables; add no `any` or suppressions; generated sibling/imports/typecheck/build/lint/unit/smoke pass; update plans/counts/build number once and record browser availability honestly.
+**Acceptance criteria:** Re-derive all seven helper signatures from their actual definitions and equation call sites; preserve one shared live object and exact `Object.assign` behavior without introducing a proxy, replacement object, runtime dependency, or circular import; keep untrusted JavaScript initialization safe and behavior-compatible; add no `any` or suppressions; ensure all 19 current importers retain their `.js` specifiers; generated sibling/typecheck/build/lint/unit/smoke pass; update counts/build number once and record browser availability honestly.
 
 ---
 
@@ -1059,3 +1081,19 @@ Phase 10 started from completed Phase 9 commit `a731dfc` on a new stacked branch
 - No live browser, Electron, touch, or physical-device verification is claimed; deterministic compiled-output tests cover the migrated DOM behavior and the recursive smoke test covers its unchanged import path.
 
 **Next suggested step:** Execute the bounded Phase 11 recommendation above for `assets/towerEquations/masterEquationUtils.js`; keep equation registries/definitions, `blueprintContext.js`, Towers tab, overlay, main integration, and simulations out of scope.
+
+### 2026-07-15 — Phase 11 executed
+
+**Status:** COMPLETE
+
+This continuation resumed from clean `codex/phase-11-master-equation-utils` at recovered checkpoint `e672bab40b40138c1daff35fc77299758fb47a8a`, stacked on the live post-retirement commit `64ebc5e`. Build 736 and the 50-TypeScript/235-remaining-JavaScript pre-conversion module baseline were verified. Before the remaining documentation, build tracking, and boundary-test edits, typecheck/build/lint passed, core tests were 142/142 plus retired-Spire checks, and the recursive smoke test passed.
+
+- Converted the sole authored implementation of `assets/towerEquations/masterEquationUtils.js` to strict `assets/towerEquations/masterEquationUtils.ts`; its `.js` sibling and `dist/` copy are generated by the established build, with unchanged named exports and caller import specifiers.
+- Reused the Phase 8 blueprint/definition/variable contracts via a type-only import and extended only the master-equation metadata the utility already reads. Added explicit format, term, symbol-pair, derived-structure, derivation-parameter, and text-parameter public contracts plus private untrusted boundaries.
+- Preserved malformed/no-argument behavior, candidate precedence, trimming and wrapper quirks, attachment/exclusion rules, symbol fallbacks, order/non-mutation, fallback timing, zero-term output, exact plain/LaTeX spacing and separators, and exact lowercase-`latex` format selection.
+- Added 15 deterministic generated-JavaScript tests, increasing the live post-retirement core suite from 127 to 142 tests. The cases cover omitted/null/primitive/array/function/malformed input, all label and symbol candidates, wrapper normalization, exclusion paths, truthy/falsy inclusion values, fallbacks, zero/multiple terms, both output formats, exact spacing, and deep-frozen input fixtures.
+- Final `npm run typecheck`, `npm run build`, `npm run lint`, `npm run test:unit` (142/142 plus retired-Spire checks), and `npm test` passed. `git diff --check`, generated-sibling comparison, import compatibility, forbidden-pattern/runtime-import audits, and the no-TypeScript-in-`dist` check passed.
+- Recomputed counts using the documented full-tree methodology: 50 to **51** authored TypeScript modules, 235 to **234** remaining JavaScript modules, and **285** active authored modules total. Build 736 advanced exactly once to Build 737.
+- No live browser, Electron, touch, or physical-device verification was performed or claimed. The migrated owner is pure and DOM-free; compiled-output tests provide its direct behavioral verification, and no requested behavior remained unverifiable within that boundary.
+
+**Next suggested step:** Execute the bounded Phase 12 recommendation above for `assets/towerEquations/blueprintContext.js`; preserve the shared object identity and `Object.assign` semantics, and keep equation definitions/registries, Towers tab, overlays, simulations, playfield systems, and main integration out of scope.

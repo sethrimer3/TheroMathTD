@@ -1377,7 +1377,7 @@ async function run() {
   });
 
   await test('master equation utils: primitive, array, and malformed inputs retain safe defaults', () => {
-    for (const input of [0, 1, true, false, 'tower', Symbol('tower'), []]) {
+    for (const input of [0, 1, 1n, true, false, 'tower', Symbol('tower'), [], () => 'tower']) {
       assert.deepEqual(masterEquationUtils.deriveMasterEquationStructure(input), {
         symbol: { plain: '', latex: '' },
         terms: [],
