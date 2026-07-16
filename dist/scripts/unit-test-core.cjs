@@ -225,6 +225,34 @@ async function importShadowGateEquationModule() {
   return { shadowGate: shadowGateModule.shadowGate, ...codexModule };
 }
 
+// Import the compiled advanced-equation barrel against identity-marked stubs
+// so every direct re-export can be checked without loading formula dependencies.
+async function importAdvancedEquationBarrelModule() {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thero-unit-test-advanced-barrel-'));
+  fs.writeFileSync(path.join(tmpDir, 'package.json'), JSON.stringify({ type: 'module' }));
+  const equationDir = path.join(tmpDir, 'assets', 'towerEquations');
+  const advancedDir = path.join(equationDir, 'advanced');
+  fs.mkdirSync(advancedDir, { recursive: true });
+  fs.copyFileSync(
+    path.join(rootDir, 'assets', 'towerEquations', 'advancedTowers.js'),
+    path.join(equationDir, 'advancedTowers.js'),
+  );
+  const exportNames = [
+    'kappa', 'lambda', 'mu', 'nu', 'xi', 'omicron', 'pi', 'rho', 'sigma',
+    'tau', 'upsilon', 'phi', 'chi', 'psi', 'omega',
+  ];
+  for (const exportName of exportNames) {
+    fs.writeFileSync(
+      path.join(advancedDir, `${exportName}Equation.js`),
+      `export const ${exportName} = { sourceId: '${exportName}' };`,
+    );
+  }
+  const barrelModule = await import(
+    pathToFileURL(path.join(equationDir, 'advancedTowers.js')).href
+  );
+  return { barrelModule, exportNames, advancedDir };
+}
+
 // Import a fresh compiled shared-context module for each state-sensitive test.
 function importBlueprintContextModule() {
   return importAsEsm('assets/towerEquations/blueprintContext.js');
@@ -1582,6 +1610,19 @@ async function run() {
       'missing', 'blank', 'zero', 'valid',
       'missing', 'blank', 'zero', 'valid',
     ]);
+  });
+
+  // --- assets/towerEquations/advancedTowers.js ---------------------------
+  await test('advanced equation barrel: exact exports preserve every source identity', async () => {
+    const { barrelModule, exportNames, advancedDir } =
+      await importAdvancedEquationBarrelModule();
+    assert.deepEqual(Object.keys(barrelModule).sort(), [...exportNames].sort());
+    for (const exportName of exportNames) {
+      const sourceModule = await import(
+        pathToFileURL(path.join(advancedDir, `${exportName}Equation.js`)).href
+      );
+      assert.equal(barrelModule[exportName], sourceModule[exportName]);
+    }
   });
 
   // --- assets/towerEquations/index.js ------------------------------------

@@ -90,7 +90,7 @@ Before reporting completion, update this document in the same branch or commit s
 
 The obsolete-Spire retirement is an intentional product change, not a general migration phase. It removed active Bet, Lamed, Tsadi, Shin, and Kuf modules and added one typed compatibility boundary, `assets/saveCompatibility.ts`. The Aleph experience remains active under the user-facing name **Well of Inspiration**; compatibility-sensitive `powder`/`aleph` identifiers remain unchanged.
 
-Using the established count method, the current tree contains **55 authored `.ts` modules** and **230 authored `.js` modules without a same-path `.ts` sibling** (**285 total**). Phase 15 converted `assets/towerEquations/shadowGate.js`, moving the live post-retirement baseline from 54 to 55 typed modules and from 231 to 230 remaining JavaScript modules without changing the total. That is **19.3% converted by module count**. A supplemental authored-line snapshot counts 6,841 TypeScript lines and 103,058 remaining JavaScript lines, or approximately **6.2% converted by source lines**; this lower figure reflects the large JavaScript integration modules still ahead. The disabled Achievements Terrarium/Bet Terrarium files referenced by older ledger entries are no longer present in the live tree, so there is no separate preserved-legacy subtraction in the current count. The retired `spireFloatingMenu` and `spireTabVisibility` TypeScript modules and the orphaned retired idle/developer controllers were removed because the one-Well navigation no longer imports or needs those multi-Spire managers. The former Collective Unconscious/Cognitive Realm runtime was removed after Phase 10, including its typed state module and two JavaScript UI modules; its earlier migration entries remain below as historical records.
+Using the established count method, the current tree contains **56 authored `.ts` modules** and **229 authored `.js` modules without a same-path `.ts` sibling** (**285 total**). Phase 16 converted `assets/towerEquations/advancedTowers.js`, moving the live post-retirement baseline from 55 to 56 typed modules and from 230 to 229 remaining JavaScript modules without changing the total. That is **19.6% converted by module count**. A supplemental authored-line snapshot remains approximately **6.2% converted by source lines**; this lower figure reflects the large JavaScript integration modules still ahead. The disabled Achievements Terrarium/Bet Terrarium files referenced by older ledger entries are no longer present in the live tree, so there is no separate preserved-legacy subtraction in the current count. The retired `spireFloatingMenu` and `spireTabVisibility` TypeScript modules and the orphaned retired idle/developer controllers were removed because the one-Well navigation no longer imports or needs those multi-Spire managers. The former Collective Unconscious/Cognitive Realm runtime was removed after Phase 10, including its typed state module and two JavaScript UI modules; its earlier migration entries remain below as historical records.
 
 **Plan created:** 2026-07-13  
 **Repository:** `sethrimer3/TheroMathTD`  
@@ -142,6 +142,7 @@ No TypeScript conversion phase is recorded as complete in this plan.
 | 13 | Tower-equation registry and lookup (`assets/towerEquations/index.js`) | COMPLETE | See Phase 13 section and Implementation Log entry below |
 | 14 | Mind Gate authored equation definition (`assets/towerEquations/mindGate.js`) | COMPLETE | See Phase 14 section and Implementation Log entry below |
 | 15 | Shadow Gate authored equation definition (`assets/towerEquations/shadowGate.js`) | COMPLETE | See Phase 15 section and Implementation Log entry below |
+| 16 | Advanced-equation barrel (`assets/towerEquations/advancedTowers.js`) | COMPLETE | See Phase 16 section and Implementation Log entry below |
 
 ---
 
@@ -848,6 +849,23 @@ Suite total: **78/78 passing** (58 pre-existing from Phases 2–5A + 20 new).
 
 ---
 
+## Phase 16 — Advanced-Equation Barrel (COMPLETE)
+
+**Status:** COMPLETE (2026-07-16)
+**Migration type:** Behavior-preserving migration
+
+**Verified starting point and baseline:** Phase 16 branched as `codex/phase-16-advanced-equation-barrel` directly from completed local Phase 15 commit `5df90011c4e75b8b03e3ed27f7e8a0eb2d1945d2`. A fresh fetch showed the stacked branch seven commits ahead and zero behind `origin/main`. The worktree was clean at Build 741, and pre-edit typecheck/build/lint, 161/161 core tests plus retired-Spire checks, and recursive smoke tests all passed.
+
+**Live imports and consumers:** The barrel retains 15 direct re-exports from `assets/towerEquations/advanced/` and remains consumed only through the typed equation registry. No individual advanced definition, grouped definition, Towers-tab, simulation, playfield, or main-integration file was edited.
+
+**Files and behavior:** The sole authored implementation became strict `assets/towerEquations/advancedTowers.ts`; its `.js` sibling remains generated at the same path. All 15 export names, `.js` source specifiers, live bindings, imported object identities, and registry compatibility remain exact. No runtime wrapper, presenter dependency, formula logic, or new type boundary was introduced.
+
+**Tests, validation, and counts:** One deterministic generated-output test imports the barrel against 15 identity-marked source stubs, raises the core suite from 161 to **162 tests**, and verifies the exact named-export set plus every source identity. Counts moved from 55 to **56 authored TypeScript modules** and from 230 to **229 remaining JavaScript modules**; total authored modules remain **285**. Completion is **19.6% by module count** and approximately **6.2% by authored source lines**. Build 741 advanced exactly once to Build 742.
+
+**Browser/manual verification:** No browser, Electron, touch, or physical-device verification was performed or claimed. This barrel is dependency-aggregation-only and DOM-free; isolated identity tests and recursive smoke validation cover its runtime boundary.
+
+---
+
 ## Tentative Later Migration Areas
 
 These are not authorized active phases. Their order must be reevaluated after Phase 1.
@@ -918,13 +936,13 @@ Do not treat this list as a fixed roadmap. Each completed phase must recommend t
 
 ## Next Suggested Step
 
-**Recommended Phase 16: `assets/towerEquations/advancedTowers.js` (advanced-equation barrel).**
+**Recommended Phase 17: `assets/towerEquations/advanced/sigmaEquation.js` (first advanced formula definition).**
 
-Phase 15 completes both standalone special definitions. The next smallest live equation module is the 22-line advanced-equation barrel, which re-exports 15 authored definitions and feeds the typed registry. Converting this aggregation seam before individual advanced formulas is low risk and establishes generated-output identity/order coverage for that module cluster.
+Phase 16 types the advanced aggregation seam. The smallest advanced formula owner is the 107-line Sigma definition, whose behavior is deterministic and limited to formatting, dynamic stat lookup, prestige-sensitive sub-equations, and a stored-damage result. It is the safest first step into the individual advanced definitions.
 
-**Bounded scope:** Convert only `assets/towerEquations/advancedTowers.js` to strict TypeScript while preserving all 15 direct `.js` re-export specifiers, export names, and source identities. Add an isolated generated-output test with identity-marked advanced-definition stubs that verifies the exact named-export set and every re-exported identity. Do not convert any file under `advanced/`, Infinity/basic/Greek definitions, the registry, Towers tab, simulations, playfield systems, or main integration.
+**Bounded scope:** Convert only `assets/towerEquations/advanced/sigmaEquation.js` to strict TypeScript. Reuse presenter/context contracts and add only narrow runtime guards needed for the JavaScript-originated dynamic context. Add deterministic generated-output tests with formatting/context stubs for canonical and prefixed stat keys, number coercion, invalid/negative fallbacks, formatting, prestige branches, optional last-release output, exact sub-equation arrays, result behavior, and base-equation formatting. Do not convert another advanced definition, Infinity/basic/Greek definitions, Towers tab, simulations, playfield systems, or main integration.
 
-**Acceptance criteria:** Preserve the exact 15 export names, source paths, live bindings, and imported object identities with no runtime wrapper or presenter dependency; generated sibling remains registry-compatible; typecheck/build/lint/unit/smoke pass; update counts/build number once and record browser availability honestly.
+**Acceptance criteria:** Preserve exact metadata, strings, formula comments, key precedence, Number coercion, finite/nonnegative validation, falsey formatting fallback, prestige identity check, sub-equation order and conditional append behavior, stored-damage result, formatter callback order/output, `.js` imports, barrel identity, and registry compatibility; add no `any` or suppressions; typecheck/build/lint/unit/smoke pass; update counts/build number once and record browser availability honestly.
 
 ---
 
@@ -1261,3 +1279,17 @@ Phase 15 branched as `codex/phase-15-shadow-gate-equation` from verified local P
 - No browser, Electron, touch, or physical-device verification was performed or claimed. Generated-output tests and recursive smoke validation cover this DOM-free definition boundary.
 
 **Next suggested step:** Execute the bounded Phase 16 recommendation above for `assets/towerEquations/advancedTowers.js`; keep individual advanced definitions, Infinity/basic/Greek definitions, Towers tab, simulations, playfield systems, and main integration out of scope.
+
+### 2026-07-16 — Phase 16 executed
+
+**Status:** COMPLETE
+
+Phase 16 branched as `codex/phase-16-advanced-equation-barrel` from verified local Phase 15 commit `5df90011c4e75b8b03e3ed27f7e8a0eb2d1945d2`. A fresh fetch confirmed the stacked migration branch was seven commits ahead and zero behind `origin/main`. All 15 re-export names/specifiers and the registry consumer were inventoried before editing; pre-edit typecheck/build/lint/161-test/retired-Spire/smoke validation passed.
+
+- Converted `assets/towerEquations/advancedTowers.js` to strict `assets/towerEquations/advancedTowers.ts`; its generated sibling retains the same 15 direct `.js` re-exports and introduces no runtime wrapper or dependency.
+- Added one isolated generated-output test with identity-marked advanced-definition stubs, increasing the core suite from 161/161 to 162/162. It verifies the exact export set and every re-exported object identity.
+- Final `npm run typecheck`, `npm run build`, `npm run lint`, `npm run test:unit` (162/162 plus retired-Spire checks), and `npm test` passed. `git diff --check`, generated-sibling/dist hashes, exact re-export inspection, scoped forbidden-pattern checks, and the no-TypeScript-in-`dist` audit passed.
+- Recalculated counts by the documented full-tree method: 55 to **56** authored TypeScript modules, 230 to **229** remaining JavaScript modules, and **285** authored modules total. Completion is **19.6% by module count** and approximately **6.2% by authored source lines**. Build 741 advanced exactly once to Build 742.
+- No browser, Electron, touch, or physical-device verification was performed or claimed. Identity tests and recursive smoke validation cover this DOM-free aggregation boundary.
+
+**Next suggested step:** Execute the bounded Phase 17 recommendation above for `assets/towerEquations/advanced/sigmaEquation.js`; keep other advanced definitions, Infinity/basic/Greek definitions, Towers tab, simulations, playfield systems, and main integration out of scope.

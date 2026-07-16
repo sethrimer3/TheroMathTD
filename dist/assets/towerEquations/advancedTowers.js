@@ -1,10 +1,9 @@
 /**
  * Advanced Tower Blueprints - barrel re-export
  *
- * Late-game towers: kappa, lambda, mu, nu, xi, omicron, pi, rho, sigma, tau, upsilon, phi, chi, psi, omega.
- * Individual blueprints live in the advanced/ subdirectory.
+ * Late-game towers: kappa, lambda, mu, nu, xi, omicron, pi, rho, sigma, tau,
+ * upsilon, phi, chi, psi, and omega.
  */
-
 export { kappa } from './advanced/kappaEquation.js';
 export { lambda } from './advanced/lambdaEquation.js';
 export { mu } from './advanced/muEquation.js';
