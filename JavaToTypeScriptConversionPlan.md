@@ -90,7 +90,7 @@ Before reporting completion, update this document in the same branch or commit s
 
 The obsolete-Spire retirement is an intentional product change, not a general migration phase. It removed active Bet, Lamed, Tsadi, Shin, and Kuf modules and added one typed compatibility boundary, `assets/saveCompatibility.ts`. The Aleph experience remains active under the user-facing name **Well of Inspiration**; compatibility-sensitive `powder`/`aleph` identifiers remain unchanged.
 
-Using the established count method, the current tree contains **50 authored `.ts` modules** and **257 authored `.js` modules without a same-path `.ts` sibling** (307 total). Of those 257 JavaScript modules, **19 are explicitly disabled legacy Achievements Terrarium/Bet Terrarium files** documented at `assets/legacy/achievementsTerrarium/README.md`; they are preserved for possible restoration and are not part of the active migration backlog. The active remaining JavaScript backlog is therefore **238 modules**. Phase 9 added `assets/towerVariableDiscovery.ts` and extended the Phase 8 variable contract with the metadata fields already consumed by discovery, without changing the total authored-module count. The retired `spireFloatingMenu` and `spireTabVisibility` TypeScript modules and the orphaned retired idle/developer controllers were removed because the one-Well navigation no longer imports or needs those multi-Spire managers. The Collective Unconscious/Cognitive Realm is unchanged by this feature task.
+Using the established count method, the current tree contains **51 authored `.ts` modules** and **256 authored `.js` modules without a same-path `.ts` sibling** (307 total). Of those 256 JavaScript modules, **19 are explicitly disabled legacy Achievements Terrarium/Bet Terrarium files** documented at `assets/legacy/achievementsTerrarium/README.md`; they are preserved for possible restoration and are not part of the active migration backlog. The active remaining JavaScript backlog is therefore **237 modules**. Phase 10 added `assets/towerEquationTooltip.ts` and reused the Phase 8 variable plus Phase 9 universal-metadata contracts without changing the total authored-module count. The retired `spireFloatingMenu` and `spireTabVisibility` TypeScript modules and the orphaned retired idle/developer controllers were removed because the one-Well navigation no longer imports or needs those multi-Spire managers. The Collective Unconscious/Cognitive Realm is unchanged by this feature task.
 
 **Plan created:** 2026-07-13  
 **Repository:** `sethrimer3/TheroMathTD`  
@@ -136,6 +136,7 @@ No TypeScript conversion phase is recorded as complete in this plan.
 | 7 | Aleph-chain upgrade state and persistence contract (`assets/alephUpgradeState.js`) | COMPLETE | See Phase 7 section and Implementation Log entry below |
 | 8 | Tower equation presenter and base tower-upgrade persistence owner (`assets/towerBlueprintPresenter.js`) | COMPLETE | See Phase 8 section and Implementation Log entry below |
 | 9 | Tower-variable discovery state owner (`assets/towerVariableDiscovery.js`) | COMPLETE | See Phase 9 section and Implementation Log entry below |
+| 10 | Tower-equation tooltip DOM owner (`assets/towerEquationTooltip.js`) | COMPLETE | See Phase 10 section and Implementation Log entry below |
 
 ---
 
@@ -700,6 +701,29 @@ Suite total: **78/78 passing** (58 pre-existing from Phases 2–5A + 20 new).
 
 ---
 
+## Phase 10 — Tower-Equation Tooltip DOM Owner (COMPLETE)
+
+**Status:** COMPLETE (2026-07-15)
+**Migration type:** Behavior-preserving migration
+
+**Verified live scope and baseline:** Phase 10 was stacked from the completed Phase 9 commit `a731dfc` on `codex/phase-10-tower-equation-tooltip`. The live recommendation remained current: one 278-line tooltip owner, directly imported only by `assets/towersTab.js`. Baseline typecheck/build/lint, 140/140 core tests plus retired-Spire checks, and recursive smoke tests all passed.
+
+**Imports, importer, and consumers:** The authored TypeScript imports only Phase 8's `TowerEquationVariable` and Phase 9's `UniversalTowerVariableMetadata`, both type-only and erased from generated JavaScript. `assets/towersTab.js` supplies the shared state bucket, panel resolver, universal metadata resolver, id, and margin; it destructures all seven returned helpers and passes `buildVariableTooltip` plus pointer/focus handlers into the still-JavaScript upgrade overlay. Neither caller required a compatibility edit.
+
+**Files converted and tests:** `assets/towerEquationTooltip.js` was converted to strict `assets/towerEquationTooltip.ts`; the `.js` sibling remains build-generated at the same path with unchanged named/default exports and controller keys. `scripts/unit-test-core.cjs` gained a deterministic minimal DOM/timer/frame harness and 10 compiled-output tests. `assets/towersTab.js`, `assets/towerUpgradeOverlayController.js`, equation modules, simulations, and main integration remain unconverted and unedited.
+
+**Types/interfaces introduced:** `TowerEquationTooltipState`, `TowerEquationTooltipOptions`, and `TowerEquationTooltipController`, plus private panel, metadata-resolver, frame-scheduler, and event-current-target contracts. The injected state and frame option remain `unknown` until narrowed by the exact inherited truthy/function checks. DOM elements use their real `HTMLElement`/`DOMRect` surfaces; no `any`, suppressions, non-null assertions, or broad double assertions were added.
+
+**Behavior preserved:** Exact missing-state error; browser/global timer and animation-frame fallback selection; connected-element reuse; class/id/role/hidden defaults; authored/universal/key/fallback tooltip text precedence and punctuation; panel max-width and horizontal/vertical clamping; below-versus-above selection; 160 ms pointer-leave delay; immediate blur cleanup; text/dataset/hidden/ARIA state; stale-target ARIA removal; pending-hide cancellation; and `HTMLElement` guards for pointer/focus event targets.
+
+**Tests and validation:** 10 tests cover construction validation, no-document/no-panel paths, element creation/reuse/defaults, every tooltip text fallback family, below and above/clamped positioning, target switching and invalid guards, delayed cleanup, immediate blur, pending-hide cancellation, and custom frame precedence. The core suite increased from 140/140 to **150/150**; retired-Spire checks remain separate. Final build/typecheck/lint/unit/smoke and output audits are recorded in the Implementation Log.
+
+**Counts and approximation:** 51 authored TypeScript modules, 256 remaining JavaScript modules, 19 preserved legacy modules, and 237 active remaining among 288 active authored modules. This is **17.7% converted by active module count**. A supplemental line-count snapshot is 7,063 typed source lines versus 106,922 active remaining JavaScript lines, or about **6.2% typed by source lines**; line share is only an approximation because TypeScript contracts/comments expand migrated files and the remaining tree includes several very large generated-like data and runtime modules. Build number advanced once from 733 to 734.
+
+**Browser/manual verification:** No live browser, Electron, touch, or physical-device verification is claimed. The DOM/timer/frame behavior is exercised through compiled-output tests with deterministic fakes, and the smoke test verifies the unchanged runtime import graph.
+
+---
+
 ## Tentative Later Migration Areas
 
 These are not authorized active phases. Their order must be reevaluated after Phase 1.
@@ -770,13 +794,13 @@ Do not treat this list as a fixed roadmap. Each completed phase must recommend t
 
 ## Next Suggested Step
 
-**Recommended Phase 10: `assets/towerEquationTooltip.js` (tower-equation tooltip DOM owner).**
+**Recommended Phase 11: `assets/towerEquations/masterEquationUtils.js` (pure master-equation derivation).**
 
-Phase 9 now exports the precise universal-metadata resolver contract consumed by the live 278-line tooltip manager, while Phase 8 owns the variable metadata fields it formats. The tooltip module is directly imported only by `assets/towersTab.js`; it owns the shared tooltip element/state, variable text fallback rules, panel-relative clamping, delayed/immediate hiding, ARIA wiring, and pointer/focus handlers. Migrating it next extends the typed tower-equation UI boundary without entering the 2,319-line Towers tab or 1,480-line upgrade overlay.
+Phase 10 completes the small tooltip owner at the equation/UI boundary. The next useful inward step is the 250-line, DOM-free master-equation utility, which derives plain and LaTeX symbols/terms from blueprint variables and is consumed by `assets/towersTab.js`, `assets/towerUpgradeOverlayController.js`, and multiple equation modules. Phase 8 already owns the core blueprint/variable contracts, so this module can extend only the master-equation metadata it actually reads while adding broad deterministic coverage before larger equation registries are attempted.
 
-**Bounded scope:** Convert only `assets/towerEquationTooltip.js` to strict TypeScript, importing the Phase 8 variable and Phase 9 metadata contracts; model the mutable tooltip state, panel/target element surfaces, controller API, timeout/frame scheduling, and event current-target boundary. Add deterministic compiled-output tests with minimal DOM fakes for the required-state error, no-document/no-panel fallbacks, element creation/reuse, exact tooltip text precedence, horizontal/vertical clamping, show/hide timing, ARIA cleanup, target switching, and pointer/focus guards. Keep `assets/towersTab.js`, `assets/towerUpgradeOverlayController.js`, `assets/towerEquations/**`, `main.js`, and simulations unconverted.
+**Bounded scope:** Convert only `assets/towerEquations/masterEquationUtils.js` to strict TypeScript, reusing and narrowly extending `TowerEquationBlueprint`, `TowerEquationVariable`, and `TowerEquationDefinition`; model plain/LaTeX master-equation structure, format options, attachment/category flags, inclusion controls, master labels/symbols, and untrusted/default parameters. Add deterministic compiled-output tests for label normalization, attachment exclusion, inclusion overrides, every symbol fallback, empty/zero equations, plain multiplication, LaTeX wrapping and multiplication, malformed inputs, and caller fallback preservation. Keep `blueprintContext.js`, equation registries/definitions, Towers tab, overlay, main integration, and simulations unconverted.
 
-**Acceptance criteria:** Preserve the exact required-state error; browser/global timer and requestAnimationFrame fallback selection; connected-element reuse; class/id/role/hidden defaults; symbol/name/units/description precedence and punctuation; max-width/left/top calculations and above/below choice; 160 ms delayed hide versus immediate blur; tooltip dataset/text/ARIA state, target switching, and handler `HTMLElement` guards; add no `any` or suppressions; generated sibling/imports/typecheck/build/lint/unit/smoke pass; update plans/counts/build number once and record browser availability honestly.
+**Acceptance criteria:** Preserve exact candidate precedence and trimming; attachment/category and explicit-exclusion behavior; wrapped `\\text{}`/`\\(...)` normalization; symbol/name/id fallbacks; zero-term output; plain ` × ` and LaTeX ` \\times ` formatting; fallback return timing; no mutation of blueprints/variables; add no `any` or suppressions; generated sibling/imports/typecheck/build/lint/unit/smoke pass; update plans/counts/build number once and record browser availability honestly.
 
 ---
 
@@ -1020,3 +1044,18 @@ The session began from clean `main` at Phase 8 commit `e59f7ab`, created feature
 - No live browser, Electron, touch, or physical-device verification is claimed; compiled-output tests directly cover the migrated state owner and the recursive smoke test covers its unchanged import path.
 
 **Next suggested step:** Execute the bounded Phase 10 recommendation above for `assets/towerEquationTooltip.js`; keep `towersTab.js`, the upgrade overlay, equation registry, main integration, and simulations out of scope.
+
+### 2026-07-15 — Phase 10 executed
+
+**Status:** COMPLETE
+
+Phase 10 started from completed Phase 9 commit `a731dfc` on a new stacked branch, `codex/phase-10-tower-equation-tooltip`. The 278-line tooltip owner and sole direct importer were re-audited, and the baseline passed typecheck/build/lint, 140/140 core tests plus retired-Spire checks, and smoke tests.
+
+- Converted `assets/towerEquationTooltip.js` to strict `assets/towerEquationTooltip.ts`; its generated sibling, named/default exports, controller keys, and caller import paths remain unchanged.
+- Reused Phase 8 variable and Phase 9 universal-metadata contracts through type-only imports; introduced explicit tooltip state/options/controller plus private DOM resolver, metadata resolver, scheduler, and event-boundary types.
+- Preserved exact validation, text precedence/punctuation, element reuse/defaults, positioning/clamping, timer/frame selection, 160 ms delayed versus immediate hide, dataset/text/ARIA cleanup, pending-hide cancellation, target switching, and `HTMLElement` guards.
+- Added a deterministic minimal DOM/timer/frame harness and 10 compiled-output tests, increasing the core suite from 140/140 to 150/150; retired-Spire checks remain separate.
+- Recomputed counts to 51 typed, 256 JavaScript without TypeScript siblings, and 237 active remaining after excluding 19 preserved legacy modules. Active module-count conversion is 17.7%; the supplemental source-line snapshot is approximately 6.2% typed. Build 733 advanced to Build 734 exactly once.
+- No live browser, Electron, touch, or physical-device verification is claimed; deterministic compiled-output tests cover the migrated DOM behavior and the recursive smoke test covers its unchanged import path.
+
+**Next suggested step:** Execute the bounded Phase 11 recommendation above for `assets/towerEquations/masterEquationUtils.js`; keep equation registries/definitions, `blueprintContext.js`, Towers tab, overlay, main integration, and simulations out of scope.

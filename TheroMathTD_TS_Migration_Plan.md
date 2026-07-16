@@ -15,13 +15,13 @@
 
 ## 1. Current State
 
-> **2026-07-13 retirement update, refreshed after Phase 9 on 2026-07-15:** The obsolete-Spire feature removal deleted active Bet, Lamed,
-> Tsadi, Shin, and Kuf modules and added `assets/saveCompatibility.ts`. Current inventory is 50
-> authored `.ts` modules and 257 authored `.js` modules without a `.ts` sibling. Nineteen of those
+> **2026-07-13 retirement update, refreshed after Phase 10 on 2026-07-15:** The obsolete-Spire feature removal deleted active Bet, Lamed,
+> Tsadi, Shin, and Kuf modules and added `assets/saveCompatibility.ts`. Current inventory is 51
+> authored `.ts` modules and 256 authored `.js` modules without a `.ts` sibling. Nineteen of those
 > JavaScript modules form the disabled legacy Achievements Terrarium/Bet Terrarium stack documented
 > at `assets/legacy/achievementsTerrarium/README.md`; they are preserved JavaScript, excluded from
 > the active application graph, and are not an active migration target. The active remaining backlog
-> is therefore 238 JavaScript modules. The obsolete typed `spireFloatingMenu` and
+> is therefore 237 JavaScript modules. The obsolete typed `spireFloatingMenu` and
 > `spireTabVisibility` managers were removed with the multi-Spire navigation. The surviving Aleph system is presented as the Well of
 > Inspiration, while compatibility-sensitive internal names remain unchanged. The Cognitive Realm
 > is outside this product change.
@@ -33,7 +33,7 @@
   `<script type="module">` imports and no dev server/bundler is required.
 - **`package.json`:** `devDependencies` has `typescript@^5.7.0`, `eslint@^10.2.0`, `electron@^42.2.0`.
   No `@types/*` packages installed. `npm run typecheck` (`tsc --noEmit`) and `npm run build` both exist.
-- **Files converted or authored so far (50 `.ts` files, all under strict mode, zero `any`):**
+- **Files converted or authored so far (51 `.ts` files, all under strict mode, zero `any`):**
   `assets/uiTabManager.ts`, `assets/tabLockManager.ts`, `assets/autoSave.ts`, `assets/preferences.ts`,
   `scripts/core/formatting.ts`, `scripts/core/mathText.ts` (Phases 1–3), plus all 33 files under
   `assets/data/towers/` (32 tower-definition modules + `index.ts`) and the new
@@ -43,8 +43,9 @@
   boundary `assets/saveCompatibility.ts`, the revised Phase 6 persistence owner
   `assets/spireResourcePersistence.ts`, and the Phase 7 Aleph-chain state owner
   `assets/alephUpgradeState.ts`, and the Phase 8 base tower-upgrade owner
-  `assets/towerBlueprintPresenter.ts`, and the Phase 9 tower-variable discovery owner
-  `assets/towerVariableDiscovery.ts`. All four files under `assets/state/` are now migrated.
+  `assets/towerBlueprintPresenter.ts`, the Phase 9 tower-variable discovery owner
+  `assets/towerVariableDiscovery.ts`, and the Phase 10 tooltip owner
+  `assets/towerEquationTooltip.ts`. All four files under `assets/state/` are now migrated.
 - **Migration count methodology (see `JavaToTypeScriptConversionPlan.md`'s "Documentation and Tooling
   Repair" section for full detail):** a *converted* module is an authored `.ts` file excluding
   `.d.ts`; a *remaining* module is an authored `.js` file with no same-path `.ts` sibling; `dist/`,
@@ -53,15 +54,15 @@
   document reported "358 remaining `.js` files" / "~366 total," which conflated the raw on-disk `.js`
   count with the true remaining count — the 8 Phase 1–3 modules' compiled `.js` siblings were being
   counted twice. That has been corrected below.)
-- **Remaining plain JavaScript:** **257 `.js` files** with no `.ts` sibling, outside `dist/`, `build/`,
+- **Remaining plain JavaScript:** **256 `.js` files** with no `.ts` sibling, outside `dist/`, `build/`,
   and `node_modules/`. This includes 19 explicitly disabled legacy Terrarium modules; the active
-  migration backlog is **238**. Dist is build output and should only be regenerated.
+  migration backlog is **237**. Dist is build output and should only be regenerated.
 - **Everything currently compiles/lints clean**: `npm run typecheck`, `npm run build`, `npm run lint`
   all pass. `npm test` (smoke test) passes cleanly (the favicon-related failures noted in every prior
   revision of this document were resolved by removing the stale favicon references, not a migration
-  change). `npm run test:unit` is 140/140 plus the separate retired-Spire checks.
+  change). `npm run test:unit` is 150/150 plus the separate retired-Spire checks.
 
-**Progress so far:** 50 typed modules among 288 active authored JS/TS source modules (~17%), plus 19
+**Progress so far:** 51 typed modules among 288 active authored JS/TS source modules (**17.7%**), plus 19
 disabled legacy Terrarium modules that are intentionally not migration targets. Typed work remains concentrated in
 navigation, persistence primitives, user preferences (Phases 1–3), static tower-definition data
 (Phase 4), and all four `assets/state/*.js` game-state containers (Phase 5A + 5B, both COMPLETE) —
@@ -70,9 +71,12 @@ stated strategy. Revised Phase 6 migrated `assets/spireResourcePersistence.ts` a
 autosave hooks it actually supplies (Spire-resource plus tower/Aleph wrapper hooks); Phase 7 migrated
 `assets/alephUpgradeState.ts` and supplied the real Aleph snapshot/playfield contracts; Phase 8
 migrated `assets/towerBlueprintPresenter.ts` and closed the base tower snapshot boundary; Phase 9
-migrated `assets/towerVariableDiscovery.ts` and typed its discovery/listener/unlock boundary. The next
-recommended slice is the 278-line `assets/towerEquationTooltip.js`; see the authoritative ledger's
-"Next Suggested Step" for its bounded Phase 10 acceptance criteria.
+migrated `assets/towerVariableDiscovery.ts` and typed its discovery/listener/unlock boundary; Phase 10
+migrated `assets/towerEquationTooltip.ts` and typed its DOM/timer/frame boundary. A supplemental
+active-source-line snapshot is approximately **6.2% typed** (7,063 typed versus 106,922 remaining JS
+lines), though line counts understate typed-contract work and do not measure difficulty. The next
+recommended slice is the 250-line `assets/towerEquations/masterEquationUtils.js`; see the authoritative
+ledger's "Next Suggested Step" for its bounded Phase 11 acceptance criteria.
 
 ---
 
@@ -380,7 +384,8 @@ Spire-resource persistence (`assets/spireResourcePersistence.ts`, revised Phase 
 **Aleph-chain upgrade state (`assets/alephUpgradeState.ts`, Phase 7 COMPLETE)** → **base tower-upgrade
 snapshot owner (`assets/towerBlueprintPresenter.ts`, Phase 8 COMPLETE)** → **tower-variable discovery
 manager (`assets/towerVariableDiscovery.ts`, Phase 9 COMPLETE)** → **tower equation tooltip
-(`assets/towerEquationTooltip.js`, recommended Phase 10)** → tower equation math.
+(`assets/towerEquationTooltip.ts`, Phase 10 COMPLETE)** → **master-equation derivation
+(`assets/towerEquations/masterEquationUtils.js`, recommended Phase 11)** → tower equation math.
 
 **Middle:** UI tab/menu/overlay controllers (parallelizable in small batches).
 
@@ -396,8 +401,8 @@ earlier phases.
 
 ## 6. Blockers / Dependencies Needing Action
 
-- **No blockers currently prevent starting Phase 10.** Tooling, strict mode, and the build pipeline are
-  already working end-to-end for 50 authored TypeScript modules, and
+- **No blockers currently prevent starting Phase 11.** Tooling, strict mode, and the build pipeline are
+  already working end-to-end for 51 authored TypeScript modules, and
   `tsconfig.json`/`scripts/sync-ts-output.cjs` now
   discover new `.ts` sources automatically via glob patterns rather than requiring a manual file-list
   edit per phase.

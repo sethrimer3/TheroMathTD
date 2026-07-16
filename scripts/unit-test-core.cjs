@@ -168,6 +168,123 @@ function importTowerVariableDiscoveryModule() {
   return importAsEsm('assets/towerVariableDiscovery.js');
 }
 
+// Import the compiled tower tooltip owner; its Phase 8/9 imports are type-only and erase from output.
+function importTowerEquationTooltipModule() {
+  return importAsEsm('assets/towerEquationTooltip.js');
+}
+
+// Install a deterministic minimal DOM, timer, and animation-frame surface for tooltip tests.
+function withFakeTooltipDom(callback) {
+  const savedDescriptors = new Map(
+    ['window', 'document', 'HTMLElement'].map((key) => [
+      key,
+      Object.getOwnPropertyDescriptor(global, key),
+    ]),
+  );
+  let nextTimerId = 1;
+  const timers = new Map();
+  const clearedTimerIds = [];
+  const frameCallbacks = [];
+
+  class FakeHTMLElement {
+    constructor(rect = {}) {
+      this.className = '';
+      this.id = '';
+      this.dataset = {};
+      this.style = {};
+      this.hidden = false;
+      this.textContent = '';
+      this.isConnected = false;
+      this.children = [];
+      this.attributes = new Map();
+      this.rect = {
+        left: 0,
+        top: 0,
+        width: 0,
+        height: 0,
+        right: (rect.left || 0) + (rect.width || 0),
+        bottom: (rect.top || 0) + (rect.height || 0),
+        ...rect,
+      };
+    }
+
+    append(child) {
+      child.isConnected = true;
+      this.children.push(child);
+    }
+
+    setAttribute(name, value) {
+      this.attributes.set(name, String(value));
+    }
+
+    getAttribute(name) {
+      return this.attributes.get(name) ?? null;
+    }
+
+    removeAttribute(name) {
+      this.attributes.delete(name);
+    }
+
+    getBoundingClientRect() {
+      return this.rect;
+    }
+  }
+
+  const fakeWindow = {
+    setTimeout(handler, delay) {
+      const id = nextTimerId++;
+      timers.set(id, { handler, delay });
+      return id;
+    },
+    clearTimeout(id) {
+      clearedTimerIds.push(id);
+      timers.delete(id);
+    },
+    requestAnimationFrame(callback) {
+      frameCallbacks.push(callback);
+      callback(0);
+      return 900 + frameCallbacks.length;
+    },
+  };
+  const fakeDocument = {
+    createElement: () => new FakeHTMLElement({ width: 80, height: 30 }),
+  };
+
+  Object.defineProperty(global, 'window', { configurable: true, writable: true, value: fakeWindow });
+  Object.defineProperty(global, 'document', { configurable: true, writable: true, value: fakeDocument });
+  Object.defineProperty(global, 'HTMLElement', { configurable: true, writable: true, value: FakeHTMLElement });
+
+  const runTimer = (id) => {
+    const timer = timers.get(id);
+    if (!timer) {
+      return false;
+    }
+    timers.delete(id);
+    timer.handler();
+    return true;
+  };
+
+  try {
+    return callback({
+      FakeHTMLElement,
+      fakeWindow,
+      fakeDocument,
+      timers,
+      clearedTimerIds,
+      frameCallbacks,
+      runTimer,
+    });
+  } finally {
+    for (const [key, descriptor] of savedDescriptors) {
+      if (descriptor) {
+        Object.defineProperty(global, key, descriptor);
+      } else {
+        delete global[key];
+      }
+    }
+  }
+}
+
 // Build a fresh dependency-injected persistence controller for each test so
 // mutable story flags, inventory maps, and invocation logs never leak between cases.
 function createSpirePersistenceHarness(spirePersistence, options = {}) {
@@ -1548,6 +1665,220 @@ async function run() {
     controller.ensureTowerUpgradeState('authored').variables.power.level = 1;
     controller.clearTowerUpgradeState();
     assert.deepEqual(controller.getTowerUpgradeStateSnapshot(), {});
+  });
+
+  // --- assets/towerEquationTooltip.js ------------------------------------
+  const towerTooltip = await importTowerEquationTooltipModule();
+
+  await test('tower tooltip: missing state throws the exact construction error', () => {
+    assert.throws(
+      () => towerTooltip.createTowerEquationTooltipSystem(),
+      { message: 'createTowerEquationTooltipSystem requires a tooltipState object.' },
+    );
+    assert.throws(
+      () => towerTooltip.createTowerEquationTooltipSystem({ tooltipState: null }),
+      { message: 'createTowerEquationTooltipSystem requires a tooltipState object.' },
+    );
+  });
+
+  await test('tower tooltip: no-document and no-panel element creation paths are safe no-ops', () => {
+    const state = { element: null, currentTarget: null, hideTimeoutId: null };
+    const withoutDocument = towerTooltip.createTowerEquationTooltipSystem({ tooltipState: state });
+    assert.equal(withoutDocument.ensureTooltipElement(), null);
+    withFakeTooltipDom(() => {
+      const withoutPanel = towerTooltip.createTowerEquationTooltipSystem({
+        tooltipState: state,
+        getPanelElement: () => null,
+      });
+      assert.equal(withoutPanel.ensureTooltipElement(), null);
+      withoutPanel.handlePointerEnter({ currentTarget: {} });
+      assert.equal(state.element, null);
+    });
+  });
+
+  await test('tower tooltip: connected tooltip elements are created once with exact defaults', () => {
+    withFakeTooltipDom(({ FakeHTMLElement }) => {
+      const panel = new FakeHTMLElement({ left: 0, top: 0, width: 300, height: 200, right: 300, bottom: 200 });
+      const state = { element: null, currentTarget: null, hideTimeoutId: null };
+      const controller = towerTooltip.createTowerEquationTooltipSystem({
+        tooltipState: state,
+        getPanelElement: () => panel,
+        tooltipId: 'custom-tooltip',
+      });
+      const first = controller.ensureTooltipElement();
+      const second = controller.ensureTooltipElement();
+      assert.equal(first, second);
+      assert.equal(panel.children.length, 1);
+      assert.equal(first.className, 'tower-upgrade-formula-tooltip');
+      assert.equal(first.id, 'custom-tooltip');
+      assert.equal(first.getAttribute('role'), 'tooltip');
+      assert.equal(first.getAttribute('aria-hidden'), 'true');
+      assert.equal(first.hidden, true);
+    });
+  });
+
+  await test('tower tooltip: variable text preserves authored, universal, key, and fallback precedence', () => {
+    const controller = towerTooltip.createTowerEquationTooltipSystem({
+      tooltipState: { element: null, currentTarget: null, hideTimeoutId: null },
+      getUniversalVariableMetadata: (variable) => variable.libraryKey === 'atk'
+        ? { symbol: 'Atk', name: 'Attack', units: 'damage', description: 'Universal description.' }
+        : null,
+    });
+    assert.equal(controller.buildVariableTooltip(null, ' F '), 'F');
+    assert.equal(controller.buildVariableTooltip(null, 3), '');
+    assert.equal(controller.buildVariableTooltip({
+      libraryKey: 'atk', equationSymbol: ' E ', symbol: 'S', tooltipName: ' Direct ',
+      name: 'Ignored', units: ' hits ', tooltipDescription: ' Own description. ',
+    }), 'E: Direct (hits) Own description.');
+    assert.equal(controller.buildVariableTooltip({ libraryKey: 'atk' }), 'Atk: Attack (damage) Universal description.');
+    assert.equal(controller.buildVariableTooltip({ key: ' power ' }), 'POWER');
+    assert.equal(controller.buildVariableTooltip({ description: 'Description only.' }), 'Description only.');
+    assert.equal(controller.buildVariableTooltip({ units: 'meters' }), '(meters)');
+    assert.equal(controller.buildVariableTooltip({}, ' Z '), 'Z');
+    assert.equal(controller.buildVariableTooltip({}), '');
+  });
+
+  await test('tower tooltip: focus shows content, ARIA state, and below-target positioning', () => {
+    withFakeTooltipDom(({ FakeHTMLElement, frameCallbacks }) => {
+      const panel = new FakeHTMLElement({ left: 0, top: 0, width: 300, height: 200, right: 300, bottom: 200 });
+      const target = new FakeHTMLElement({ left: 100, top: 50, width: 20, height: 20, right: 120, bottom: 70 });
+      target.dataset.tooltip = 'Attack details';
+      const state = { element: null, currentTarget: null, hideTimeoutId: null };
+      const controller = towerTooltip.createTowerEquationTooltipSystem({
+        tooltipState: state,
+        getPanelElement: () => panel,
+      });
+      controller.handleFocus({ currentTarget: target });
+      assert.equal(frameCallbacks.length, 1);
+      assert.equal(state.element.textContent, 'Attack details');
+      assert.equal(state.element.hidden, false);
+      assert.equal(state.element.dataset.visible, 'true');
+      assert.equal(state.element.getAttribute('aria-hidden'), 'false');
+      assert.equal(target.getAttribute('aria-describedby'), 'tower-upgrade-equation-tooltip');
+      assert.equal(state.element.style.maxWidth, '276px');
+      assert.equal(state.element.style.left, '70px');
+      assert.equal(state.element.style.top, '82px');
+    });
+  });
+
+  await test('tower tooltip: positioning clamps right and chooses above when it has more space', () => {
+    withFakeTooltipDom(({ FakeHTMLElement }) => {
+      const panel = new FakeHTMLElement({ left: 0, top: 0, width: 300, height: 200, right: 300, bottom: 200 });
+      const target = new FakeHTMLElement({ left: 290, top: 170, width: 10, height: 20, right: 300, bottom: 190 });
+      target.dataset.tooltip = 'Edge details';
+      const state = { element: null, currentTarget: null, hideTimeoutId: null };
+      const controller = towerTooltip.createTowerEquationTooltipSystem({
+        tooltipState: state,
+        getPanelElement: () => panel,
+        tooltipMarginPx: 12,
+        requestAnimationFrame: (callback) => { callback(0); return 77; },
+      });
+      controller.handlePointerEnter({ currentTarget: target });
+      assert.equal(state.element.style.left, '208px');
+      assert.equal(state.element.style.top, '128px');
+    });
+  });
+
+  await test('tower tooltip: switching targets removes stale ARIA and ignores invalid or blank targets', () => {
+    withFakeTooltipDom(({ FakeHTMLElement }) => {
+      const panel = new FakeHTMLElement({ width: 300, height: 200, right: 300, bottom: 200 });
+      const first = new FakeHTMLElement({ left: 30, top: 30, width: 10, height: 10, right: 40, bottom: 40 });
+      const second = new FakeHTMLElement({ left: 60, top: 30, width: 10, height: 10, right: 70, bottom: 40 });
+      const blank = new FakeHTMLElement();
+      first.dataset.tooltip = 'First';
+      second.dataset.tooltip = 'Second';
+      const state = { element: null, currentTarget: null, hideTimeoutId: null };
+      const controller = towerTooltip.createTowerEquationTooltipSystem({
+        tooltipState: state,
+        getPanelElement: () => panel,
+      });
+      controller.handlePointerEnter({ currentTarget: first });
+      controller.handlePointerEnter({ currentTarget: second });
+      assert.equal(first.getAttribute('aria-describedby'), null);
+      assert.equal(second.getAttribute('aria-describedby'), 'tower-upgrade-equation-tooltip');
+      assert.equal(state.element.textContent, 'Second');
+      controller.handlePointerEnter({ currentTarget: {} });
+      controller.handleFocus(null);
+      controller.handleFocus({ currentTarget: blank });
+      assert.equal(state.currentTarget, second);
+    });
+  });
+
+  await test('tower tooltip: pointer leave schedules the exact delayed cleanup', () => {
+    withFakeTooltipDom(({ FakeHTMLElement, timers, runTimer }) => {
+      const panel = new FakeHTMLElement({ width: 300, height: 200, right: 300, bottom: 200 });
+      const target = new FakeHTMLElement({ left: 20, top: 20, width: 10, height: 10, right: 30, bottom: 30 });
+      target.dataset.tooltip = 'Delayed';
+      const state = { element: null, currentTarget: null, hideTimeoutId: null };
+      const controller = towerTooltip.createTowerEquationTooltipSystem({
+        tooltipState: state,
+        getPanelElement: () => panel,
+        requestAnimationFrame: (callback) => { callback(0); return 1; },
+      });
+      controller.handlePointerEnter({ currentTarget: target });
+      controller.handlePointerLeave();
+      const timeoutId = state.hideTimeoutId;
+      assert.equal(timers.get(timeoutId).delay, 160);
+      assert.equal(state.element.dataset.visible, 'false');
+      assert.equal(state.element.getAttribute('aria-hidden'), 'true');
+      assert.equal(state.element.hidden, false);
+      assert.equal(state.element.textContent, 'Delayed');
+      assert.equal(runTimer(timeoutId), true);
+      assert.equal(state.element.hidden, true);
+      assert.equal(state.element.textContent, '');
+      assert.equal(target.getAttribute('aria-describedby'), null);
+      assert.equal(state.currentTarget, null);
+      assert.equal(state.hideTimeoutId, null);
+    });
+  });
+
+  await test('tower tooltip: blur cancels a pending delay and hides immediately', () => {
+    withFakeTooltipDom(({ FakeHTMLElement, timers, clearedTimerIds }) => {
+      const panel = new FakeHTMLElement({ width: 300, height: 200, right: 300, bottom: 200 });
+      const target = new FakeHTMLElement({ left: 20, top: 20, width: 10, height: 10, right: 30, bottom: 30 });
+      target.dataset.tooltip = 'Immediate';
+      const state = { element: null, currentTarget: null, hideTimeoutId: null };
+      const controller = towerTooltip.createTowerEquationTooltipSystem({
+        tooltipState: state,
+        getPanelElement: () => panel,
+        requestAnimationFrame: (callback) => { callback(0); return 1; },
+      });
+      controller.handleFocus({ currentTarget: target });
+      controller.handlePointerLeave();
+      const timeoutId = state.hideTimeoutId;
+      controller.handleBlur();
+      assert.deepEqual(clearedTimerIds, [timeoutId]);
+      assert.equal(timers.has(timeoutId), false);
+      assert.equal(state.element.hidden, true);
+      assert.equal(state.currentTarget, null);
+    });
+  });
+
+  await test('tower tooltip: showing again cancels pending hide and custom frames take precedence', () => {
+    withFakeTooltipDom(({ FakeHTMLElement, timers, clearedTimerIds, frameCallbacks }) => {
+      const panel = new FakeHTMLElement({ width: 300, height: 200, right: 300, bottom: 200 });
+      const first = new FakeHTMLElement({ left: 20, top: 20, width: 10, height: 10, right: 30, bottom: 30 });
+      const second = new FakeHTMLElement({ left: 50, top: 20, width: 10, height: 10, right: 60, bottom: 30 });
+      first.dataset.tooltip = 'First';
+      second.dataset.tooltip = 'Second';
+      let customFrames = 0;
+      const state = { element: null, currentTarget: null, hideTimeoutId: null };
+      const controller = towerTooltip.createTowerEquationTooltipSystem({
+        tooltipState: state,
+        getPanelElement: () => panel,
+        requestAnimationFrame: (callback) => { customFrames += 1; callback(0); return customFrames; },
+      });
+      controller.handlePointerEnter({ currentTarget: first });
+      controller.handlePointerLeave();
+      const timeoutId = state.hideTimeoutId;
+      controller.handlePointerEnter({ currentTarget: second });
+      assert.equal(timers.has(timeoutId), false);
+      assert.deepEqual(clearedTimerIds, [timeoutId]);
+      assert.equal(customFrames, 2);
+      assert.equal(frameCallbacks.length, 0);
+      assert.equal(state.element.textContent, 'Second');
+      assert.equal(state.element.hidden, false);
+    });
   });
 
   // --- assets/towerVariableDiscovery.js -----------------------------------
