@@ -53,6 +53,29 @@ export interface TowerVariableDefinitionContext {
   towerId: string;
 }
 
+/** One structured line returned by an authored variable's sub-equation builder. */
+export interface TowerVariableSubEquation {
+  text?: string;
+  expression?: string;
+  values?: string;
+  /** Authored display mode; consumers reserve `values` and treat other labels as expressions. */
+  variant?: string;
+  glyphEquation?: boolean;
+  category?: string;
+}
+
+/** Live overlay context supplied when resolving authored variable sub-equations. */
+export interface TowerVariableSubEquationContext extends TowerVariableComputationContext {
+  level: number;
+  value: number;
+  variable: TowerEquationVariable;
+  values: TowerEquationValueMap;
+  formatValue: () => string;
+  formatWholeNumber: unknown;
+  formatDecimal: unknown;
+  formatGameNumber: unknown;
+}
+
 /** Context supplied to custom final-result callbacks. */
 export interface TowerResultComputationContext {
   definition: TowerEquationDefinition | null | undefined;
@@ -90,6 +113,9 @@ export interface TowerEquationVariable {
   transform?: (referencedValue: number) => number;
   exponent?: number;
   computeValue?: (context: TowerVariableComputationContext) => unknown;
+  getSubEquations?: (
+    context: TowerVariableSubEquationContext,
+  ) => readonly TowerVariableSubEquation[];
   getBase?: (context: TowerVariableDefinitionContext) => number;
   baseValue?: number;
   getStep?: (level: number, context: TowerVariableDefinitionContext) => number;

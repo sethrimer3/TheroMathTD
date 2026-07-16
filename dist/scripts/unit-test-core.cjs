@@ -178,6 +178,29 @@ function importMasterEquationUtilsModule() {
   return importAsEsm('assets/towerEquations/masterEquationUtils.js');
 }
 
+// Import the compiled Mind Gate blueprint with a recording formatting stub so
+// its authored equations and callback timing can be characterized in Node.
+async function importMindGateEquationModule() {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thero-unit-test-mind-gate-'));
+  fs.writeFileSync(path.join(tmpDir, 'package.json'), JSON.stringify({ type: 'module' }));
+  const equationDest = path.join(tmpDir, 'assets', 'towerEquations', 'mindGate.js');
+  const formattingDest = path.join(tmpDir, 'scripts', 'core', 'formatting.js');
+  fs.mkdirSync(path.dirname(equationDest), { recursive: true });
+  fs.mkdirSync(path.dirname(formattingDest), { recursive: true });
+  fs.copyFileSync(path.join(rootDir, 'assets', 'towerEquations', 'mindGate.js'), equationDest);
+  fs.writeFileSync(
+    formattingDest,
+    `export const formatCalls = [];
+     export function formatWholeNumber(value) {
+       formatCalls.push(value);
+       return \`whole:\${String(value)}\`;
+     }`,
+  );
+  const mindGateModule = await import(pathToFileURL(equationDest).href);
+  const formattingModule = await import(pathToFileURL(formattingDest).href);
+  return { mindGate: mindGateModule.mindGate, formatCalls: formattingModule.formatCalls };
+}
+
 // Import a fresh compiled shared-context module for each state-sensitive test.
 function importBlueprintContextModule() {
   return importAsEsm('assets/towerEquations/blueprintContext.js');
@@ -1406,6 +1429,91 @@ async function run() {
     controller.ensureTowerUpgradeState('authored').variables.power.level = 1;
     controller.clearTowerUpgradeState();
     assert.deepEqual(controller.getTowerUpgradeStateSnapshot(), {});
+  });
+
+  // --- assets/towerEquations/mindGate.js ---------------------------------
+  await test('Mind Gate equation: authored metadata and variable order remain exact', async () => {
+    const { mindGate } = await importMindGateEquationModule();
+    assert.equal(mindGate.mathSymbol, String.raw`\mathfrak{G}`);
+    assert.equal(
+      mindGate.baseEquation,
+      String.raw`\( \mathfrak{G} = \text{Life} \times \text{Regeneration} \)`,
+    );
+    assert.deepEqual(
+      mindGate.variables.map(({ key, symbol, name, masterEquationSymbol, description, baseValue, step, upgradable }) => ({
+        key, symbol, name, masterEquationSymbol, description, baseValue, step, upgradable,
+      })),
+      [
+        {
+          key: 'life', symbol: 'Life', name: 'Life', masterEquationSymbol: 'Life',
+          description: 'Glyph lifeforce braided into the Mind Gate core.',
+          baseValue: 1, step: 1, upgradable: true,
+        },
+        {
+          key: 'recovery', symbol: 'Reg', name: 'Regeneration', masterEquationSymbol: 'Reg',
+          description: 'Restorative glyph cadence that rethreads the gate between waves.',
+          baseValue: 2, step: 1, upgradable: true,
+        },
+      ],
+    );
+  });
+
+  await test('Mind Gate equation: formatting and upgrade costs preserve input behavior', async () => {
+    const { mindGate, formatCalls } = await importMindGateEquationModule();
+    const [life, recovery] = mindGate.variables;
+    assert.equal(life.format(2.5), 'whole:2.5 ℵ₁');
+    assert.equal(recovery.format(-3), 'whole:-3 ℵ₂');
+    assert.deepEqual(formatCalls, [2.5, -3]);
+    assert.deepEqual([-4, 0, 2.5].map(life.cost), [1, 1, 3.5]);
+    assert.deepEqual([-4, 0, 2.5].map(recovery.cost), [1, 2, 4.5]);
+  });
+
+  await test('Mind Gate equation: life sub-equations preserve clamping, defaults, and formatting order', async () => {
+    const { mindGate, formatCalls } = await importMindGateEquationModule();
+    const life = mindGate.variables[0];
+    assert.deepEqual(life.getSubEquations({ level: -2.5, value: 3.75 }), [
+      { expression: String.raw`\( \text{Life} = 100^{\aleph_{1} / \aleph_{2}} \)` },
+      {
+        values: String.raw`\( whole:3.75 = 1 + whole:0 \)`,
+        variant: 'values',
+        glyphEquation: true,
+      },
+    ]);
+    assert.deepEqual(formatCalls, [3.75, 0]);
+    formatCalls.length = 0;
+    life.getSubEquations({ level: NaN, value: Infinity });
+    assert.deepEqual(formatCalls, [1, 0]);
+  });
+
+  await test('Mind Gate equation: recovery sub-equations preserve clamping, defaults, and formatting order', async () => {
+    const { mindGate, formatCalls } = await importMindGateEquationModule();
+    const recovery = mindGate.variables[1];
+    assert.deepEqual(recovery.getSubEquations({ level: 1.25, value: -7 }), [
+      { expression: String.raw`\( \text{Reg} = \frac{100 \times \aleph_{2}}{\aleph_{1}} \)` },
+      {
+        values: String.raw`\( whole:1 = 2 + whole:1.25 \)`,
+        variant: 'values',
+        glyphEquation: true,
+      },
+    ]);
+    assert.deepEqual(formatCalls, [1, 1.25]);
+    formatCalls.length = 0;
+    recovery.getSubEquations({ level: Infinity, value: NaN });
+    assert.deepEqual(formatCalls, [2, 0]);
+  });
+
+  await test('Mind Gate equation: result fallbacks and golden callback order remain exact', async () => {
+    const { mindGate } = await importMindGateEquationModule();
+    assert.equal(mindGate.computeResult({ life: 2.5, recovery: 4 }), 10);
+    assert.equal(mindGate.computeResult({ life: -2, recovery: 0 }), 1);
+    assert.equal(mindGate.computeResult({ life: '3', recovery: Infinity }), 1);
+    const calls = [];
+    const golden = mindGate.formatGoldenEquation({
+      formatResult() { calls.push('result'); return 'R'; },
+      formatVariable(key) { calls.push(key); return key.toUpperCase(); },
+    });
+    assert.equal(golden, String.raw`\( R = LIFE \times RECOVERY \)`);
+    assert.deepEqual(calls, ['result', 'life', 'recovery']);
   });
 
   // --- assets/towerEquations/index.js ------------------------------------

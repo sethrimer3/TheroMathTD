@@ -90,7 +90,7 @@ Before reporting completion, update this document in the same branch or commit s
 
 The obsolete-Spire retirement is an intentional product change, not a general migration phase. It removed active Bet, Lamed, Tsadi, Shin, and Kuf modules and added one typed compatibility boundary, `assets/saveCompatibility.ts`. The Aleph experience remains active under the user-facing name **Well of Inspiration**; compatibility-sensitive `powder`/`aleph` identifiers remain unchanged.
 
-Using the established count method, the current tree contains **53 authored `.ts` modules** and **232 authored `.js` modules without a same-path `.ts` sibling** (**285 total**). Phase 13 converted `assets/towerEquations/index.js`, moving the live post-retirement baseline from 52 to 53 typed modules and from 233 to 232 remaining JavaScript modules without changing the total. The disabled Achievements Terrarium/Bet Terrarium files referenced by older ledger entries are no longer present in the live tree, so there is no separate preserved-legacy subtraction in the current count. The retired `spireFloatingMenu` and `spireTabVisibility` TypeScript modules and the orphaned retired idle/developer controllers were removed because the one-Well navigation no longer imports or needs those multi-Spire managers. The former Collective Unconscious/Cognitive Realm runtime was removed after Phase 10, including its typed state module and two JavaScript UI modules; its earlier migration entries remain below as historical records.
+Using the established count method, the current tree contains **54 authored `.ts` modules** and **231 authored `.js` modules without a same-path `.ts` sibling** (**285 total**). Phase 14 converted `assets/towerEquations/mindGate.js`, moving the live post-retirement baseline from 53 to 54 typed modules and from 232 to 231 remaining JavaScript modules without changing the total. The disabled Achievements Terrarium/Bet Terrarium files referenced by older ledger entries are no longer present in the live tree, so there is no separate preserved-legacy subtraction in the current count. The retired `spireFloatingMenu` and `spireTabVisibility` TypeScript modules and the orphaned retired idle/developer controllers were removed because the one-Well navigation no longer imports or needs those multi-Spire managers. The former Collective Unconscious/Cognitive Realm runtime was removed after Phase 10, including its typed state module and two JavaScript UI modules; its earlier migration entries remain below as historical records.
 
 **Plan created:** 2026-07-13  
 **Repository:** `sethrimer3/TheroMathTD`  
@@ -140,6 +140,7 @@ No TypeScript conversion phase is recorded as complete in this plan.
 | 11 | Master-equation derivation utility (`assets/towerEquations/masterEquationUtils.js`) | COMPLETE | See Phase 11 section and Implementation Log entry below |
 | 12 | Tower-blueprint shared dependency context (`assets/towerEquations/blueprintContext.js`) | COMPLETE | See Phase 12 section and Implementation Log entry below |
 | 13 | Tower-equation registry and lookup (`assets/towerEquations/index.js`) | COMPLETE | See Phase 13 section and Implementation Log entry below |
+| 14 | Mind Gate authored equation definition (`assets/towerEquations/mindGate.js`) | COMPLETE | See Phase 14 section and Implementation Log entry below |
 
 ---
 
@@ -808,6 +809,25 @@ Suite total: **78/78 passing** (58 pre-existing from Phases 2–5A + 20 new).
 
 ---
 
+## Phase 14 — Mind Gate Authored Equation Definition (COMPLETE)
+
+**Status:** COMPLETE (2026-07-16)
+**Migration type:** Behavior-preserving migration
+
+**Verified starting point and baseline:** Phase 14 branched as `codex/phase-14-mind-gate-equation` directly from completed local Phase 13 commit `4b87d9da3ad906cc14046b2467f36e5ac284120d`. The worktree was clean at Build 739, the registry still imported `./mindGate.js`, and the live recommendation named this 76-line first authored equation definition. Before editing, typecheck/build/lint, 153/153 core tests plus retired-Spire checks, and the recursive smoke test all passed.
+
+**Live imports and consumers:** Mind Gate retains its sole runtime dependency, `scripts/core/formatting.js`, and remains consumed through the typed equation registry. The live upgrade-overlay caller supplies level/value plus formatter and tower context fields to `getSubEquations`; the presenter-owned callback contract now records that actual surface. No Shadow Gate, grouped definition, Towers-tab, simulation, playfield, or main-integration implementation was edited.
+
+**Files and types:** The sole authored implementation became strict `assets/towerEquations/mindGate.ts`; its `.js` sibling remains generated at the same path with the same named export and formatting import. `TowerVariableSubEquation` and `TowerVariableSubEquationContext` were added to `assets/towerBlueprintPresenter.ts`, and `TowerEquationVariable` gained the optional callback already used by JavaScript definitions. The result label remains an open string because the live renderer reserves only exact `values` and treats every other authored label as an expression; this keeps all remaining JavaScript definitions registry-compatible without weakening their numeric callback inputs.
+
+**Behavior characterized and preserved:** Both variables retain their exact order, metadata, glyph labels, base/step values, cost functions, and formatter calls. Both sub-equation builders retain exact `String.raw` LaTeX, finite fractional values, minimum rank/investment clamping, malformed defaults, result-object order, `values` variant, and glyph flag. Result calculation retains number-only finite acceptance, minimum-one clamping, and multiplication. Golden formatting retains result-first, life-second, recovery-third callback order and exact symbolic output.
+
+**Tests, validation, and counts:** Five deterministic tests load generated `assets/towerEquations/mindGate.js` against a recording formatting stub, raising the core suite from 153 to **158 tests**. They cover exact metadata/order/text, formatting and fractional costs, both sub-equation arrays and malformed/fractional inputs, number-only result fallbacks/product, and golden callback order/output. Final typecheck/build/lint/unit/retired-Spire/smoke validation and generated/import audits are recorded in the Implementation Log. Counts moved from 53 to **54 authored TypeScript modules** and from 232 to **231 remaining JavaScript modules**; total authored modules remain **285**. Build 739 advanced exactly once to Build 740.
+
+**Browser/manual verification:** No browser, Electron, touch, or physical-device verification was performed or claimed. This definition is DOM-free; generated-output characterization tests cover its formulas and callback behavior, while the recursive smoke test verifies registry and real-graph compatibility.
+
+---
+
 ## Tentative Later Migration Areas
 
 These are not authorized active phases. Their order must be reevaluated after Phase 1.
@@ -878,13 +898,13 @@ Do not treat this list as a fixed roadmap. Each completed phase must recommend t
 
 ## Next Suggested Step
 
-**Recommended Phase 14: `assets/towerEquations/mindGate.js` (first authored equation definition).**
+**Recommended Phase 15: `assets/towerEquations/shadowGate.js` (second authored equation definition).**
 
-Phase 13 types the registry without changing any authored formula. The next smallest meaningful inward step is the 76-line Mind Gate blueprint: one formatting import, two upgrade variables, two deterministic sub-equation builders, one product result, and one golden-equation formatter. It is substantially safer than the Codex-coupled Shadow Gate or the 400–1,600-line grouped definition files and can establish the missing typed sub-equation callback surface before broader definition migrations.
+Phase 14 establishes the typed authored-definition and sub-equation boundary. The next smallest meaningful inward step is the 39-line Shadow Gate blueprint: one Codex state dependency, one dynamic variable-name getter, one passive zero result, and one symbolic golden equation. It is far smaller than the 400–1,600-line grouped definition files and can type the first dynamic definition without entering combat or rendering systems.
 
-**Bounded scope:** Convert only `assets/towerEquations/mindGate.js` to strict TypeScript. Narrowly extend the presenter-owned variable/blueprint contracts only for the real `getSubEquations` result shape used by this definition, and type callback inputs without changing formulas, text, mojibake-preserved glyph labels, cost behavior, or formatter calls. Add deterministic compiled-output tests against a stub formatting dependency for variable metadata, malformed/fractional levels and values, exact sub-equation arrays/text/flags, cost functions, result fallbacks/product, and golden-equation callback order/output. Do not convert Shadow Gate, grouped/basic/Greek/advanced definitions, the registry, Towers tab, simulations, playfield systems, or main integration.
+**Bounded scope:** Convert only `assets/towerEquations/shadowGate.js` to strict TypeScript. Reuse the presenter blueprint contract and introduce only the narrow Codex-facing set/entry shape required by the dynamic getter. Add deterministic compiled-output tests against a stub Codex dependency for initial and later getter reads, insertion order, duplicate handling inherited from `Set`, missing/falsey symbols, exact lookup order/count, joins, metadata, zero result, and exact golden equation. Do not convert `codex.js`, grouped/basic/Greek/advanced definitions, the registry, Towers tab, simulations, playfield systems, or main integration.
 
-**Acceptance criteria:** Preserve exact exported `mindGate` object shape, variable order, strings, `String.raw` output, `Number.isFinite` fallback/clamping, formatter call values, `Math.max` cost semantics, product calculation, and golden formatter call order; add only owner-accurate sub-equation contracts with no `any` or suppressions; generated sibling keeps the formatting `.js` import and registry compatibility; typecheck/build/lint/unit/smoke pass; update counts/build number once and record browser availability honestly.
+**Acceptance criteria:** Preserve the exact exported `shadowGate` object shape and strings, live getter timing, `Array.from` insertion order, one lookup per encountered id, optional-symbol access, `filter(Boolean)` semantics, comma-space joining, passive zero result, and exact symbolic formatter output; add no `any` or suppressions; generated sibling keeps the Codex `.js` import and registry compatibility; typecheck/build/lint/unit/smoke pass; update counts/build number once and record browser availability honestly.
 
 ---
 
@@ -1191,3 +1211,18 @@ Phase 13 branched as `codex/phase-13-equation-registry` from verified local Phas
 - No browser, Electron, touch, or physical-device verification was performed or claimed. Generated-output tests and the recursive real-graph smoke test fully cover the requested DOM-free registry boundary.
 
 **Next suggested step:** Execute the bounded Phase 14 recommendation above for `assets/towerEquations/mindGate.js`; keep Shadow Gate, grouped definitions, Towers tab, simulations, playfield systems, and main integration out of scope.
+
+### 2026-07-16 — Phase 14 executed
+
+**Status:** COMPLETE
+
+Phase 14 branched as `codex/phase-14-mind-gate-equation` from verified local Phase 13 commit `4b87d9da3ad906cc14046b2467f36e5ac284120d` with a clean worktree and Build 739. The formatting dependency, two authored variables, live overlay callback payload, formula/fallback behavior, and registry consumer were characterized before editing; the pre-edit typecheck/build/lint/153-test/retired-Spire/smoke baseline passed.
+
+- Converted `assets/towerEquations/mindGate.js` to strict `assets/towerEquations/mindGate.ts`; its generated sibling retains the same formatting `.js` import, named export, object shape, strings, formulas, costs, clamping, and callback order.
+- Extended the presenter-owned variable contract only with the real sub-equation result/context surface already consumed by the upgrade overlay. The open variant label reflects the renderer's exact `values`-special-case behavior and keeps remaining JavaScript definitions compatible.
+- Added five isolated generated-output tests with a recording formatter stub, increasing the core suite from 153/153 to 158/158. Coverage includes exact metadata/order/text, costs/formatting, both sub-equation builders, malformed and fractional inputs, number-only result fallbacks/product, and golden callback order/output.
+- Final `npm run typecheck`, `npm run build`, `npm run lint`, `npm run test:unit` (158/158 plus retired-Spire checks), and `npm test` passed. `git diff --check`, generated-sibling/dist hashes, formatting-import/registry-specifier inspection, scoped forbidden-pattern checks, and the no-TypeScript-in-`dist` audit passed.
+- Recalculated counts by the documented full-tree method: 53 to **54** authored TypeScript modules, 232 to **231** remaining JavaScript modules, and **285** authored modules total. Build 739 advanced exactly once to Build 740.
+- No browser, Electron, touch, or physical-device verification was performed or claimed. Generated-output tests and the recursive real-graph smoke test cover this DOM-free definition boundary.
+
+**Next suggested step:** Execute the bounded Phase 15 recommendation above for `assets/towerEquations/shadowGate.js`; keep `codex.js`, grouped definitions, Towers tab, simulations, playfield systems, and main integration out of scope.
