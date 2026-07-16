@@ -4,9 +4,12 @@ This appendix is the mechanically checked coverage record for the long-range roa
 
 ## Verified inventory
 
-**Inventory date:** 2026-07-16  
-**Inventory base:** `codex/phases-17-20-advanced-equations` at `2bad7891ca88baa20c1a084c31ecd939e11b4eca`  
-**Planning branch:** `codex/typescript-migration-roadmap`  
+**Inventory date:** 2026-07-16
+
+**Inventory base:** `codex/phases-17-20-advanced-equations` at `2bad7891ca88baa20c1a084c31ecd939e11b4eca`
+
+**Planning branch:** `codex/typescript-migration-roadmap`
+
 **Runtime root:** `index.html` -> `assets/main.js`
 
 | Classification | Count | Treatment |
