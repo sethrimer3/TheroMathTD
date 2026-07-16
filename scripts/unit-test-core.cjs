@@ -178,6 +178,11 @@ function importMasterEquationUtilsModule() {
   return importAsEsm('assets/towerEquations/masterEquationUtils.js');
 }
 
+// Import a fresh compiled shared-context module for each state-sensitive test.
+function importBlueprintContextModule() {
+  return importAsEsm('assets/towerEquations/blueprintContext.js');
+}
+
 // Install a deterministic minimal DOM, timer, and animation-frame surface for tooltip tests.
 function withFakeTooltipDom(callback) {
   const savedDescriptors = new Map(
@@ -1358,6 +1363,119 @@ async function run() {
     controller.ensureTowerUpgradeState('authored').variables.power.level = 1;
     controller.clearTowerUpgradeState();
     assert.deepEqual(controller.getTowerUpgradeStateSnapshot(), {});
+  });
+
+  // --- assets/towerEquations/blueprintContext.js -------------------------
+  await test('blueprint context: initial export owns seven mutable null helper slots', async () => {
+    const { blueprintContext } = await importBlueprintContextModule();
+    const expectedKeys = [
+      'deriveGlyphRankFromLevel',
+      'getTowerEquationBlueprint',
+      'ensureTowerUpgradeState',
+      'calculateTowerEquationResult',
+      'getDynamicConnectionCount',
+      'getTowerDefinition',
+      'computeTowerVariableValue',
+    ].sort();
+    assert.deepEqual(Object.keys(blueprintContext).sort(), expectedKeys);
+    for (const key of expectedKeys) {
+      assert.equal(blueprintContext[key], null);
+      assert.equal(Object.hasOwn(blueprintContext, key), true);
+    }
+    assert.equal(Object.isFrozen(blueprintContext), false);
+    assert.equal(Object.isSealed(blueprintContext), false);
+    blueprintContext.mutableProbe = true;
+    assert.equal(blueprintContext.mutableProbe, true);
+  });
+
+  await test('blueprint context: partial and repeated initialization retain object and value identity', async () => {
+    const module = await importBlueprintContextModule();
+    const retained = module.blueprintContext;
+    const firstHelper = () => 1;
+    const secondHelper = () => 2;
+    const marker = { live: true };
+    const source = Object.freeze({ deriveGlyphRankFromLevel: firstHelper, marker });
+    assert.equal(module.initializeBlueprintContext(source), undefined);
+    assert.equal(module.blueprintContext, retained);
+    assert.equal(retained.deriveGlyphRankFromLevel, firstHelper);
+    assert.equal(retained.marker, marker);
+    assert.equal(retained.getTowerEquationBlueprint, null);
+    assert.equal(module.initializeBlueprintContext({ deriveGlyphRankFromLevel: secondHelper }), undefined);
+    assert.equal(module.blueprintContext, retained);
+    assert.equal(retained.deriveGlyphRankFromLevel, secondHelper);
+    assert.deepEqual(source, { deriveGlyphRankFromLevel: firstHelper, marker });
+  });
+
+  await test('blueprint context: omitted, null, undefined, and empty sources are no-ops', async () => {
+    const module = await importBlueprintContextModule();
+    const before = { ...module.blueprintContext };
+    assert.equal(module.initializeBlueprintContext(), undefined);
+    assert.equal(module.initializeBlueprintContext(undefined), undefined);
+    assert.equal(module.initializeBlueprintContext(null), undefined);
+    assert.equal(module.initializeBlueprintContext({}), undefined);
+    assert.deepEqual(module.blueprintContext, before);
+  });
+
+  await test('blueprint context: primitive and array sources keep native Object.assign behavior', async () => {
+    const module = await importBlueprintContextModule();
+    assert.equal(module.initializeBlueprintContext(42), undefined);
+    assert.equal(module.initializeBlueprintContext(true), undefined);
+    assert.equal(Object.hasOwn(module.blueprintContext, '0'), false);
+    assert.equal(module.initializeBlueprintContext('ab'), undefined);
+    assert.equal(module.blueprintContext[0], 'a');
+    assert.equal(module.blueprintContext[1], 'b');
+    const source = Object.freeze(['array-value']);
+    assert.equal(module.initializeBlueprintContext(source), undefined);
+    assert.equal(module.blueprintContext[0], 'array-value');
+    assert.deepEqual(source, ['array-value']);
+  });
+
+  await test('blueprint context: enumerable own and symbol keys copy while inherited and hidden keys do not', async () => {
+    const module = await importBlueprintContextModule();
+    const symbolKey = Symbol('context');
+    const source = Object.create({ inherited: 'ignored' });
+    source.own = { assignedByReference: true };
+    source[symbolKey] = 'symbol-value';
+    Object.defineProperty(source, 'hidden', { value: 'ignored', enumerable: false });
+    module.initializeBlueprintContext(source);
+    assert.equal(module.blueprintContext.own, source.own);
+    assert.equal(module.blueprintContext[symbolKey], 'symbol-value');
+    assert.equal(Object.hasOwn(module.blueprintContext, 'inherited'), false);
+    assert.equal(Object.hasOwn(module.blueprintContext, 'hidden'), false);
+  });
+
+  await test('blueprint context: enumerable source getters run once and assign their result', async () => {
+    const module = await importBlueprintContextModule();
+    let reads = 0;
+    const source = Object.defineProperty({}, 'derived', {
+      enumerable: true,
+      get() {
+        reads += 1;
+        return { reads };
+      },
+    });
+    module.initializeBlueprintContext(source);
+    assert.equal(reads, 1);
+    assert.deepEqual(module.blueprintContext.derived, { reads: 1 });
+  });
+
+  await test('blueprint context: throwing getters propagate after earlier assignments only', async () => {
+    const module = await importBlueprintContextModule();
+    const expectedError = new Error('context getter failed');
+    const source = { before: 'assigned' };
+    Object.defineProperty(source, 'boom', {
+      enumerable: true,
+      get() {
+        throw expectedError;
+      },
+    });
+    source.after = 'not-assigned';
+    assert.throws(() => module.initializeBlueprintContext(source), (error) => error === expectedError);
+    assert.equal(module.blueprintContext.before, 'assigned');
+    assert.equal(Object.hasOwn(module.blueprintContext, 'boom'), false);
+    assert.equal(Object.hasOwn(module.blueprintContext, 'after'), false);
+    assert.equal(source.before, 'assigned');
+    assert.equal(source.after, 'not-assigned');
   });
 
   // --- assets/towerEquations/masterEquationUtils.js ----------------------
