@@ -1,5 +1,7 @@
 # TheroMathTD — JavaScript → TypeScript Migration Plan
 
+> **Superseded inventory and sequencing notice (2026-07-16):** This document is retained as a secondary historical orientation guide. Its counts, largest-file snapshot, references to deleted Terrarium/Cognitive Realm files, and “Phase 11 next” recommendation are stale. The authoritative verified baseline, reconciled Phases 0-20, dependency-aware Phases 21-55, single authorized Phase 21, and complete active-module coverage are in [`JavaToTypeScriptConversionPlan.md`](JavaToTypeScriptConversionPlan.md) and [`docs/TypeScriptMigrationRoadmapInventory.md`](docs/TypeScriptMigrationRoadmapInventory.md). Do not authorize work from this secondary document.
+
 **Audit date:** 2026-07-13
 **Auditor:** Claude Code (planning only — no code changes made)
 

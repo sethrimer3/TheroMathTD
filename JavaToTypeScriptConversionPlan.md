@@ -86,17 +86,29 @@ Before reporting completion, update this document in the same branch or commit s
 
 ## Current Repository Baseline
 
-### 2026-07-13 product-retirement inventory note
+### 2026-07-16 verified long-range-roadmap baseline
 
 The obsolete-Spire retirement is an intentional product change, not a general migration phase. It removed active Bet, Lamed, Tsadi, Shin, and Kuf modules and added one typed compatibility boundary, `assets/saveCompatibility.ts`. The Aleph experience remains active under the user-facing name **Well of Inspiration**; compatibility-sensitive `powder`/`aleph` identifiers remain unchanged.
 
-Using the established count method, the current tree contains **60 authored `.ts` modules** and **225 authored `.js` modules without a same-path `.ts` sibling** (**285 total**). Phases 17–20 converted the Sigma, Phi, Upsilon, and Tau advanced equation definitions, moving the live post-retirement baseline from 56 to 60 typed modules and from 229 to 225 remaining JavaScript modules without changing the total. That is **21.1% converted by module count**. A supplemental authored-line snapshot is approximately **6.7% converted by source lines**; this lower figure reflects the large JavaScript integration modules still ahead. The disabled Achievements Terrarium/Bet Terrarium files referenced by older ledger entries are no longer present in the live tree, so there is no separate preserved-legacy subtraction in the current count. The retired `spireFloatingMenu` and `spireTabVisibility` TypeScript modules and the orphaned retired idle/developer controllers were removed because the one-Well navigation no longer imports or needs those multi-Spire managers. The former Collective Unconscious/Cognitive Realm runtime was removed after Phase 10, including its typed state module and two JavaScript UI modules; its earlier migration entries remain below as historical records.
+Inventory was recalculated from the live tree on **2026-07-16**, starting on `codex/phases-17-20-advanced-equations` at exact commit `2bad7891ca88baa20c1a084c31ecd939e11b4eca`, then continuing on the documentation-only branch `codex/typescript-migration-roadmap`. The browser entry root is `index.html` → `assets/main.js`.
+
+- **60 authored `.ts` modules** (excluding `.d.ts`; none exist).
+- **60 build-generated `.js` siblings** of those TypeScript modules. These are runtime output, not backlog.
+- **179 active authored `.js` modules**, verified reachable through static local imports from `assets/main.js`.
+- **0 intentionally preserved legacy `.js` modules** with current repository evidence. The previously documented 19-file disabled Terrarium tree was deleted by `64ebc5e`.
+- **46 ambiguous or retirement/deletion-candidate `.js` modules**, all currently unreachable from the browser entry graph. They are excluded from the active backlog pending a separate decision.
+- **239 active authored modules** in total, so active module-count conversion is **25.1%** (`60 / 239`). The raw authored-language tree is 285 modules when the 46 decision candidates are included.
+- Supplemental authored-line snapshot: **7,390 TypeScript lines** and **84,802 active JavaScript lines**. Line counts do not represent migration difficulty.
+
+Method: recursively enumerate `assets/` and `scripts/`; exclude `node_modules/`, `dist/`, `build/`, generated output, dependencies, fixtures, and non-source material; remove each `.js` file with a same-path `.ts` sibling; parse static relative `import`/`export ... from` edges; traverse from `assets/main.js`; and audit unreachable files against tests, retirement documentation, HTML harnesses, and recent commits. The full classification, dependency evidence, 179-module coverage map, and 46-file retirement list are in [`docs/TypeScriptMigrationRoadmapInventory.md`](docs/TypeScriptMigrationRoadmapInventory.md).
+
+Phases 17–20 converted Sigma, Phi, Upsilon, and Tau in committed implementation `2bad789`; they are not prompt-only assignments. The retired `spireFloatingMenu` and `spireTabVisibility` TypeScript modules and the former Cognitive Realm typed state remain part of phase history but not the live source count.
 
 **Plan created:** 2026-07-13  
 **Repository:** `sethrimer3/TheroMathTD`  
 **Active game referred to as “Thero”:** this repository, not `sethrimer3/Thero_Idle_TD`.
 
-At the time this plan was created:
+At the time this plan was created (historical snapshot, not the current baseline):
 
 - The browser application is organized as JavaScript ES modules.
 - Electron starts from `electron/main.cjs`.
@@ -107,16 +119,15 @@ At the time this plan was created:
 
 ### Relevant structural work completed before this plan
 
-The following work is useful groundwork but is **not itself a TypeScript migration**:
+The following work was useful groundwork but is **not itself a TypeScript migration**. Some bullets are historical because the product-retirement commits later removed their files:
 
 - Primary tab behavior has already been extracted into `assets/uiTabManager.js`.
 - Tab lock behavior has been extracted into `assets/tabLockManager.js`.
-- Spire tab visibility behavior has been extracted into `assets/spireTabVisibility.js`.
-- Floating Spire menu behavior has been extracted into `assets/spireFloatingMenu.js`.
-- `assets/main.js` imports these modules and uses them as integration dependencies.
+- Spire tab visibility behavior was extracted into `assets/spireTabVisibility.js`, and the floating Spire menu into `assets/spireFloatingMenu.js`; both were later removed with multi-Spire navigation.
+- `assets/main.js` imported those modules at the time of Phase 1; it no longer does.
 - Agent-navigation documentation already distinguishes `assets/main.js` as an orchestration layer and discourages adding new gameplay logic there.
 
-No TypeScript conversion phase is recorded as complete in this plan.
+The original statement that no conversion phase was complete is superseded by the reconciled ledger and evidence below.
 
 ---
 
@@ -147,6 +158,129 @@ No TypeScript conversion phase is recorded as complete in this plan.
 | 18 | Phi advanced equation definition (`assets/towerEquations/advanced/phiEquation.js`) | COMPLETE | See Phase 18 section and Implementation Log entry below |
 | 19 | Upsilon advanced equation definition (`assets/towerEquations/advanced/upsilonEquation.js`) | COMPLETE | See Phase 19 section and Implementation Log entry below |
 | 20 | Tau advanced equation definition (`assets/towerEquations/advanced/tauEquation.js`) | COMPLETE | See Phase 20 section and Implementation Log entry below |
+
+---
+
+## 2026-07-16 Reconciled History and Long-Range Roadmap
+
+This section supersedes the old seven-item “Tentative Later Migration Areas” list and the stale next-step material in `TheroMathTD_TS_Migration_Plan.md`. Historical implementation sections and logs below remain authoritative evidence and are not renumbered. Exact future file coverage is normative in [`docs/TypeScriptMigrationRoadmapInventory.md`](docs/TypeScriptMigrationRoadmapInventory.md); future phases beyond Phase 21 are recommendations that must be re-inventoried before authorization.
+
+### Reconciled phase history
+
+“Valid now” assesses the historical scope, not whether the file still exists after product retirement.
+
+| Phase / label | Actual scope | Status | Commit or repository evidence | Valid now / conflict audit |
+|---|---|---|---|---|
+| 0 | Migration plan and handoff process | COMPLETE | `a4e29f3` created this plan | Valid historical foundation. |
+| 1 | TS infrastructure plus `uiTabManager`, `tabLockManager`, `spireFloatingMenu`, `spireTabVisibility` | COMPLETE | Typed sources introduced beginning `d62b98f`; plan implementation log | Valid at execution. The two multi-Spire owners were later deleted; no scope conflict. |
+| 2 | `formatting`, `mathText`, and typed-adapter `autoSave` | COMPLETE | Typed sources introduced beginning `40fa83f`; Phase 2 log/tests | Still valid and foundational. |
+| 3 | `assets/preferences` | COMPLETE | `072fe54`; Phase 3 log/tests | Still valid; mixed DOM/storage responsibilities remain a deferred design concern, not a migration conflict. |
+| Doc/tooling repair | Count correction, glob discovery, scalable TS output sync | COMPLETE | Plan/tooling history preceding `fae913a` | Still valid. Generated siblings remain intentional. |
+| 4 | All 32 tower data definitions, registry, and new owner types | COMPLETE | `fae913a` introduced `assets/data/towers/types.ts`; Phase 4 log | Still valid. Historical “~24 files” estimate was corrected to 32 definitions plus registry/type owner. |
+| 5A | `resourceState`, `spireResourceState`, `monetizationState` | COMPLETE | `3b268a4`; Phase 5A log | Still valid. |
+| 5B | Cognitive Realm state/schema | COMPLETE, later retired | `2e78ef0`; removal in `c1ab2a6` | Valid completed history; absent from live inventory and not a future prerequisite. |
+| Retirement compatibility | `saveCompatibility.ts` plus obsolete-Spire removal | COMPLETE product change | `b420cb9`, `64ebc5e` | Not a numbered migration phase. It changes the live backlog and invalidates old legacy counts. |
+| 6 | Post-retirement Spire/tower/Aleph persistence | COMPLETE | `fe18aaa` | Revised scope correctly followed retirement; no conflict. |
+| 7 | Aleph-chain upgrade state | COMPLETE | `5f18697` | Still valid and active. |
+| 8 | Tower blueprint presenter/base upgrade snapshot | COMPLETE | `e59f7ab` | Still valid; owns equation blueprint contracts used by Phases 9-25. |
+| 9 | Tower-variable discovery | COMPLETE | `a731dfc` and remote phase branch | Still valid. |
+| 10 | Tower-equation tooltip | COMPLETE | `b292606` and remote phase branch | Still valid. |
+| 11 | Master-equation derivation utility | COMPLETE | `73e3a11` | Still valid; stacked after post-retirement main. |
+| 12 | Blueprint shared dependency context | COMPLETE | `d8edefe` | Still valid; prerequisite for definition phases. |
+| 13 | Equation registry and lookup | COMPLETE | `4b87d9d` | Still valid. |
+| 14 | Mind Gate equation | COMPLETE | `3acc367` | Still valid. |
+| 15 | Shadow Gate equation | COMPLETE | `5df9001` | Still valid; narrow Codex adapter remains intentional. |
+| 16 | Advanced-equation barrel | COMPLETE | `7d2aa7b` | Still valid; all 15 re-export identities characterized. |
+| 17 | Sigma advanced equation | COMPLETE | `2bad789` | Valid committed implementation, not instruction-only. Shares one combined commit with 18-20; no missing prerequisite (8, 12, 16 were complete). |
+| 18 | Phi advanced equation | COMPLETE | `2bad789` | Valid committed implementation. Its selection by size was opportunistic but dependency-safe. |
+| 19 | Upsilon advanced equation | COMPLETE | `2bad789` | Valid committed implementation. No numbering collision. |
+| 20 | Tau advanced equation | COMPLETE | `2bad789` | Valid committed implementation. No earlier prerequisite is missing. |
+
+Phases 17-20 therefore keep their historical numbers and scopes. They were implemented together after Phase 16, fully tested in the combined commit, and need neither relocation nor renumbering. The roadmap resumes at Phase 21.
+
+### Standard implementation gate for every proposed phase
+
+Every future phase is behavior-preserving unless separately authorized. Every phase must:
+
+1. Re-inventory its exact files, imports, importers, generated siblings, and relevant subsystem guidance before editing.
+2. Add owner-defined interfaces/literal unions and runtime validation at JSON, storage, global, DOM dataset, and legacy-input boundaries. `any`, blanket assertions, suppressions, and global strictness weakening are not acceptable strategies.
+3. Preserve `.js` import specifiers and generate same-path `.js` siblings with the established `tsc` + `sync-ts-output.cjs` pipeline.
+4. Add deterministic characterization before or with conversion. Randomness must be controlled in tests; timers/animation frames must use a deterministic harness; save formats need malformed/legacy fixtures; DOM/Canvas phases need minimal fakes plus manual verification.
+5. Run `npm run typecheck`, `npm run build`, `npm run lint`, `npm run test:unit`, `npm test`, and `git diff --check`. Inspect generated sibling and `dist/` drift; commit only intentional phase output.
+6. Manually verify the phase-specific surface listed below. DOM/input/render phases require a browser console check and portrait-mobile viewport; audio requires playback/mute/volume checks; save phases require reload/legacy-save checks; application roots require browser plus Electron startup.
+7. Exclude balance, formula, visual redesign, save-key renaming, retired-system resurrection, bundler adoption, and unrelated cleanup. Completion requires exact export/object identity compatibility, deterministic tests, clean validation, honest manual-test reporting, updated counts, and a new single-phase authorization decision.
+
+### Proposed phase sequence
+
+Exact file lists and per-module risk notes are in the linked coverage appendix. “Consumer impact” identifies the direct high-value boundary, not every graph edge.
+
+| Phase | Status | Scope / purpose / approximate count | Prerequisites and expected owner contracts | Consumer impact and compatibility edits | Characterization, manual verification, risks, exclusions, completion focus |
+|---:|---|---|---|---|---|
+| 21 | **AUTHORIZED NEXT** | Rho income equation; 1 module | 8, 12, 16-20; Rho dynamic context, upgrade-state reads, sub-equation contexts | Advanced barrel and typed registry; presenter contract edits only if the live payload proves they belong there | Deterministic metadata/cost/prestige/rank/coercion/formatter tests; no manual UI required beyond optional equation display smoke; exclude all other definitions and consumers. |
+| 22 | **TENTATIVE NEAR-TERM** | Kappa→Lambda→Mu→Nu→Xi equation chain; 5 modules | 21; shared blueprint variable/result/context contracts | Advanced barrel/registry and Towers tab equation consumers; one contract steward, no duplicate local interfaces | Frozen-input formula/cost/lookup/cycle tests; optional in-game equation inspection; risk is cross-equation recursion/coercion. |
+| 23 | **TENTATIVE NEAR-TERM** | Omicron/Pi/Chi/Psi/Omega equations; 5 modules | 22 | Terminal equation entity/count/HP context shapes owned by presenter/context | Same barrel/registry; compatibility limited to type-only imports and proven presenter additions | Formula, fallback, callback-order, `NaN`/Infinity, and lookup tests; exclude simulations. |
+| 24 | **TENTATIVE NEAR-TERM** | Basic and Infinity grouped equations; 2 modules | 23 | Foundational tower equation and Infinity term contracts | Registry and all dependent equations/Towers tab | Registry identity/order plus per-tower golden cases; risk is broad foundational fan-out; exclude Greek monolith. |
+| 25 | **TENTATIVE NEAR-TERM** | Greek grouped equation monolith; 1 module | 24 | Per-tower variable/result types reusing the shared owner contract | Completes authored equation definitions consumed by registry/Towers tab | Characterize each tower independently before conversion; manual all-equation overlay pass; do not redesign/split formulas during migration. |
+| 26 | **TENTATIVE NEAR-TERM** | Pure tokens, units, geometry, wave codec, playfield facades, build data, Aleph registry; 11 modules | 25 | `Wave`, `EnemyGroup`, points, units, token spans, numeric helpers, Aleph ids | 31 importers for units, 13 for playfield formatting, level/editor and tower consumers | Edge/malformed/round-trip/property tests; no browser except wave-editor smoke; risk is preserving coercive legacy codec behavior. |
+| 27 | **TENTATIVE NEAR-TERM** | Gameplay config loaders, levels, configuration, enemies; 4 modules | 26 and Phase 4 tower data | Runtime-validated config/level/wave/enemy/gem schemas | Main, playfield, managers, achievements, crafting; compatibility adapters for untyped callers | Fetch/global/dynamic-import fallback tests, malformed JSON/config fixtures, seeded enemy helpers; browser config load; exclude balance changes. |
+| 28 | **TENTATIVE NEAR-TERM** | Equipment, tutorial, Powder state/queue/log/persistence; 6 modules | 26-27 and existing save owners | Equipment/tutorial/Powder snapshots and legacy validators | Autosave, main, Towers tab, Powder UI | Round-trip plus malformed/old saves, queue ordering, event log retention; manual reload; never trust or rename saved keys. |
+| 29 | **TENTATIVE NEAR-TERM** | Powder grid/palette/data utilities; 3 modules | 26, 28 | Cell/material/wall/mote/palette and narrow simulation adapter types | PowderSimulation and later palette/render consumers | Small-grid golden states, bounds, palette normalization, controlled randomness; exclude PowderSimulation class. |
+| 30 | **TENTATIVE NEAR-TERM** | `PowderSimulation`; 1 module | 29 | Owner-defined simulation state, cell buffers, lifecycle, persistence snapshot, viewport API | 13 direct importers including color, main, UI, render layers | Seeded step/render/save characterization, timer/RAF fakes, manual touch/resize/save; critical monolith risk; no feature extraction unless needed for type ownership and separately documented. |
+| 31 | **TENTATIVE NEAR-TERM** | Palette, performance, audio, lifecycle, rendering helper; 6 modules | 26, 30 | Palette/RGB, performance segment, audio manifest/settings, lifecycle interfaces | 36 palette importers plus playfield/tower/audio/main consumers | Palette/storage/audio/timer tests; manual theme switching and sound controls; preserve lazy browser behavior. |
+| 32 | **TENTATIVE NEAR-TERM** | Tower equipment/loadout/upgrade overlay leaves; 3 modules | 21-28, 31 | Controller options, DOM element resolvers, callbacks, upgrade overlay payload | Sole owner consumer `towersTab.js` | DOM/timer/equipment/loadout characterization and portrait overlays; exclude Towers tab itself. |
+| 33 | **TENTATIVE NEAR-TERM** | Towers tab owner; 1 module | 25-28, 31-32 | Canonical runtime tower, upgrade, lookup, equation context and public controller types | 35 importers across towers, playfield, UI, crafting, main | State/save/equation/DOM golden tests plus browser upgrade/loadout pass; critical 2,271-line owner; no balance or UI redesign. |
+| 34 | **TENTATIVE LATER** | Shared helpers and Alpha/Beta/Gamma; 5 modules | 26-27, 31, 33 | Tower/projectile/burst/render-state contracts | TowerManager, playfield, projectile renderer and later towers | Seeded update/draw/damage lifecycle tests and desktop/mobile placement; exclude later towers. |
+| 35 | **TENTATIVE LATER** | Delta through Iota mid-tier towers; 6 modules | 34 | Mid-tier orbit/beam/chain/integration states | TowerManager, playfield, sprite/projectile systems | Per-tower deterministic math/state/audio tests and manual placement; high Canvas/audio risk. |
+| 36 | **TENTATIVE LATER** | Kappa through Xi simulation chain; 5 modules | 34-35 | Mine/beam/chain/target/teardown states | Playfield update, damage and renderer systems | Seeded lifecycle/teardown/cross-tower tests; manual upgrade and wave pass; preserve formulas. |
+| 37 | **TENTATIVE LATER** | Omicron/Pi/Sigma/Tau/Upsilon simulations; 5 modules | 34-36 | Geometry/fleet/stored-damage state types | TowerManager, dispatch, sprite renderer, playfield | Golden entity transitions/audio and render-call traces; manual all-five tower pass. |
+| 38 | **TENTATIVE LATER** | Phi/Chi/Psi/Omega/Infinity/T1/T2; 7 modules | 34-37 | Terminal/experimental tower state and effect types | Completes tower types consumed by playfield/managers/renderers | Seeded spawn/HP-slice/thrall/merge tests; manual placement; explicitly exclude unreachable graph towers. |
+| 39 | **TENTATIVE LATER** | Powder/Well controllers and DOM/viewport owners; 7 modules | 28-31 | Controllers consume the Powder owner API, preference/persistence and viewport types | Main and Well tab | DOM/resize/tier/drop/touch tests; portrait and landscape manual pass; exclude simulation formula changes. |
+| 40 | **TENTATIVE LATER** | Playfield geometry/preferences/background systems; 6 modules | 26-31, 33 | Normalized points, paths, viewport, playfield preferences, background entities | `playfield.js`, input, rendering | Geometry invariants, storage and controlled-random tests; manual orientation/track checks. |
+| 41 | **TENTATIVE LATER** | Enemy metadata and specialist systems; 10 modules | 27, 34-40 | Shared enemy/effect/boss state types owned by enemy/playfield boundaries | Enemy update/damage/render consumers | Seeded state-machine tests per specialist; manual representative waves; do not migrate unreachable Integral scaffold. |
+| 42 | **TENTATIVE LATER** | Combat, projectile, wave, drop and transition systems; 10 modules | 27, 34-41 | Damage events, projectiles, queue entries, drops, transition states | Playfield root, managers, renderers | Update-order, mutation, collision, queue and seeded drop tests; manual full wave; high shared-mutation risk. |
+| 43 | **TENTATIVE LATER** | Connections, tower dispatch/interaction, effects, reset; 6 modules | 31, 33-42 | Narrow playfield context capabilities and reset lifecycle | Playfield root/managers/audio/UI | Interaction/reset/effect/audio trace tests; manual drag/touch/reset; no new global capability bag. |
+| 44 | **TENTATIVE LATER** | Tower/combat/stats/lifecycle managers, orchestration, developer service; 6 modules | 27, 33-43 | Consolidated owner interfaces for entities, state managers, level lifecycle and DI | Playfield root plus level/UI consumers | Dependency-injection contract tests, lifecycle order and developer-tool cases; manual level start/end; critical convergence point. |
+| 45 | **TENTATIVE LATER** | Gesture/input and playfield UI; 8 modules | 31, 33, 40-44 | Pointer/touch gesture, HUD, menu, wheel and tally contracts | Playfield root | Mouse/touch event harness, DOM timers, accessibility; mandatory portrait touch and desktop pointer verification. |
+| 46 | **TENTATIVE LATER** | Background effects and background layer; 8 modules | 26, 31, 40-45 | Canvas effect lifecycle and render-state contracts | CanvasRenderer/background layer | Seeded snapshot/render-call tests and visual browser comparisons; high Canvas cache/randomness risk. |
+| 47 | **TENTATIVE LATER** | Entity/render layers, CanvasRenderer, RenderCoordinator; 8 modules | 31, 34-46 | Frame/render context, Canvas entities, layer contracts, RAF scheduler | Playfield root and main developer controls | Layer-order and canvas-call traces, RAF limit tests, manual graphics modes; no visual redesign. |
+| 48 | **TENTATIVE LATER** | `assets/playfield.js`; 1 module | 27, 31, 33-47 | Typed `SimplePlayfield`, configuration injection, public lifecycle API | Main and level preview | Characterize configure/update/draw/reset/input order and public method surface; browser full-level + touch; no broad architectural rewrite. |
+| 49 | **TENTATIVE LATER** | Wave editor and level/progression controllers; 9 modules | 26-28, 45, 48 | Level/editor forms, preview, story, combat/outcome contracts | Main and developer workflows | Wave round trips, DOM/Canvas/timer flows; manual editor import/export and level lifecycle. |
+| 50 | **TENTATIVE LATER** | Tower tree/matrix/library/stats/crafting UI; 5 modules | 28, 31, 33-39, 48 | Presenter/controller types consuming canonical tower/equipment state | Main, playfield stats and crafting | DOM/Canvas/save overlay tests and manual crafting/upgrade/tree pass. |
+| 51 | **TENTATIVE LATER** | Codex, achievements, boosts; 3 modules | 27-28, 31, 44, 48 | Codex entries, proof/achievement state, monetization presenters | Main, configuration, orchestration | Seeded proof/effect and DOM tests; manual Codex/achievements; ensure retired Terrarium stays absent. |
+| 52 | **TENTATIVE LATER** | Small application-shell presenters/helpers; 9 modules | 31, 39, 45, 48 | DOM/layout/startup/resource/spire controller option types | Main | DOM/accessibility/resize tests and portrait startup/options pass; compatibility-only edits. |
+| 53 | **TENTATIVE LATER** | Developer controls/mode, field notes, scrollbar, playfield menu; 5 modules | 31, 44-52 | Central browser-global declarations and developer/menu controller types | Main and playfield developer hooks | Global/timer/Canvas/audio tests plus browser developer-mode pass; do not revive retired managers. |
+| 54 | **TENTATIVE LATER** | Main responsibility-extraction gate; 0 backlog conversions | All active modules except `main.js` typed | Extract only still-owned cohesive responsibilities into new typed owners; define composition contract | Compatibility edits inside `assets/main.js` are expected, but it remains `.js` | Characterize startup order and globals before extraction; browser/Electron; completion means residual main is composition-only. No extension conversion yet. |
+| 55 | **TENTATIVE LATER** | Final `assets/main.js` → `assets/main.ts`; 1 module | 54 and every prior active-module phase | Typed application composition/startup/window API | `index.html` keeps loading generated `assets/main.js` | Startup order/global/API tests, browser portrait/desktop, save reload, full level, audio, and Electron. Complete only with no broad assertions and no owned feature logic left. |
+
+Phases 21-55 cover all 179 active authored JavaScript modules. There are **35 roadmap phases**: one authorized conversion phase, 33 tentative conversion phases, and one tentative zero-module extraction gate (Phase 54). Thus 34 phases assign backlog modules and one prepares the final root without double-counting it. No module is assigned twice.
+
+### Critical path
+
+The most likely controlling chain is:
+
+`equation contracts (21-25)` → `pure/config/enemy contracts (26-28)` → `Powder owner needed by palette (29-31)` → `tower leaf UI and Towers tab owner (32-33)` → `active tower simulations (34-38)` → `playfield systems/managers/input/rendering (40-47)` → `assets/playfield.js (48)` → `remaining UI/application controllers (49-53)` → `main extraction (54)` → `assets/main.ts (55)`.
+
+The early leverage modules are `assets/gameUnits.js` (31 importers), `assets/colorSchemeUtils.js` (36), `assets/towersTab.js` (35), `assets/enemies.js` (15), and `assets/playfield/utils/formatting.js` (13). Their contracts must be owner-defined once and consumed downstream. The apparent detour through Powder is real: `colorSchemeUtils.js` imports PowderSimulation behavior, while most tower/render modules import `colorSchemeUtils.js`.
+
+### Parallelizable work after contracts freeze
+
+- Phases 22 and 23 can be divided by equation file only after Phase 21 proves the shared presenter/context surface; one designated contract owner must make any shared `towerBlueprintPresenter.ts` edit.
+- Phase 28 state/persistence work and Phase 32 leaf DOM controllers are file-disjoint after Phase 27/31, but they should not invent overlapping tower or save types.
+- Tower families 34-38 are file-disjoint and can be handled by separate agents after Phases 31 and 33 freeze palette, tower, enemy, and unit contracts. Shared helper files belong only to Phase 34.
+- Root UI groups 49-53 can proceed in parallel after Phase 48 if each agent stays within its files and imports owner types. The central ambient browser-global declaration, if needed, belongs to Phase 53 alone.
+- Playfield phases 40-44 should not be parallelized initially: they converge on shared enemy/projectile/playfield-context contracts. Parallel file work becomes safe only after the earlier phase in that chain establishes and owns those types. Rendering 46 must precede the layer/compositor contracts in 47.
+
+### Deletion before migration
+
+The 46 unreachable JavaScript files are not migration backlog. The strongest retirement candidates are the 17-file Shin/Cardinal Warden cluster (explicitly required to be unreachable by `scripts/test-retired-spires.cjs`), its 12-file orphaned fractal support cluster, the 10-file unintegrated graph-tower runtime, and seven individual orphan managers/effects/scaffolds. The exact files and evidence are in the inventory appendix. Do not delete or migrate them under a TypeScript phase; authorize a separate product retirement/integration audit first.
+
+### Single next authorized phase
+
+Only Phase 21 is authorized. Later phases are sequencing hypotheses, not implementation authority.
+
+**Phase 21 exact scope:** convert only `assets/towerEquations/advanced/rhoEquation.js` to strict `assets/towerEquations/advanced/rhoEquation.ts`; regenerate its compatibility sibling; make only evidence-required type-contract and test/documentation edits.
+
+**Acceptance criteria:** preserve the `rho` export identity, all metadata/strings, two-variable order, costs, upgrade-state lookup, optional helper timing, strict `prestige === true` branch, unspent-Thero normalization, logarithmic/non-prestige branches, rank handling, finite/negative fallbacks, result math, formatter call order/output, advanced-barrel identity, registry lookup, and `.js` specifiers. Tests must cover missing/malformed states, getter/coercion edges, both prestige modes, `unspentThero` boundaries, both variables' sub-equations, costs, results, and base-equation formatting. Add no `any`, blanket assertion, suppression, redesign, or another converted definition. Run the standard validation gate; optional browser equation-display verification must be reported honestly. Do not begin Phase 21 during this planning task.
 
 ---
 
@@ -924,9 +1058,9 @@ Suite total: **78/78 passing** (58 pre-existing from Phases 2–5A + 20 new).
 
 ---
 
-## Tentative Later Migration Areas
+## Tentative Later Migration Areas (SUPERSEDED 2026-07-16)
 
-These are not authorized active phases. Their order must be reevaluated after Phase 1.
+The original sketch below is retained as historical planning evidence only. It is superseded by the dependency-aware Phases 21-55 and the module coverage appendix above. None of the later phases is authorized merely because it appears in either list.
 
 Potential later slices include:
 
