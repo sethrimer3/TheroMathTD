@@ -115,7 +115,7 @@ if (isLowGraphicsModeActive()) {
 ```
 
 ### `autoSave.js` - Persistence System
-**Purpose:** Auto-save game state, handle offline progression
+**Purpose:** Auto-save active game state
 
 **Key Functions:**
 - `configureAutoSave()` - Setup auto-save interval

@@ -1,8 +1,8 @@
 ﻿/**
  * Powder Spire simulation utilities and shared mote palette helpers.
  *
- * The Powder Spire is an idle game whose falling-sand physics produce
- * Aleph glyphs (ℵ) used to alter tower equations.
+ * The Powder Spire uses falling-sand physics to produce Aleph glyphs (ℵ)
+ * that alter tower equations through active play.
  *
  * Static constants and pure helpers live in powderTowerData.js.
  */
@@ -110,12 +110,7 @@ export class PowderSimulation {
       : 3;
     this.maxGrainsBase = options.maxGrains && options.maxGrains > 0 ? options.maxGrains : 1600;
     this.maxGrains = this.maxGrainsBase;
-    this.baseSpawnInterval = options.baseSpawnInterval && options.baseSpawnInterval > 0
-      ? options.baseSpawnInterval
-      : 180;
-
     this.onHeightChange = typeof options.onHeightChange === 'function' ? options.onHeightChange : null;
-    this.onIdleBankChange = typeof options.onIdleBankChange === 'function' ? options.onIdleBankChange : null;
 
     this.width = 0;
     this.height = 0;
@@ -125,16 +120,6 @@ export class PowderSimulation {
     this.grains = [];
     this.heightInfo = { normalizedHeight: 0, duneGain: 0, largestGrain: 0 };
     this.pendingDrops = [];
-    this.idleBank = 0;
-    this.idleAccumulator = 0;
-    this.idleDropBuffer = 0; // Track how many idle conversions still need to spawn into the basin.
-    this.idleDropAccumulator = 0; // Retain fractional idle releases so drops respect the configured rate.
-    const fallbackIdleDrainRate = Number.isFinite(options.fallbackIdleDrainRate)
-      ? Math.max(0, options.fallbackIdleDrainRate)
-      : 0;
-    this.idleDrainRate = Number.isFinite(options.idleDrainRate)
-      ? Math.max(0, options.idleDrainRate)
-      : fallbackIdleDrainRate;
     this.maxDropSize = 1;
 
     // Track the camera transform so the basin view can pan and zoom smoothly.
@@ -232,8 +217,6 @@ export class PowderSimulation {
 
     this.defaultProfile = {
       grainSizes: [...this.grainSizes],
-      idleDrainRate: this.idleDrainRate,
-      baseSpawnInterval: this.baseSpawnInterval,
       palette: {
         ...this.motePalette,
         stops: Array.isArray(this.motePalette.stops)
@@ -447,8 +430,6 @@ export class PowderSimulation {
     this.pendingDrops = [];
     this.spawnTimer = 0;
     this.lastFrame = 0;
-    this.idleDropBuffer = 0; // Remove any leftover idle conversions when the basin resets.
-    this.idleDropAccumulator = 0; // Reset the idle cadence so fresh runs start cleanly.
     this.scrollOffsetCells = 0;
     this.highestTotalHeightCells = 0;
     this.heightInfo = { normalizedHeight: 0, duneGain: 0, largestGrain: 0 };
@@ -502,14 +483,6 @@ export class PowderSimulation {
     this.onWallMetricsChange(metrics || this.getWallMetrics());
   }
 
-  notifyIdleBankChange() {
-    if (typeof this.onIdleBankChange !== 'function') {
-      return;
-    }
-    const bank = Number.isFinite(this.idleBank) ? Math.max(0, this.idleBank) : 0;
-    this.onIdleBankChange(bank);
-  }
-
   getWallMetrics() {
     return getWallMetrics(this);
   }
@@ -530,7 +503,6 @@ export class PowderSimulation {
     this.spawnEnabled = Boolean(enabled);
     if (!this.spawnEnabled) {
       this.spawnTimer = 0;
-      this.idleDropAccumulator = 0;
       if (options.clearPendingDrops) {
         this.pendingDrops = [];
       }
@@ -568,13 +540,8 @@ export class PowderSimulation {
 
     this.updateStars(delta);
     if (this.spawnEnabled) {
-      this.convertIdleBank(delta);
-      this.advanceSpawnTimer(delta); // Continuously queue natural mote drops so the basin never starves between enemy events.
-
       const spawnBudget = Math.max(1, Math.ceil(delta / 12));
-      const idleReleased = this.releaseIdleDrops(delta, spawnBudget); // Emit idle conversions using the earned rate budget.
-      const remainingBudget = Math.max(0, spawnBudget - idleReleased); // Preserve headroom for combat or ambient drops.
-      this.spawnPendingDrops(remainingBudget);
+      this.spawnPendingDrops(spawnBudget);
     }
 
     const iterations = Math.max(1, Math.min(4, Math.round(delta / 16)));
@@ -587,128 +554,6 @@ export class PowderSimulation {
     this.render();
   }
 
-  convertIdleBank(delta) {
-    if (!Number.isFinite(delta) || delta <= 0 || this.idleBank <= 0) {
-      if (this.idleBank <= 0) {
-        this.idleDropBuffer = 0; // Purge buffered conversions so falling motes halt the instant the bank is empty.
-        this.idleDropAccumulator = 0;
-        this.idleAccumulator = 0; // Clear fractional progress so the counter stops when the bank is empty.
-      }
-      return 0;
-    }
-
-    const rate = Math.max(0, this.idleDrainRate) / 1000;
-    if (rate <= 0) {
-      return 0;
-    }
-
-    const pending = this.idleAccumulator + delta * rate;
-    const availableBank = Math.floor(Math.max(0, this.idleBank)); // Only convert whole motes so fractional rewards remain banked.
-    const toQueue = Math.max(0, Math.min(availableBank, Math.floor(pending)));
-    this.idleAccumulator = pending - toQueue;
-
-    if (toQueue <= 0) {
-      return 0;
-    }
-
-    this.idleBank = Math.max(0, this.idleBank - toQueue);
-    if (this.idleBank < 1e-6) {
-      this.idleBank = 0;
-    }
-    this.notifyIdleBankChange();
-    this.idleDropBuffer = Math.max(0, this.idleDropBuffer + toQueue); // Store the converted motes until the release cadence emits them.
-    return toQueue;
-  }
-
-  releaseIdleDrops(delta, limit = Infinity) {
-    if (!Number.isFinite(delta) || delta <= 0) {
-      return 0;
-    }
-
-    const availableBuffer = Math.floor(Math.max(0, this.idleDropBuffer)); // Respect integer release counts to avoid over-spawning.
-    if (availableBuffer <= 0) {
-      if (this.idleDropBuffer <= 0 && this.idleBank <= 0) {
-        this.idleDropAccumulator = 0; // Reset the release timer once all idle motes have been dispatched.
-        this.idleDropBuffer = 0;
-      }
-      return 0;
-    }
-
-    const rate = Math.max(0, this.idleDrainRate) / 1000;
-    if (rate <= 0) {
-      return 0;
-    }
-
-    this.idleDropAccumulator += delta * rate;
-
-    const allowedLimit = Number.isFinite(limit) ? Math.max(0, Math.floor(limit)) : availableBuffer; // Clamp to finite release budgets while honouring the buffer.
-    const allowed = Math.max(0, Math.min(availableBuffer, allowedLimit));
-    let released = 0;
-
-    while (released < allowed && this.idleDropAccumulator >= 1 && this.grains.length < this.maxGrains) {
-      this.spawnGrain({ size: 1, source: 'idle' }); // Spawn idle motes through the normal grain generator for consistency.
-      this.idleDropAccumulator -= 1;
-      released += 1;
-    }
-
-    if (released > 0) {
-      this.idleDropBuffer = Math.max(0, this.idleDropBuffer - released);
-      if (this.idleDropBuffer < 1e-6) {
-        this.idleDropBuffer = 0;
-      }
-    }
-
-    if (this.idleDropBuffer <= 0 && this.idleBank <= 0) {
-      this.idleDropAccumulator = 0; // Prevent runaway accumulation when the bank is exhausted.
-      this.idleDropBuffer = 0;
-    }
-
-    return released;
-  }
-
-  advanceSpawnTimer(delta) {
-    // Advance the ambient spawn clock so motes trickle into the basin even without combat drops.
-    if (!Number.isFinite(delta) || delta <= 0) {
-      return 0;
-    }
-    this.spawnTimer += delta;
-
-    const interval = Math.max(16, this.getSpawnInterval());
-    if (interval <= 0) {
-      this.spawnTimer = 0;
-      return 0;
-    }
-
-    const capacity = Math.max(0, this.maxGrains - this.grains.length - this.pendingDrops.length);
-    if (capacity <= 0) {
-      this.spawnTimer = Math.min(this.spawnTimer, interval);
-      return 0;
-    }
-
-    const idleBankPositive = Number.isFinite(this.idleBank) && this.idleBank > 1e-6;
-    const idleDrainActive = Number.isFinite(this.idleDrainRate) && this.idleDrainRate > 0;
-    const ambientEnabled = this.flowOffset > 0 && idleBankPositive && idleDrainActive;
-    // Keep ambient motes in sync with the configured fall rate so a zero rate fully halts the cascade.
-
-    if (!ambientEnabled) {
-      this.spawnTimer = Math.min(this.spawnTimer, interval);
-      return 0;
-    }
-
-    let spawned = 0;
-    while (this.spawnTimer >= interval && spawned < capacity) {
-      this.spawnTimer -= interval;
-      this.pendingDrops.push({ size: this.chooseGrainSize(), source: 'ambient' }); // Seed natural motes using the weighted grain distribution.
-      spawned += 1;
-    }
-
-    if (spawned >= capacity) {
-      this.spawnTimer = Math.min(this.spawnTimer, interval);
-    }
-
-    return spawned;
-  }
-
   spawnPendingDrops(limit = 1) {
     if (!this.pendingDrops.length || !this.cols || !this.rows) {
       return;
@@ -717,15 +562,8 @@ export class PowderSimulation {
     if (remaining <= 0) {
       return;
     }
-    const idleDrainActive = Number.isFinite(this.idleDrainRate) && this.idleDrainRate > 0;
-    const allowAmbient =
-      idleDrainActive && this.flowOffset > 0 && Number.isFinite(this.idleBank) && this.idleBank > 1e-6;
     while (remaining > 0 && this.pendingDrops.length && this.grains.length < this.maxGrains) {
       const drop = this.pendingDrops[0];
-      if (drop && drop.source === 'ambient' && !allowAmbient) {
-        this.pendingDrops.shift(); // Discard stale ambient drops so idle pacing stays accurate.
-        continue;
-      }
       this.pendingDrops.shift();
       this.spawnGrain(drop);
       remaining -= 1;
@@ -754,14 +592,6 @@ export class PowderSimulation {
     this.pendingDrops.push(pendingDrop);
   }
 
-  addIdleMotes(amount) {
-    if (!Number.isFinite(amount) || amount <= 0) {
-      return;
-    }
-    this.idleBank = Math.max(0, this.idleBank + amount);
-    this.notifyIdleBankChange();
-  }
-
   clampGrainSize(size) {
     const normalized = Number.isFinite(size) ? Math.max(1, Math.round(size)) : 1;
     return Math.max(1, Math.min(normalized, this.maxDropSize || normalized));
@@ -772,13 +602,6 @@ export class PowderSimulation {
     const scale = Number.isFinite(this.collisionScale) && this.collisionScale > 0 ? this.collisionScale : 1;
     const scaled = normalized * scale;
     return Math.max(1, Math.round(scaled));
-  }
-
-  getSpawnInterval() {
-    if (!this.stabilized) {
-      return this.baseSpawnInterval * 1.25;
-    }
-    return this.baseSpawnInterval / Math.max(0.6, 1 + this.flowOffset * 0.45);
   }
 
   getViewportTopRowCells() {
@@ -1548,11 +1371,9 @@ export class PowderSimulation {
     if (!this.defaultProfile) {
       return null;
     }
-    const { grainSizes, idleDrainRate, baseSpawnInterval, palette } = this.defaultProfile;
+    const { grainSizes, palette } = this.defaultProfile;
     return {
       grainSizes: Array.isArray(grainSizes) ? [...grainSizes] : null,
-      idleDrainRate,
-      baseSpawnInterval,
       palette: palette
         ? {
             ...palette,
@@ -1580,18 +1401,6 @@ export class PowderSimulation {
       if (normalized.length) {
         this.grainSizes = normalized;
       }
-    }
-
-    if (Number.isFinite(targetProfile.idleDrainRate)) {
-      this.idleDrainRate = Math.max(0, targetProfile.idleDrainRate);
-    } else if (targetProfile.idleDrainRate === null && this.defaultProfile) {
-      this.idleDrainRate = this.defaultProfile.idleDrainRate;
-    }
-
-    if (Number.isFinite(targetProfile.baseSpawnInterval) && targetProfile.baseSpawnInterval > 0) {
-      this.baseSpawnInterval = targetProfile.baseSpawnInterval;
-    } else if (targetProfile.baseSpawnInterval === null && this.defaultProfile) {
-      this.baseSpawnInterval = this.defaultProfile.baseSpawnInterval;
     }
 
     if (targetProfile.palette) {
@@ -2006,7 +1815,6 @@ export class PowderSimulation {
   _synthesizeRectangleState(state) {
     // Rectangle-based mote restoration: Fill from the basin floor and respect wall insets.
     const savedMoteCount = Math.max(0, Math.round(state.moteCount || 0));
-    const normalizedIdleBank = Math.max(0, normalizeFiniteNumber(state.idleBank, 0));
     const compactCols = Number.isFinite(state?.compactHeightLine?.cols)
       ? Math.max(0, Math.round(state.compactHeightLine.cols))
       : 0;
@@ -2017,7 +1825,6 @@ export class PowderSimulation {
         ...state,
         grains: [],
         pendingDrops: [],
-        idleBank: normalizedIdleBank,
         moteCount: 0,
       };
     }
@@ -2047,7 +1854,6 @@ export class PowderSimulation {
         ...state,
         grains: [],
         pendingDrops: [],
-        idleBank: normalizedIdleBank,
         moteCount: 0,
       };
     }
@@ -2058,7 +1864,6 @@ export class PowderSimulation {
         ...state,
         grains: [],
         pendingDrops: [],
-        idleBank: normalizedIdleBank,
         moteCount: 0,
       };
     }
@@ -2078,7 +1883,6 @@ export class PowderSimulation {
         ...state,
         grains: [],
         pendingDrops: [],
-        idleBank: normalizedIdleBank,
         moteCount: 0,
       };
     }
@@ -2119,7 +1923,6 @@ export class PowderSimulation {
       ...state,
       grains: limitedGrains,
       pendingDrops: [],
-      idleBank: normalizedIdleBank,
       moteCount: limitedGrains.length,
       nextId: Math.max(synthesizedId, this.nextId || synthesizedId),
     };
@@ -2192,10 +1995,6 @@ export class PowderSimulation {
     if (shouldCompact) {
       const compact = this.computeCompactHeightLine();
       return {
-        idleBank: Math.max(0, normalizeFiniteNumber(this.idleBank, 0)),
-        idleAccumulator: Math.max(0, normalizeFiniteNumber(this.idleAccumulator, 0)),
-        idleDropBuffer: Math.max(0, normalizeFiniteInteger(this.idleDropBuffer, 0)),
-        idleDropAccumulator: Math.max(0, normalizeFiniteNumber(this.idleDropAccumulator, 0)),
         spawnTimer: Math.max(0, normalizeFiniteNumber(this.spawnTimer, 0)),
         scrollOffsetCells: Math.max(0, normalizeFiniteInteger(this.scrollOffsetCells, 0)),
         highestTotalHeightCells: Math.max(0, normalizeFiniteInteger(this.highestTotalHeightCells ?? 0, 0)),
@@ -2204,8 +2003,6 @@ export class PowderSimulation {
         flowOffset: Math.max(0, normalizeFiniteNumber(this.flowOffset, 0)),
         stabilized: !!this.stabilized,
         nextId: Math.max(1, normalizeFiniteInteger(this.nextId, 1)),
-        idleDrainRate: Math.max(0, normalizeFiniteNumber(this.idleDrainRate, 0)),
-        baseSpawnInterval: Math.max(16, normalizeFiniteNumber(this.baseSpawnInterval, 180)),
         grainSizes: Array.isArray(this.grainSizes) ? this.grainSizes.map((size) => Math.max(1, normalizeFiniteInteger(size, 1))) : [],
         wallInsetLeftCells: Math.max(0, normalizeFiniteInteger(this.wallInsetLeftCells, 0)),
         wallInsetRightCells: Math.max(0, normalizeFiniteInteger(this.wallInsetRightCells, 0)),
@@ -2221,10 +2018,6 @@ export class PowderSimulation {
     return {
       grains,
       pendingDrops,
-      idleBank: Math.max(0, normalizeFiniteNumber(this.idleBank, 0)),
-      idleAccumulator: Math.max(0, normalizeFiniteNumber(this.idleAccumulator, 0)),
-      idleDropBuffer: Math.max(0, normalizeFiniteInteger(this.idleDropBuffer, 0)),
-      idleDropAccumulator: Math.max(0, normalizeFiniteNumber(this.idleDropAccumulator, 0)),
       spawnTimer: Math.max(0, normalizeFiniteNumber(this.spawnTimer, 0)),
       scrollOffsetCells: Math.max(0, normalizeFiniteInteger(this.scrollOffsetCells, 0)),
       highestTotalHeightCells: Math.max(0, normalizeFiniteInteger(this.highestTotalHeightCells ?? 0, 0)),
@@ -2233,8 +2026,6 @@ export class PowderSimulation {
       flowOffset: Math.max(0, normalizeFiniteNumber(this.flowOffset, 0)),
       stabilized: !!this.stabilized,
       nextId: Math.max(1, normalizeFiniteInteger(this.nextId, grains.length + 1)),
-      idleDrainRate: Math.max(0, normalizeFiniteNumber(this.idleDrainRate, 0)),
-      baseSpawnInterval: Math.max(16, normalizeFiniteNumber(this.baseSpawnInterval, 180)),
       grainSizes: Array.isArray(this.grainSizes) ? this.grainSizes.map((size) => Math.max(1, normalizeFiniteInteger(size, 1))) : [],
       wallInsetLeftCells: Math.max(0, normalizeFiniteInteger(this.wallInsetLeftCells, 0)),
       wallInsetRightCells: Math.max(0, normalizeFiniteInteger(this.wallInsetRightCells, 0)),
@@ -2277,14 +2068,6 @@ export class PowderSimulation {
       if (sizes.length) {
         this.grainSizes = sizes;
       }
-    }
-
-    if (Number.isFinite(state.idleDrainRate) && state.idleDrainRate >= 0) {
-      this.idleDrainRate = Math.max(0, state.idleDrainRate);
-    }
-
-    if (Number.isFinite(state.baseSpawnInterval) && state.baseSpawnInterval > 0) {
-      this.baseSpawnInterval = Math.max(16, state.baseSpawnInterval);
     }
 
     if (Number.isFinite(state.wallGapCellsTarget) && state.wallGapCellsTarget > 0) {
@@ -2467,10 +2250,6 @@ export class PowderSimulation {
       this.updateMaxDropSize();
     }
 
-    this.idleBank = Math.max(0, normalizeFiniteNumber(state.idleBank, 0));
-    this.idleAccumulator = Math.max(0, normalizeFiniteNumber(state.idleAccumulator, 0));
-    this.idleDropBuffer = Math.max(0, normalizeFiniteInteger(state.idleDropBuffer, 0));
-    this.idleDropAccumulator = Math.max(0, normalizeFiniteNumber(state.idleDropAccumulator, 0));
     this.spawnTimer = Math.max(0, normalizeFiniteNumber(state.spawnTimer, 0));
     this.scrollOffsetCells = Math.max(0, normalizeFiniteInteger(state.scrollOffsetCells, 0));
     this.highestTotalHeightCells = Math.max(
@@ -2519,7 +2298,6 @@ export class PowderSimulation {
     this.updateHeightFromGrains(true);
     this.render();
     this.notifyWallMetricsChange();
-    this.notifyIdleBankChange();
     this.notifyViewTransformChange();
     return true;
   }

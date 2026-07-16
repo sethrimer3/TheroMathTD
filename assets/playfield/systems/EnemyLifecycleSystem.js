@@ -264,7 +264,7 @@ export function processEnemyDefeat(enemy) {
 
 /**
  * Handle a victory condition: play audio, update UI state, award energy reward,
- * call the external onVictory callback with full stats, and refresh idle values.
+   * call the external onVictory callback with full stats, and refresh result values.
  * Invoked by the CombatStateManager's onVictory callback after all waves are complete
  * and the enemies array is empty. The manager has already set combatActive=false and
  * resolvedOutcome='victory' by the time this runs.

@@ -7,7 +7,6 @@ const DEVELOPER_RESET_CONFIRM_LABEL = 'Are you sure?';
 const DEVELOPER_RESET_CONFIRM_WINDOW_MS = 5000;
 const DEVELOPER_RESET_RELOAD_DELAY_MS = 900;
 const DEVELOPER_MODE_STORAGE_KEY = 'glyph-defense-idle:developer-mode';
-const DEVELOPER_RESOURCE_GRANT = Number.MAX_SAFE_INTEGER;
 
 export function createDeveloperModeManager(options = {}) {
   const {
@@ -25,7 +24,6 @@ export function createDeveloperModeManager(options = {}) {
     setDeveloperInfiniteTheroEnabled,
     getPowderSimulation,
     setPowderSimulation,
-    getSandSimulation,
     setSandSimulation,
     unlockedLevels,
     interactiveLevelOrder,
@@ -43,7 +41,6 @@ export function createDeveloperModeManager(options = {}) {
     syncLoadoutToPlayfield,
     updateStatusDisplays,
     evaluateAchievements,
-    refreshAchievementPowderRate,
     updateResourceRates,
     updatePowderLedger,
     updateDeveloperControlsVisibility,
@@ -66,7 +63,6 @@ export function createDeveloperModeManager(options = {}) {
     updatePowderModeButton,
     updatePowderLogDisplay,
     setPowderCurrency,
-    idleLevelRuns,
     gameStats,
     resourceState,
     baseResources,
@@ -130,25 +126,6 @@ export function createDeveloperModeManager(options = {}) {
     }
   }
 
-  function updateDeveloperBanksForSimulation(simulation, { bank = null, rate = null } = {}) {
-    if (!simulation) {
-      return;
-    }
-    if (Number.isFinite(bank) && typeof simulation.idleBank !== 'undefined') {
-      simulation.idleBank = bank;
-    }
-    if (Number.isFinite(rate) && typeof simulation.idleDrainRate !== 'undefined') {
-      simulation.idleDrainRate = rate;
-    }
-  }
-
-  function updateWellSimulationBank() {
-    updateDeveloperBanksForSimulation(getSandSimulation?.(), {
-      bank: DEVELOPER_RESOURCE_GRANT,
-      rate: 0,
-    });
-  }
-
   function enableDeveloperMode() {
     const developerModeWasActive = isDeveloperModeActive();
     setDeveloperModeFlag(true);
@@ -180,14 +157,9 @@ export function createDeveloperModeManager(options = {}) {
     }
     pruneLockedTowersFromLoadout?.();
 
-    if (powderState) {
-      powderState.idleMoteBank = DEVELOPER_RESOURCE_GRANT;
-      powderState.idleDrainRate = 0;
-    }
     if (!developerModeWasActive) {
       setDeveloperInfiniteTheroEnabled?.(true);
     }
-    updateWellSimulationBank();
 
     if (unlockedLevels?.clear) {
       unlockedLevels.clear();
@@ -222,7 +194,6 @@ export function createDeveloperModeManager(options = {}) {
     syncLoadoutToPlayfield?.();
     updateStatusDisplays?.();
     evaluateAchievements?.();
-    refreshAchievementPowderRate?.();
     updateResourceRates?.();
     updatePowderLedger?.();
 
@@ -308,7 +279,6 @@ export function createDeveloperModeManager(options = {}) {
     syncLoadoutToPlayfield?.();
     updateStatusDisplays?.();
     evaluateAchievements?.();
-    refreshAchievementPowderRate?.();
     updateResourceRates?.();
     updatePowderLedger?.();
 
@@ -364,13 +334,11 @@ export function createDeveloperModeManager(options = {}) {
   function resetPlayerProgressState() {
     if (gameStats) {
       gameStats.manualVictories = 0;
-      gameStats.idleVictories = 0;
       gameStats.towersPlaced = 0;
       gameStats.maxTowersSimultaneous = 0;
       gameStats.autoAnchorPlacements = 0;
       gameStats.powderActions = 0;
       gameStats.enemiesDefeated = 0;
-      gameStats.idleMillisecondsAccumulated = 0;
       gameStats.powderSigilsReached = 0;
       gameStats.highestPowderMultiplier = 1;
     }
@@ -383,7 +351,6 @@ export function createDeveloperModeManager(options = {}) {
     }
 
     setPowderCurrency?.(0);
-    idleLevelRuns?.clear?.();
 
     if (powderState?.viewInteraction?.destroy) {
       try {
@@ -441,10 +408,7 @@ export function createDeveloperModeManager(options = {}) {
       powderState.simulatedDuneGain = 0;
       powderState.wallGlyphsLit = 0;
       powderState.glyphsAwarded = 0;
-      powderState.idleMoteBank = 100;
-      powderState.idleDrainRate = 0;
       powderState.pendingMoteDrops = [];
-      powderState.idleBankHydrated = false;
       powderState.motePalette = typeof mergeMotePalette === 'function'
         ? mergeMotePalette(defaultMotePalette)
         : defaultMotePalette;

@@ -104,11 +104,9 @@ import {
   loadPersistentState,
   schedulePowderSave,
   schedulePowderBasinSave,
-  savePowderCurrency,
   startAutoSaveLoop,
   stopAutoSaveLoop,
   commitAutoSave,
-  readStorageJson,
   writeStorageJson,
   GRAPHICS_MODE_STORAGE_KEY,
   NOTATION_STORAGE_KEY,
@@ -121,14 +119,10 @@ import {
   KUF_STATE_STORAGE_KEY,
 } from './autoSave.js';
 import {
-  configureOfflinePersistence,
-  bindOfflineOverlayElements,
+  configurePowderEventLog,
   updatePowderLogDisplay,
   recordPowderEvent,
-  checkOfflineRewards,
-  markLastActive,
-  OFFLINE_STORAGE_KEY,
-} from './offlinePersistence.js';
+} from './powderEventLog.js';
 import { createPowderPersistence } from './powderPersistence.js';
 import { createPowderDisplaySystem } from './powderDisplay.js';
 import { createPowderViewportController } from './powderViewportController.js';
@@ -138,7 +132,7 @@ import { createPowderUiDomHelpers } from './powderUiDomHelpers.js';
 // Aleph tier-transition animation: wall-exit, golden glyph collection, wall-enter, palette scaling.
 import { createAlephTierTransitionController } from './alephTierTransitionController.js';
 import { createResourceHud } from './resourceHud.js';
-import { createIdleLevelRunManager } from './idleLevelRunManager.js';
+import { flushPendingMoteDrops } from './powderDropQueue.js';
 import { createSpireResourceState } from './state/spireResourceState.js';
 import { createPowderStateContext } from './powder/powderState.js';
 import { createSpireResourcePersistence } from './spireResourcePersistence.js';
@@ -169,9 +163,6 @@ import {
   generateLevelAchievements,
   bindAchievements,
   evaluateAchievements,
-  refreshAchievementPowderRate,
-  getUnlockedAchievementCount,
-  getAchievementPowderRate,
   notifyAchievementsTabVisibilityChange,
 } from './achievementsTab.js';
 import {
@@ -332,7 +323,6 @@ import {
   levelBlueprints,
   levelLookup,
   levelConfigs,
-  idleLevelConfigs,
   levelState,
   interactiveLevelOrder,
   unlockedLevels,
@@ -364,7 +354,6 @@ import {
   enablePanelWheelScroll,
 } from './uiHelpers.js';
 import { clampNormalizedCoordinate } from './geometryHelpers.js';
-import { createIdleResourceBankController } from './idleResourceBankController.js';
 import { createPlayfieldLayoutController } from './playfieldLayoutController.js';
 import { createSpireCameraController } from './spireCameraController.js';
 
@@ -383,14 +372,6 @@ import { createSpireCameraController } from './spireCameraController.js';
   let updateStatusDisplays = () => {};
   let bindStatusElements = () => {};
   let registerResourceHudRefreshCallback = () => {};
-  let resourceElements = {
-    theroMultiplier: null,
-    glyphsAlephTotal: null,
-    glyphsAlephUnused: null,
-    tabGlyphBadge: null,
-    tabMoteBadge: null,
-  };
-
   const THERO_SYMBOL = 'þ';
   const _COMMUNITY_DISCORD_INVITE = 'https://discord.gg/UzqhfsZQ8n'; // Reserved for future placement.
 
@@ -401,7 +382,6 @@ import { createSpireCameraController } from './spireCameraController.js';
     getStartingTheroMultiplier,
     isInteractiveLevel,
     levelConfigs,
-    idleLevelConfigs,
     getBaseStartThero,
     theroSymbol: THERO_SYMBOL,
     isDeveloperInfiniteTheroEnabled,
@@ -466,7 +446,7 @@ import { createSpireCameraController } from './spireCameraController.js';
   let activeLevelId = null;
 
   // Level combat controller – declared early for late-binding in callback registrations;
-  // instantiated after idle run manager and remaining dependencies are available.
+  // instantiated after the remaining level dependencies are available.
   let levelCombatCtrl;
 
   const PERSISTENT_STORAGE_KEYS = [
@@ -480,7 +460,6 @@ import { createSpireCameraController } from './spireCameraController.js';
     AUDIO_SETTINGS_STORAGE_KEY,
     CRAFTING_TIER_STORAGE_KEY,
     EQUIPMENT_STORAGE_KEY,
-    OFFLINE_STORAGE_KEY,
     COLOR_SCHEME_STORAGE_KEY,
     // Retired storage keys remain in reset coverage for compatibility with old saves.
     KUF_STATE_STORAGE_KEY,
@@ -709,13 +688,11 @@ import { createSpireCameraController } from './spireCameraController.js';
 
   const gameStats = {
     manualVictories: 0,
-    idleVictories: 0,
     towersPlaced: 0,
     maxTowersSimultaneous: 0,
     autoAnchorPlacements: 0,
     powderActions: 0,
     enemiesDefeated: 0,
-    idleMillisecondsAccumulated: 0,
     powderSigilsReached: 0,
     highestPowderMultiplier: 1,
   };
@@ -803,30 +780,14 @@ import { createSpireCameraController } from './spireCameraController.js';
     }
   });
 
-  const idleBankCtrl = createIdleResourceBankController({
-    powderState,
-    getSandSimulation: () => sandSimulation,
-    getPowderSimulation: () => powderSimulation,
-    schedulePowderBasinSave,
-    updateStatusDisplays,
-  });
-
-  // Thin delegates so existing call sites continue to work unchanged.
-  const getCurrentIdleMoteBank = idleBankCtrl.getCurrentIdleMoteBank;
-  const getCurrentMoteDispenseRate = idleBankCtrl.getCurrentMoteDispenseRate;
-  const addIdleMoteBank = idleBankCtrl.addIdleMoteBank;
-  const flushPendingMoteDrops = idleBankCtrl.flushPendingMoteDrops;
-
   const resourceHud = createResourceHud({
     formatGameNumber,
     formatWholeNumber,
     getStartingTheroMultiplier,
     getGlyphCurrency,
-    getCurrentIdleMoteBank,
     powderState,
   });
 
-  resourceElements = resourceHud.resourceElements;
   bindStatusElements = resourceHud.bindStatusElements;
   updateStatusDisplays = resourceHud.updateStatusDisplays;
   registerResourceHudRefreshCallback = resourceHud.registerStatusRefreshCallback;
@@ -879,20 +840,14 @@ import { createSpireCameraController } from './spireCameraController.js';
     powderElements,
     bindPowderControls,
     updateResourceRates,
-    updateMoteStatsDisplays,
     updatePowderStockpileDisplay,
     updatePowderLedger,
     triggerPowderBasinPulse: _triggerPowderBasinPulse,
-    applyPowderGain,
     toggleSandfallStability: _toggleSandfallStability,
     surveyRidgeHeight: _surveyRidgeHeight,
     chargeCrystalMatrix: _chargeCrystalMatrix,
     refreshPowderSystems,
     updatePowderDisplay,
-    notifyIdleTime,
-    grantSpireMinuteIncome: _grantSpireMinuteIncome,
-    bindSpireClickIncome,
-    calculateIdleSpireSummary: _calculateIdleSpireSummary,
     getPowderCurrency,
     setPowderCurrency,
     getCurrentPowderBonuses,
@@ -915,24 +870,16 @@ import { createSpireCameraController } from './spireCameraController.js';
     notifyPowderMultiplier,
     notifyPowderSigils,
     updateStatusDisplays,
-    getUnlockedAchievementCount,
-    getAchievementPowderRate,
-    getCurrentIdleMoteBank,
-    getCurrentMoteDispenseRate,
     THERO_SYMBOL,
     updatePowderLogDisplay,
     updateMoteGemInventoryDisplay,
     SIGIL_LADDER_IS_STUB,
     getPowderSimulation: () => powderSimulation,
     spireResourceState,
-    addIdleMoteBank,
-    evaluateAchievements,
-    gameStats,
   });
 
   setPowderElements(powderElements);
 
-  registerResourceHudRefreshCallback(updateMoteStatsDisplays);
   registerResourceHudRefreshCallback(updatePowderModeButton);
 
   // Provide the developer controls module with runtime state references once all powder helpers are wired.
@@ -943,7 +890,6 @@ import { createSpireCameraController } from './spireCameraController.js';
     recordPowderEvent,
     getPowderSimulation: () => powderSimulation,
     powderState,
-    handlePowderIdleBankChange,
     schedulePowderBasinSave,
     updatePowderDisplay,
     setBaseStartThero,
@@ -961,14 +907,11 @@ import { createSpireCameraController } from './spireCameraController.js';
     gameStats,
     updateDeveloperMapElementsVisibility,
     updatePowderRenderSizeControlsVisibility,
-    getCurrentIdleMoteBank,
-    getCurrentMoteDispenseRate,
     updatePlayfieldDevLayerTogglesVisibility,
   });
 
   configureEnemyHandlers({ queueMoteDrop, recordPowderEvent });
 
-  // Helper function to apply idle time for a specific spire (for ad boosts)
   // Helper function to grant random gems (for ad boosts)
   function grantRandomGems(count) {
     let gemsGranted = 0;
@@ -998,24 +941,15 @@ import { createSpireCameraController } from './spireCameraController.js';
     grantRandomGems,
   });
 
-  // Wire the standalone offline persistence helpers to the shared gameplay state and utilities.
-  configureOfflinePersistence({
-    formatWholeNumber,
+  // Keep the active Well ledger isolated from persistence and reward systems.
+  configurePowderEventLog({
     formatGameNumber,
     formatDecimal,
     formatSignedPercentage,
-    readStorageJson,
-    writeStorageJson,
-    applyPowderGain,
-    notifyIdleTime,
-    getCurrentFluxRate: () => resourceState.fluxRate,
-    onBeforePersist: savePowderCurrency,
     getCurrentPowderBonuses,
     powderState,
-    powderConfig,
     powderElements,
     updateMoteGemInventoryDisplay,
-    setActiveTab,
   });
 
   const {
@@ -1038,7 +972,6 @@ import { createSpireCameraController } from './spireCameraController.js';
   const cameraCtrl = createSpireCameraController({
     powderState,
     getPowderSimulation: () => powderSimulation,
-    getSandSimulation: () => sandSimulation,
     handlePowderViewTransformChange,
     handlePowderWallMetricsChange,
     schedulePowderBasinSave,
@@ -1052,23 +985,6 @@ import { createSpireCameraController } from './spireCameraController.js';
   // Hook the Well of Inspiration settings toggle into the camera control handler.
   setPowderCameraModeHandler((enabled) => {
     setPowderCameraMode(enabled);
-  });
-
-  const {
-    idleLevelRuns,
-    beginIdleLevelRun,
-    stopIdleLevelRun,
-    stopAllIdleRuns,
-    updateIdleLevelDisplay,
-  } = createIdleLevelRunManager({
-    idleLevelConfigs,
-    levelState,
-    levelLookup,
-    isInteractiveLevel,
-    updateLevelCards,
-    handlePlayfieldVictory: (...args) => levelCombatCtrl.handlePlayfieldVictory(...args),
-    getActiveLevelId: () => activeLevelId,
-    getPlayfieldElements: () => playfieldElements,
   });
 
   // ── Level combat controller (extracted from main.js) ──────────────────
@@ -1118,10 +1034,6 @@ import { createSpireCameraController } from './spireCameraController.js';
     updateLayoutVisibility,
     notifyLevelVictory,
     commitAutoSave,
-    stopAllIdleRuns,
-    beginIdleLevelRun,
-    updateIdleLevelDisplay,
-    stopIdleLevelRun,
     closeLoadoutWheel,
     refreshTabMusic,
     deactivateDeveloperMapTools,
@@ -1203,7 +1115,6 @@ import { createSpireCameraController } from './spireCameraController.js';
     syncLoadoutToPlayfield,
     updateStatusDisplays,
     evaluateAchievements,
-    refreshAchievementPowderRate,
     updateResourceRates,
     updatePowderLedger,
     updateDeveloperControlsVisibility,
@@ -1226,7 +1137,6 @@ import { createSpireCameraController } from './spireCameraController.js';
     updatePowderModeButton,
     updatePowderLogDisplay,
     setPowderCurrency,
-    idleLevelRuns,
     gameStats,
     resourceState,
     baseResources,
@@ -1260,7 +1170,6 @@ import { createSpireCameraController } from './spireCameraController.js';
     levelConfigs,
     levelLookup,
     levelSetEntries,
-    idleLevelRuns,
     isLevelUnlocked,
     isStoryOnlyLevel,
     isInteractiveLevel,
@@ -1287,8 +1196,7 @@ import { createSpireCameraController } from './spireCameraController.js';
   levelGridCtrl.attachDocumentListeners();
 
   // Thin delegates that forward to the level grid controller so hoisted function names
-  // remain available to callback registrations earlier in the IIFE (e.g. configureDeveloperControls,
-  // createIdleLevelRunManager). Call these wrappers—not the controller directly—when passing
+  // remain available to callback registrations earlier in the IIFE. Call these wrappers when passing
   // function references so the signatures match what external modules expect.
   function buildLevelCards() { levelGridCtrl.buildLevelCards(); }
   function updateLevelCards() { levelGridCtrl.updateLevelCards(); }
@@ -1318,12 +1226,7 @@ import { createSpireCameraController } from './spireCameraController.js';
           wallGapCells: powderConfig.wallBaseGapMotes,
           gapWidthRatio: powderConfig.wallGapViewportRatio,
           maxDuneGain: powderConfig.simulatedDuneGainMax,
-          idleDrainRate: resolveAlephTierRate(
-            powderState.alephBaseIdleDrainRate ?? powderState.idleDrainRate,
-            powderState.alephWallTier,
-          ),
           motePalette: resolveAlephTierStubPalette(powderState.alephWallTier),
-          onIdleBankChange: (value) => handlePowderIdleBankChange(value, 'sand'),
           onHeightChange: (info) => handlePowderHeightChange(info, 'sand'),
           onWallMetricsChange: (metrics) => handlePowderWallMetricsChange(metrics, 'sand'),
           onViewTransformChange: handlePowderViewTransformChange,
@@ -1336,7 +1239,6 @@ import { createSpireCameraController } from './spireCameraController.js';
       powderSimulation.setFlowOffset(powderState.sandOffset);
       powderState.motePalette = powderSimulation.getEffectiveMotePalette();
       applyMindGatePaletteToDom(powderState.motePalette);
-      powderState.idleDrainRate = powderSimulation.idleDrainRate;
       powderState.simulationMode = 'sand';
       if (powderState.alephTierTransition?.active) {
         setAlephTierTransitionSpawnState({ spawnEnabled: false, floorDrainEnabled: true, clearPendingDrops: true });
@@ -1348,7 +1250,7 @@ import { createSpireCameraController } from './spireCameraController.js';
       powderSimulation.setWallGapTarget(powderState.wallGapTarget || powderConfig.wallBaseGapMotes, { skipRebuild: true });
       powderSimulation.handleResize();
       applyLoadedPowderSimulationState(powderSimulation);
-      flushPendingMoteDrops();
+      flushPendingMoteDrops({ powderState, powderSimulation, schedulePowderBasinSave });
       powderSimulation.start();
       applyPowderVisualSettings();
       initializePowderViewInteraction();
@@ -1358,7 +1260,6 @@ import { createSpireCameraController } from './spireCameraController.js';
       const tierVisualGlyphs = getTierVisualGlyphCount(powderState.wallGlyphsLit || 0);
       updatePowderWallGapFromGlyphs(tierVisualGlyphs);
       syncAlephTierVisualProfile(resolveAlephTierProgress(tierVisualGlyphs));
-      updateMoteStatsDisplays();
     } finally {
       powderState.modeSwitchPending = false;
       ensurePowderBasinResizeObserver();
@@ -1385,7 +1286,6 @@ import { createSpireCameraController } from './spireCameraController.js';
 
   // Thin delegates so existing call sites in main.js continue to work unchanged.
   const resolveAlephTierStubPalette = alephTierCtrl.resolveAlephTierStubPalette;
-  const resolveAlephTierRate = alephTierCtrl.resolveAlephTierRate;
   const getTierVisualGlyphCount = alephTierCtrl.getTierVisualGlyphCount;
   const setAlephTierTransitionVisualState = alephTierCtrl.setAlephTierTransitionVisualState;
   const setAlephTierTransitionSpawnState = alephTierCtrl.setAlephTierTransitionSpawnState;
@@ -1490,7 +1390,6 @@ import { createSpireCameraController } from './spireCameraController.js';
     describeLevelLastResult,
     getLevelSummary,
     getLevelState: (levelId) => levelState.get(levelId) || null,
-    getIdleLevelRunner: (levelId) => idleLevelRuns.get(levelId) || null,
     getLevelById: (levelId) => levelLookup.get(levelId) || null,
     getActiveLevelId: () => activeLevelId,
     revealOverlay,
@@ -1524,8 +1423,6 @@ import { createSpireCameraController } from './spireCameraController.js';
     isStoryOnlyLevel,
     commitAutoSave,
   });
-
-  // Track the animation frame id that advances idle simulations so we can pause the loop when idle.
 
   /**
    * Resize active spire simulations so their canvases track the responsive layout.
@@ -1586,9 +1483,6 @@ import { createSpireCameraController } from './spireCameraController.js';
     }
     const stateKey = 'loadedSimulationState';
     const pendingKey = 'pendingMoteDrops';
-    const bankKey = 'idleMoteBank';
-    const hydratedKey = 'idleBankHydrated';
-    const drainKey = 'idleDrainRate';
     const initialLoadKey = 'initialLoadRestored';
     const snapshot = powderState[stateKey];
     if (!snapshot || typeof snapshot !== 'object') {
@@ -1609,12 +1503,6 @@ import { createSpireCameraController } from './spireCameraController.js';
       return;
     }
     powderState[stateKey] = null;
-    powderState[bankKey] = Math.max(
-      0,
-      Number.isFinite(snapshot.idleBank) ? snapshot.idleBank : simulation.idleBank || 0,
-    );
-    powderState[hydratedKey] = true;
-    powderState[drainKey] = simulation.idleDrainRate;
     powderState.motePalette = simulation.getEffectiveMotePalette();
     // Apply the restored palette so the Towers tab matches the revived basin state.
     applyMindGatePaletteToDom(powderState.motePalette);
@@ -1673,7 +1561,7 @@ import { createSpireCameraController } from './spireCameraController.js';
     }
   }
 
-  // Maintain a lightweight ticker so idle resources trickle in during auto-run defenses.
+  // Maintain a lightweight ticker while an active defense is running.
   function ensureResourceTicker() {
     if (!resourceState.running) {
       stopResourceTicker();
@@ -1751,11 +1639,10 @@ import { createSpireCameraController } from './spireCameraController.js';
   }
 
   function notifyLevelVictory(levelId) {
-    if (isInteractiveLevel(levelId)) {
-      gameStats.manualVictories += 1;
-    } else {
-      gameStats.idleVictories += 1;
+    if (!isInteractiveLevel(levelId)) {
+      return;
     }
+    gameStats.manualVictories += 1;
     evaluateAchievements();
   }
 
@@ -1791,32 +1678,6 @@ import { createSpireCameraController } from './spireCameraController.js';
       gameStats.highestPowderMultiplier = value;
     }
     evaluateAchievements();
-  }
-
-  function handlePowderIdleBankChange(bankValue, _source) {
-    const normalized = Number.isFinite(bankValue) ? Math.max(0, bankValue) : 0;
-
-    const previous = Number.isFinite(powderState.idleMoteBank) ? powderState.idleMoteBank : 0;
-    powderState.idleMoteBank = normalized;
-    powderState.idleBankHydrated = powderSimulation === sandSimulation && !!sandSimulation;
-
-    if (Math.abs(previous - normalized) < 0.0001) {
-      return;
-    }
-
-    if (powderElements.moteBank) {
-      const moteLabel = normalized === 1 ? 'Mote' : 'Motes';
-      powderElements.moteBank.textContent = `${formatGameNumber(normalized)} ${moteLabel}`;
-    }
-
-    if (resourceElements.tabMoteBadge) {
-      const tabStoredLabel = formatGameNumber(normalized);
-      resourceElements.tabMoteBadge.textContent = tabStoredLabel;
-      resourceElements.tabMoteBadge.setAttribute('aria-label', `${tabStoredLabel} motes in bank`);
-      resourceElements.tabMoteBadge.removeAttribute('hidden');
-      resourceElements.tabMoteBadge.setAttribute('aria-hidden', 'false');
-    }
-
   }
 
   function handlePowderHeightChange(info, _source) {
@@ -2305,7 +2166,6 @@ import { createSpireCameraController } from './spireCameraController.js';
 
     refreshTabMusic({ restart: true });
 
-    bindOfflineOverlayElements();
     loadPersistentState();
     // Load tutorial state after persistent state is loaded
     loadTutorialState();
@@ -2327,7 +2187,6 @@ import { createSpireCameraController } from './spireCameraController.js';
     bindPowderControls();
     bindAlephTierTransitionControls();
     ensurePowderBasinResizeObserver();
-    bindSpireClickIncome();
     await applyPowderSimulationMode();
     initializeEquipmentState();
     initializeCraftingOverlay({
@@ -2343,16 +2202,10 @@ import { createSpireCameraController } from './spireCameraController.js';
     updatePowderLogDisplay();
     updateResourceRates();
     updatePowderDisplay();
-    // Start the resource ticker for active idle resources while no level is active.
-    resourceState.running = true;
-    ensureResourceTicker();
     // Begin the recurring autosave cadence once the core systems are initialized.
     startAutoSaveLoop();
 
     await dismissStartupOverlay();
-    checkOfflineRewards();
-    markLastActive();
-
     injectTowerCardPreviews();
     refreshTowerCardBackgroundAnimations();
     simplifyTowerCards();
@@ -2400,11 +2253,9 @@ import { createSpireCameraController } from './spireCameraController.js';
 
   bindPageLifecycleEvents({
     commitAutoSave,
-    markLastActive,
     suppressAudioPlayback,
     releaseAudioSuppression,
     refreshTabMusic,
-    checkOfflineRewards,
     audioManager,
   });
 

@@ -6,21 +6,10 @@ import {
   loadMonetizationState,
   getMonetizationState,
   unlockPremium,
-  triggerSpireBoost,
   triggerGemBoost,
   getBoostCooldown,
   addMonetizationListener,
 } from './state/monetizationState.js';
-
-// Spire display names and symbols
-const SPIRE_INFO = [
-  { id: 'powder', name: 'Well of Inspiration', symbol: 'ℵ' },
-  { id: 'fluid', name: 'Bet', symbol: 'בּ' },
-  { id: 'lamed', name: 'Lamed', symbol: 'ל' },
-  { id: 'tsadi', name: 'Tsadi', symbol: 'צ' },
-  { id: 'shin', name: 'Shin', symbol: 'ש' },
-  { id: 'kuf', name: 'Kuf', symbol: 'ק' },
-];
 
 let boostsContainer = null;
 let dropdownContent = null;
@@ -29,7 +18,6 @@ let updateInterval = null;
 
 // Dependencies injected from main
 let dependencies = {
-  applyIdleTimeToSpire: null,
   grantRandomGems: null,
 };
 
@@ -74,31 +62,6 @@ function updateBoostButtons() {
     return;
   }
   
-  // Update spire boost buttons
-  SPIRE_INFO.forEach((spire) => {
-    const button = boostsContainer.querySelector(`[data-boost-spire="${spire.id}"]`);
-    if (!button) {
-      return;
-    }
-    
-    const cooldown = getBoostCooldown(spire.id);
-    const statusEl = button.querySelector('.boost-button__status');
-    
-    if (cooldown.onCooldown) {
-      button.disabled = true;
-      button.classList.add('boost-button--cooldown');
-      if (statusEl) {
-        statusEl.textContent = formatCooldown(cooldown.remainingMs);
-      }
-    } else {
-      button.disabled = false;
-      button.classList.remove('boost-button--cooldown');
-      if (statusEl) {
-        statusEl.textContent = 'Ready';
-      }
-    }
-  });
-  
   // Update gem boost button
   const gemButton = boostsContainer.querySelector('[data-boost-type="gems"]');
   if (gemButton) {
@@ -141,54 +104,6 @@ async function handlePremiumUnlock() {
     premiumButton.disabled = true;
     premiumButton.textContent = '✓ Premium Unlocked';
     premiumButton.classList.add('boost-button--unlocked');
-  }
-}
-
-/**
- * Handle spire boost button click.
- * @param {string} spireId - ID of the spire
- */
-async function handleSpireBoost(spireId) {
-  const button = boostsContainer?.querySelector(`[data-boost-spire="${spireId}"]`);
-  if (!button) {
-    return;
-  }
-  
-  // Disable button during processing
-  button.disabled = true;
-  const originalText = button.querySelector('.boost-button__label')?.textContent || '';
-  const labelEl = button.querySelector('.boost-button__label');
-  if (labelEl) {
-    labelEl.textContent = 'Watching ad...';
-  }
-  
-  try {
-    const result = await triggerSpireBoost(spireId, dependencies.applyIdleTimeToSpire);
-    
-    if (result.success) {
-      if (labelEl) {
-        labelEl.textContent = '✓ Boost applied!';
-      }
-      setTimeout(() => {
-        if (labelEl) {
-          labelEl.textContent = originalText;
-        }
-        updateBoostButtons();
-      }, 2000);
-    } else {
-      alert(`Boost failed: ${result.error}`);
-      if (labelEl) {
-        labelEl.textContent = originalText;
-      }
-      button.disabled = false;
-    }
-  } catch (error) {
-    console.error('Spire boost error:', error);
-    alert('Boost failed. Please try again.');
-    if (labelEl) {
-      labelEl.textContent = originalText;
-    }
-    button.disabled = false;
   }
 }
 
@@ -317,43 +232,6 @@ function createBoostsUI() {
   const divider = document.createElement('hr');
   divider.className = 'boosts-divider';
   dropdown.appendChild(divider);
-  
-  // Spire boosts section
-  const spireHeader = document.createElement('h4');
-  spireHeader.className = 'boosts-section-header';
-  spireHeader.textContent = 'Spire Idle Time Boosts';
-  dropdown.appendChild(spireHeader);
-  
-  const spireGrid = document.createElement('div');
-  spireGrid.className = 'boosts-grid';
-  
-  SPIRE_INFO.forEach((spire) => {
-    const button = document.createElement('button');
-    button.className = 'boost-button boost-button--spire action-button';
-    button.type = 'button';
-    button.setAttribute('data-boost-spire', spire.id);
-    
-    const symbol = document.createElement('span');
-    symbol.className = 'boost-button__symbol';
-    symbol.textContent = spire.symbol;
-    symbol.setAttribute('aria-hidden', 'true');
-    button.appendChild(symbol);
-    
-    const label = document.createElement('span');
-    label.className = 'boost-button__label';
-    label.textContent = `${spire.name}: +2h Idle`;
-    button.appendChild(label);
-    
-    const status = document.createElement('span');
-    status.className = 'boost-button__status';
-    status.textContent = 'Ready';
-    button.appendChild(status);
-    
-    button.addEventListener('click', () => handleSpireBoost(spire.id));
-    spireGrid.appendChild(button);
-  });
-  
-  dropdown.appendChild(spireGrid);
   
   // Gem boost section
   const gemHeader = document.createElement('h4');

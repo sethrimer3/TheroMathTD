@@ -2,7 +2,6 @@ export function createPowderDisplaySystem({
   powderState,
   powderConfig,
   powderGlyphColumns,
-  formatWholeNumber,
   formatGameNumber,
   formatDecimal,
   formatPercentage,
@@ -10,24 +9,16 @@ export function createPowderDisplaySystem({
   getBaseStartThero,
   resourceState,
   baseResources,
-  schedulePowderSave,
   recordPowderEvent,
   notifyPowderAction,
   notifyPowderMultiplier,
   notifyPowderSigils,
   updateStatusDisplays,
-  getUnlockedAchievementCount,
-  getAchievementPowderRate,
-  getCurrentIdleMoteBank,
-  getCurrentMoteDispenseRate,
   THERO_SYMBOL,
   updatePowderLogDisplay,
   updateMoteGemInventoryDisplay,
   SIGIL_LADDER_IS_STUB,
   getPowderSimulation,
-  addIdleMoteBank,
-  evaluateAchievements,
-  gameStats,
 }) {
   let powderCurrency = 0;
   let powderBasinPulseTimer = null;
@@ -49,10 +40,7 @@ export function createPowderDisplaySystem({
     crystalNote: null,
     crystalButton: null,
     stockpile: null,
-    idleMultiplier: null,
     nextGlyphProgress: null,
-    moteBank: null,
-    moteRate: null,
     gemInventoryList: null,
     gemInventoryEmpty: null,
     craftingButton: null,
@@ -133,34 +121,6 @@ export function createPowderDisplaySystem({
     updateStatusDisplays();
   }
 
-  function updateMoteStatsDisplays() {
-    if (powderElements.idleMultiplier) {
-      const achievements = getUnlockedAchievementCount();
-      // Keep the HUD aligned with the offline formula: most achievements double mote fall rate, with additive exceptions.
-      // Guard the callback so older callers that omit this dependency still fall back to legacy behavior.
-      const rate = typeof getAchievementPowderRate === 'function'
-        ? Math.max(0, getAchievementPowderRate())
-        : 2 ** Math.max(0, Math.floor(achievements));
-      const achievementLabel = achievements === 1 ? 'achievement' : 'achievements';
-      const rateLabel = rate === 1 ? 'Mote/min' : 'Motes/min';
-      powderElements.idleMultiplier.textContent = `${formatWholeNumber(achievements)} ${achievementLabel} · ${formatGameNumber(
-        rate,
-      )} ${rateLabel}`;
-    }
-
-    if (powderElements.moteBank) {
-      const bankedMotes = getCurrentIdleMoteBank();
-      const moteLabel = bankedMotes === 1 ? 'Mote' : 'Motes';
-      powderElements.moteBank.textContent = `${formatGameNumber(bankedMotes)} ${moteLabel}`;
-    }
-
-    if (powderElements.moteRate) {
-      const dispenseRate = getCurrentMoteDispenseRate();
-      const moteLabel = dispenseRate === 1 ? 'Mote/sec' : 'Motes/sec';
-      powderElements.moteRate.textContent = `${formatDecimal(dispenseRate, 2)} ${moteLabel}`;
-    }
-  }
-
   function updatePowderStockpileDisplay() {
     if (powderElements.stockpile) {
       powderElements.stockpile.textContent = `${formatGameNumber(powderCurrency)} Mote Gems`;
@@ -184,9 +144,6 @@ export function createPowderDisplaySystem({
 
   function bindPowderControls() {
     powderElements.stockpile = document.getElementById('powder-stockpile');
-    powderElements.moteBank = document.getElementById('powder-mote-bank');
-    powderElements.moteRate = document.getElementById('powder-mote-rate');
-    powderElements.idleMultiplier = document.getElementById('powder-idle-multiplier');
     powderElements.nextGlyphProgress = document.getElementById('powder-next-glyph-progress');
     powderElements.gemInventoryList = document.getElementById('powder-gem-inventory');
     powderElements.gemInventoryEmpty = document.getElementById('powder-gem-empty');
@@ -255,7 +212,6 @@ export function createPowderDisplaySystem({
     updatePowderLogDisplay();
     updatePowderLedger();
     updatePowderDisplay();
-    updateMoteStatsDisplays();
   }
 
   function triggerPowderBasinPulse() {
@@ -278,24 +234,6 @@ export function createPowderDisplaySystem({
         powderBasinPulseTimer = null;
       }, 900);
     });
-  }
-
-  function applyPowderGain(amount, context = {}) {
-    if (!Number.isFinite(amount) || amount <= 0) {
-      return 0;
-    }
-
-    const { source = 'tick', minutes = 0, rate = 0, idleSummary = null, powder = amount } = context;
-    powderCurrency = Math.max(0, powderCurrency + amount);
-    updatePowderStockpileDisplay();
-    schedulePowderSave();
-
-    if (source === 'offline') {
-      recordPowderEvent('offline-reward', { minutes, rate, powder, idleSummary });
-      triggerPowderBasinPulse();
-    }
-
-    return amount;
   }
 
   function toggleSandfallStability() {
@@ -355,7 +293,6 @@ export function createPowderDisplaySystem({
   function refreshPowderSystems(pulseBonus) {
     updateResourceRates();
     updatePowderDisplay(pulseBonus);
-    updateMoteStatsDisplays();
   }
 
   function updatePowderDisplay(pulseBonus) {
@@ -454,7 +391,7 @@ export function createPowderDisplaySystem({
       } else if (powderState.charges >= 3) {
         powderElements.crystalNote.textContent = 'Pulse ready—channel the matrix to unleash stored Σ energy.';
       } else if (currentPowderBonuses.crystalBonus <= 0) {
-        powderElements.crystalNote.textContent = 'Crystal resonance is idle—no pulse prepared.';
+        powderElements.crystalNote.textContent = 'Crystal resonance is dormant—no pulse prepared.';
       } else {
         powderElements.crystalNote.textContent = `Stored resonance grants +${formatPercentage(
           currentPowderBonuses.crystalBonus,
@@ -465,109 +402,18 @@ export function createPowderDisplaySystem({
     updatePowderStockpileDisplay();
   }
 
-  function createIdleSummaryDefaults() {
-    return {
-      minutes: 0,
-      aleph: { multiplier: 0, total: 0, unlocked: true },
-    };
-  }
-
-  function calculateIdleSpireSummary(elapsedMs) {
-    const summary = createIdleSummaryDefaults();
-    if (!Number.isFinite(elapsedMs) || elapsedMs <= 0) {
-      return summary;
-    }
-
-    const minutes = Math.max(0, elapsedMs / 60000);
-    const achievementsUnlocked = Math.max(0, Math.floor(getUnlockedAchievementCount()));
-    // The Aleph baseline starts at 1 mote/minute and applies achievement-defined bonuses.
-    // Guard the callback so the idle summary can still run with legacy callers during rollout.
-    const alephRatePerMinute = typeof getAchievementPowderRate === 'function'
-      ? Math.max(0, getAchievementPowderRate())
-      : 2 ** achievementsUnlocked;
-    const alephTotal = minutes * alephRatePerMinute;
-    summary.minutes = minutes;
-    summary.aleph = {
-      multiplier: alephRatePerMinute,
-      total: alephTotal,
-      unlocked: true,
-    };
-    return summary;
-  }
-
-  function notifyIdleTime(elapsedMs) {
-    const normalizedElapsed = Number.isFinite(elapsedMs) && elapsedMs > 0 ? elapsedMs : 0;
-    const summary = calculateIdleSpireSummary(normalizedElapsed);
-    if (normalizedElapsed <= 0 || summary.minutes <= 0) {
-      return summary;
-    }
-
-    gameStats.idleMillisecondsAccumulated += normalizedElapsed;
-
-    if (summary.aleph.total > 0) {
-      addIdleMoteBank(summary.aleph.total, { target: 'aleph' });
-    }
-    evaluateAchievements();
-
-    return summary;
-  }
-
-  function grantSpireMinuteIncome(spireId = 'aleph') {
-    const summary = calculateIdleSpireSummary(60000);
-    if (summary.minutes <= 0 || (spireId !== 'aleph' && spireId !== 'wellOfInspiration')) {
-      return;
-    }
-    if (summary.aleph.total > 0) {
-      addIdleMoteBank(summary.aleph.total, { target: 'aleph' });
-      evaluateAchievements();
-    }
-  }
-
-  function bindSpireClickIncome() {
-    const clickTargets = [{ elementId: 'powder-simulation-card', spireId: 'aleph' }];
-
-    clickTargets.forEach(({ elementId, spireId }) => {
-      const element = document.getElementById(elementId);
-      if (!element) {
-        return;
-      }
-      element.addEventListener('click', (event) => {
-        if (event.defaultPrevented) {
-          return;
-        }
-        if (typeof event.button === 'number' && event.button !== 0) {
-          return;
-        }
-        const interactiveTarget =
-          event.target instanceof HTMLElement
-            ? event.target.closest('button, a, input, select, textarea')
-            : null;
-        if (interactiveTarget) {
-          return;
-        }
-        grantSpireMinuteIncome(spireId);
-      });
-    });
-  }
-
   return {
     powderElements,
     bindPowderControls,
     updateResourceRates,
-    updateMoteStatsDisplays,
     updatePowderStockpileDisplay,
     updatePowderLedger,
     triggerPowderBasinPulse,
-    applyPowderGain,
     toggleSandfallStability,
     surveyRidgeHeight,
     chargeCrystalMatrix,
     refreshPowderSystems,
     updatePowderDisplay,
-    notifyIdleTime,
-    grantSpireMinuteIncome,
-    bindSpireClickIncome,
-    calculateIdleSpireSummary,
     getPowderCurrency,
     setPowderCurrency,
     getCurrentPowderBonuses,

@@ -1,5 +1,8 @@
 # Monolithic File Refactoring Plan
 
+> Build 736 removed all idle progression. References below to idle controllers,
+> offline rewards, and automated runs are historical extraction notes only.
+
 **Build 443 - Comprehensive Strategy for Breaking Down Large Files**
 
 ## Executive Summary

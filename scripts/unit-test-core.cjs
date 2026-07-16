@@ -763,26 +763,26 @@ async function run() {
 
   await test('migrateWellOfInspirationSave: old retired branches are ignored without blocking startup data', () => {
     const migrated = saveCompatibility.migrateWellOfInspirationSave({
-      powder: { idleMoteBank: 42, storySeen: true },
-      fluid: { idleBank: 999 },
+      powder: { storySeen: true },
+      fluid: { grainCount: 999 },
       lamed: { unlocked: true },
       tsadi: { bindingAgents: 7 },
       shin: { iterons: 8 },
       kuf: { shards: 9 },
     });
     assert.deepEqual(migrated, {
-      wellOfInspiration: { idleMoteBank: 42, storySeen: true },
+      wellOfInspiration: { storySeen: true },
     });
   });
 
   await test('migrateWellOfInspirationSave: preserves a valid legacy simulation snapshot', () => {
     const migrated = saveCompatibility.migrateWellOfInspirationSave({
       alephSpire: { storySeen: true },
-      loadedSimulationState: { idleBank: 12 },
+      loadedSimulationState: { grains: [] },
     });
     assert.deepEqual(migrated, {
       wellOfInspiration: { storySeen: true },
-      simulation: { idleBank: 12 },
+      simulation: { grains: [] },
     });
   });
 
@@ -797,9 +797,8 @@ async function run() {
     return import(pathToFileURL(destPath).href);
   }
 
-  // watchAdMock() uses a real setTimeout(1000ms); stub it globally for these
-  // tests so triggerSpireBoost/triggerGemBoost resolve immediately instead of
-  // making the suite wait a full second per call.
+  // watchAdMock() uses a real setTimeout(1000ms); stub it globally so the gem
+  // boost resolves immediately instead of making the suite wait a full second.
   const realSetTimeout = global.setTimeout;
   global.setTimeout = (fn) => {
     fn();
@@ -813,16 +812,14 @@ async function run() {
     await test('monetizationState: default snapshot has premium locked and all cooldowns at 0', () => {
       const snapshot = monetization.getMonetizationState();
       assert.equal(snapshot.premiumUnlocked, false);
-      assert.deepEqual(snapshot.boostCooldowns, {
-        powder: 0, fluid: 0, lamed: 0, tsadi: 0, shin: 0, kuf: 0, gems: 0,
-      });
+      assert.deepEqual(snapshot.boostCooldowns, { gems: 0 });
     });
 
     await test('monetizationState: getMonetizationState returns a clone, not the live cooldown object', () => {
       const snapshotA = monetization.getMonetizationState();
-      snapshotA.boostCooldowns.lamed = 999999;
+      snapshotA.boostCooldowns.gems = 999999;
       const snapshotB = monetization.getMonetizationState();
-      assert.equal(snapshotB.boostCooldowns.lamed, 0);
+      assert.equal(snapshotB.boostCooldowns.gems, 0);
     });
 
     await test('monetizationState: unlockPremium sets premiumUnlocked and persists to storage', () => {
@@ -842,10 +839,6 @@ async function run() {
       assert.equal(seen.length, 1, 'listener should not be called again after unsubscribe');
     });
 
-    await test('monetizationState: triggerSpireBoost rejects an invalid spire id', async () => {
-      const result = await monetization.triggerSpireBoost('not-a-spire', () => {});
-      assert.deepEqual(result, { success: false, error: 'Invalid spire ID' });
-    });
   }
 
   {
@@ -857,43 +850,9 @@ async function run() {
       const realNow = Date.now;
       Date.now = () => 1_000_000;
       try {
-        const cooldown = monetization.getBoostCooldown('lamed');
+        const cooldown = monetization.getBoostCooldown('gems');
         assert.equal(cooldown.onCooldown, false);
         assert.equal(cooldown.remainingMs, 0);
-      } finally {
-        Date.now = realNow;
-      }
-    });
-
-    await test('monetizationState: successful idle boost invokes applyIdleTime with (spireId, 7200) and starts a 1hr cooldown', async () => {
-      const realNow = Date.now;
-      Date.now = () => 1_000_000;
-      try {
-        let calledWith = null;
-        const result = await monetization.triggerSpireBoost('tsadi', (spireId, idleTimeSeconds) => {
-          calledWith = [spireId, idleTimeSeconds];
-        });
-        assert.deepEqual(result, { success: true, idleTimeSeconds: 2 * 60 * 60 });
-        assert.deepEqual(calledWith, ['tsadi', 7200]);
-        const cooldown = monetization.getBoostCooldown('tsadi');
-        assert.equal(cooldown.onCooldown, true);
-        assert.equal(cooldown.remainingMs, 60 * 60 * 1000);
-      } finally {
-        Date.now = realNow;
-      }
-    });
-
-    await test('monetizationState: a second boost attempt on the same spire while on cooldown is rejected', async () => {
-      const realNow = Date.now;
-      // Keep the mocked clock consistent with the boost set by the previous
-      // test (still inside the 1hr cooldown window) rather than letting the
-      // real wall-clock time make the previously-set cooldown look expired.
-      Date.now = () => 1_000_000 + 1000;
-      try {
-        const result = await monetization.triggerSpireBoost('tsadi', () => {});
-        assert.equal(result.success, false);
-        assert.equal(result.error, 'Boost on cooldown');
-        assert.ok(result.remainingMs > 0);
       } finally {
         Date.now = realNow;
       }

@@ -49,15 +49,6 @@ assert.match(nav, /aria-controls="panel-powder"/);
 assert.match(index, /id="panel-powder"[\s\S]*?aria-labelledby="tab-powder"/);
 assert.match(index, /id="panel-achievements"[\s\S]*?aria-labelledby="tab-achievements"/);
 
-const offline = read('assets/offlinePersistence.js');
-for (const token of ['offline-bet', 'offline-lamed', 'offline-tsadi', 'offline-shin', 'offline-kuf']) {
-  assert.equal(index.includes(token), false, `${token} must not have an active offline-reward row`);
-  assert.equal(offline.includes(token), false, `${token} must not be queried by offline rewards`);
-}
-for (const branch of ['idleSummary.bet', 'idleSummary.lamed', 'idleSummary.tsadi', 'idleSummary.shin', 'idleSummary.kuf']) {
-  assert.equal(offline.includes(branch), false, `${branch} must not contribute to offline rewards`);
-}
-
 const activeGraph = collectLocalImportGraph('assets/main.js');
 const retiredRuntimeModules = [
   'betSpireConfig.js',
@@ -102,8 +93,8 @@ assert.doesNotMatch(activeSource, /stopBetSpireRender|resumeBetSpireRender/);
 assert.doesNotMatch(activeSource, /glyphCurrency:\s*['"](?:bet|lamed|tsadi|shin|kuf)['"]/i);
 assert.equal(index.includes('achievements-terrarium-host'), false, 'Achievements Terrarium DOM must stay disabled');
 
-assert.ok(fs.existsSync(path.join(root, 'assets/legacy/achievementsTerrarium/README.md')));
-assert.ok(fs.existsSync(path.join(root, 'assets/betTerrariumController.js')));
-assert.ok(fs.existsSync(path.join(root, 'assets/achievementsTerrariumPreferences.js')));
+assert.equal(fs.existsSync(path.join(root, 'assets/legacy/achievementsTerrarium/README.md')), false);
+assert.equal(fs.existsSync(path.join(root, 'assets/betTerrariumController.js')), false);
+assert.equal(fs.existsSync(path.join(root, 'assets/achievementsTerrariumPreferences.js')), false);
 
 console.log(`Retired-Spire checks passed (${activeGraph.size} active modules inspected).`);

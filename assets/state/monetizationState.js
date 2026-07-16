@@ -1,20 +1,12 @@
 // Monetization state for in-app purchases and ad-based boosts.
 // Tracks premium unlock status and cooldowns for boost actions.
 export const MONETIZATION_STORAGE_KEY = 'glyph-defense-idle:monetization';
-// Spire identifiers matching the spire system
-const SPIRE_IDS = ['powder', 'fluid', 'lamed', 'tsadi', 'shin', 'kuf'];
 // Cooldown duration for ad-based boosts (in milliseconds)
 const AD_COOLDOWN_MS = 60 * 60 * 1000; // 1 hour cooldown
 // Default state structure
 const DEFAULT_STATE = {
     premiumUnlocked: false,
     boostCooldowns: {
-        powder: 0,
-        fluid: 0,
-        lamed: 0,
-        tsadi: 0,
-        shin: 0,
-        kuf: 0,
         gems: 0,
     },
 };
@@ -132,31 +124,6 @@ function watchAdMock() {
             resolve(true);
         }, 1000);
     });
-}
-/**
- * Trigger a spire idle boost (watch ad for 2 hours of idle time).
- */
-export async function triggerSpireBoost(spireId, applyIdleTime) {
-    if (!SPIRE_IDS.includes(spireId)) {
-        return { success: false, error: 'Invalid spire ID' };
-    }
-    const cooldown = getBoostCooldown(spireId);
-    if (cooldown.onCooldown) {
-        return { success: false, error: 'Boost on cooldown', remainingMs: cooldown.remainingMs };
-    }
-    // Mock ad watching
-    const adWatched = await watchAdMock();
-    if (!adWatched) {
-        return { success: false, error: 'Ad watch failed' };
-    }
-    // Apply 2 hours of idle time (in seconds)
-    const idleTimeSeconds = 2 * 60 * 60;
-    if (typeof applyIdleTime === 'function') {
-        applyIdleTime(spireId, idleTimeSeconds);
-    }
-    // Start cooldown
-    startBoostCooldown(spireId);
-    return { success: true, idleTimeSeconds };
 }
 /**
  * Trigger gem boost (watch ad for 100 random gems).

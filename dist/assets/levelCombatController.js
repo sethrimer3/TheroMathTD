@@ -67,12 +67,6 @@ export function createLevelCombatController(deps) {
     notifyLevelVictory,
     commitAutoSave,
 
-    // ── Idle level runs ──────────────────────────────────────────────
-    stopAllIdleRuns,
-    beginIdleLevelRun,
-    updateIdleLevelDisplay,
-    stopIdleLevelRun,
-
     // ── Misc ─────────────────────────────────────────────────────────
     closeLoadoutWheel,
     refreshTabMusic,
@@ -396,6 +390,9 @@ export function createLevelCombatController(deps) {
       completed: false,
     };
     const isInteractive = isInteractiveLevel(level.id);
+    if (!isInteractive) {
+      return;
+    }
     const levelConfig = levelConfigs.get(level.id);
     const forceEndlessMode = Boolean(level?.forceEndlessMode || levelConfig?.forceEndlessMode);
     const endlessCampaign = level?.campaign === 'Ladder';
@@ -414,7 +411,7 @@ export function createLevelCombatController(deps) {
     const updatedState = {
       ...currentState,
       entered: true,
-      running: !isInteractive,
+      running: false,
     };
     levelState.set(level.id, updatedState);
     
@@ -423,8 +420,6 @@ export function createLevelCombatController(deps) {
       unlockTowersTabState();
       unlockTowersTab();
     }
-
-    stopAllIdleRuns(level.id);
 
     levelState.forEach((state, id) => {
       if (id !== level.id) {
@@ -435,8 +430,7 @@ export function createLevelCombatController(deps) {
     setActiveLevelId(level.id);
     // Remember whether the active map uses the live battlefield.
     setActiveLevelIsInteractive(isInteractive);
-    resourceState.running = !isInteractive;
-    ensureResourceTicker();
+    resourceState.running = false;
     updateActiveLevelBanner();
     updateLevelCards();
 
@@ -446,7 +440,7 @@ export function createLevelCombatController(deps) {
       const loadingEl = typeof document !== 'undefined'
         ? document.getElementById('level-loading-overlay')
         : null;
-      if (isInteractive && loadingEl) {
+      if (loadingEl) {
         loadingEl.removeAttribute('hidden');
       }
       playfield.enterLevel(level, {
@@ -455,7 +449,7 @@ export function createLevelCombatController(deps) {
       // Hide the loading overlay once the canvas has had two frames to paint its initial state.
       // The first rAF schedules after enterLevel's synchronous setup; the second waits for the
       // resulting paint so the overlay dissolves after the playfield is visually ready.
-      if (isInteractive && loadingEl) {
+      if (loadingEl) {
         requestAnimationFrame(() => {
           requestAnimationFrame(() => {
             loadingEl.setAttribute('hidden', '');
@@ -465,25 +459,15 @@ export function createLevelCombatController(deps) {
     }
 
     const levelStoryScreen = getLevelStoryScreen();
-    if (isInteractive && levelStoryScreen) {
+    if (levelStoryScreen) {
       levelStoryScreen.maybeShowStory(level);
     }
 
     const audioManager = getAudioManager();
-    if (isInteractive) {
-      if (audioManager) {
-        audioManager.playSfx('enterLevel');
-      }
-      refreshTabMusic({ restart: true });
-    } else {
-      refreshTabMusic();
+    if (audioManager) {
+      audioManager.playSfx('enterLevel');
     }
-
-    if (!isInteractive) {
-      beginIdleLevelRun(level);
-    } else {
-      updateIdleLevelDisplay();
-    }
+    refreshTabMusic({ restart: true });
 
     updateTowerSelectionButtons();
 
@@ -500,7 +484,6 @@ export function createLevelCombatController(deps) {
     if (state) {
       levelState.set(activeLevelId, { ...state, running: false });
     }
-    stopIdleLevelRun(activeLevelId);
     const playfield = getPlayfield();
     if (playfield) {
       // Close any open tower selection wheels when leaving the level

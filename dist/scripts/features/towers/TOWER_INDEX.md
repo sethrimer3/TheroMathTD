@@ -35,7 +35,7 @@ The Well of Inspiration is the only active Spire experience. Its internal `powde
 
 | Name | File | Description |
 |------|------|-------------|
-| Well of Inspiration | `powderTower.js` | Falling-mote idle game producing Well glyphs (ℵ) |
+| Well of Inspiration | `powderTower.js` | Active falling-mote simulation producing Well glyphs (ℵ) |
 
 Bet, Lamed, Tsadi, Shin, and Kuf Spires are retired. The Achievements Terrarium is disabled legacy JavaScript; see `../../../assets/legacy/achievementsTerrarium/README.md`.
 

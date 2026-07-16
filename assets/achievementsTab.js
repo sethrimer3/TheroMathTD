@@ -5,11 +5,6 @@ import { GEM_DEFINITIONS } from './enemies.js';
 // Achievements tab logic extracted from the main script to keep state and rendering scoped here.
 
 const ACHIEVEMENT_REWARD_FLUX = 1;
-// Base achievement doubling factor (2^n) used for standard mote-fall reward scaling.
-const ACHIEVEMENT_DEFAULT_MOTE_FALL_MULTIPLIER = 2;
-const DEFAULT_MOTE_FALL_REWARD_DEFINITION = Object.freeze({
-  moteFallMultiplier: ACHIEVEMENT_DEFAULT_MOTE_FALL_MULTIPLIER,
-});
 const PROLOGUE_CHAPTER_ACHIEVEMENT_ID = 'prologue-complete';
 const MERGED_PROLOGUE_LEVEL_IDS = new Set(['Prologue - 1', 'Prologue - 2', 'Prologue - 3']);
 const PROLOGUE_CHAPTER_LEVEL_IDS = ['Prologue - 1', 'Prologue - 2', 'Prologue - 3', 'Prologue - Story'];
@@ -34,7 +29,6 @@ const achievementElements = new Map();
 let achievementDefinitions = [];
 let achievementsByCategory = new Map();
 let achievementGridEl = null;
-let achievementPowderRate = 1; // Baseline Well mote fall rate starts at 1 mote/min before achievements.
 let context = null;
 let overlayElements = null; // Stores the lazily created overlay nodes for cinematic reveals.
 let overlayState = null; // Tracks the currently animating achievement so it can return home.
@@ -357,7 +351,7 @@ function describeLevelAchievementProgress(levelId, shortLabel, longLabel) {
   const { levelState } = getContext();
   const state = levelState.get(levelId) || {};
   if (state.completed) {
-    return 'Victory sealed · Mote fall bonus secured.';
+    return 'Victory sealed.';
   }
 
   const bestWave = Number.isFinite(state.bestWave) ? state.bestWave : 0;
@@ -366,30 +360,6 @@ function describeLevelAchievementProgress(levelId, shortLabel, longLabel) {
     return `Locked — Best wave ${formatWholeNumber(bestWave)}. Seal ${label} to unlock.`;
   }
   return `Locked — Seal ${label} to unlock.`;
-}
-
-// Resolve per-achievement Well mote fall bonus values with defaults for legacy definitions.
-function getAchievementMoteFallBonus(definition) {
-  // Additive chapter rewards intentionally override multipliers so the prologue exception stays unique.
-  if (Number.isFinite(definition?.moteFallAdditive)) {
-    return {
-      multiplier: 1,
-      additive: Math.max(0, definition.moteFallAdditive),
-    };
-  }
-  const multiplier = Number.isFinite(definition?.moteFallMultiplier)
-    ? Math.max(1, definition.moteFallMultiplier)
-    : ACHIEVEMENT_DEFAULT_MOTE_FALL_MULTIPLIER;
-  return { multiplier, additive: 0 };
-}
-
-// Format reward text so all achievement surfaces describe the same mote-fall behavior.
-function formatAchievementMoteFallReward(definition) {
-  const bonus = getAchievementMoteFallBonus(definition);
-  if (bonus.additive > 0) {
-    return `+${formatGameNumber(bonus.additive)} Well mote fall rate`;
-  }
-  return `×${formatGameNumber(bonus.multiplier)} Well mote fall rate`;
 }
 
 // Builds an achievement definition for a single level entry.
@@ -423,7 +393,7 @@ function createLevelAchievementDefinition(levelId, ordinal, metadataMap) {
   const rewardFlux = Number.isFinite(metadata?.rewardFlux) ? metadata.rewardFlux : ACHIEVEMENT_REWARD_FLUX;
   const baseDescription = metadata?.description
     ? `${metadata.description}`
-    : `${displayName} — seal ${shortLabel} to claim the idle mote seal. ${rewardSummary}`.trim();
+    : `${displayName} — seal ${shortLabel}. ${rewardSummary}`.trim();
 
   // Determine campaign category based on level config
   const campaign = levelConfig.campaign || 'Story';
@@ -442,7 +412,7 @@ function createLevelAchievementDefinition(levelId, ordinal, metadataMap) {
     subtitle: shortLabel,
     icon,
     rewardFlux,
-    description: `${baseDescription} Unlocking grants ${formatAchievementMoteFallReward(DEFAULT_MOTE_FALL_REWARD_DEFINITION)}.`.trim(),
+    description: baseDescription,
     condition: () => isLevelCompleted(levelId),
     progress: () => describeLevelAchievementProgress(levelId, shortLabel, displayName),
   };
@@ -472,7 +442,7 @@ function generateSpireAchievements(spireId, spireName, spireIcon) {
     subtitle: 'Novice',
     icon: spireIcon,
     rewardFlux: ACHIEVEMENT_REWARD_FLUX,
-    description: `Earn your first ${spireName} glyph. Unlocking grants ${formatAchievementMoteFallReward(DEFAULT_MOTE_FALL_REWARD_DEFINITION)}.`,
+    description: `Earn your first ${spireName} glyph.`,
     condition: () => getSpireGlyphCount(spireId) >= 1,
     progress: () => {
       const glyphs = getSpireGlyphCount(spireId);
@@ -490,7 +460,7 @@ function generateSpireAchievements(spireId, spireName, spireIcon) {
     subtitle: 'Intermediate',
     icon: spireIcon,
     rewardFlux: ACHIEVEMENT_REWARD_FLUX * 2,
-    description: `Earn 10 ${spireName} glyphs. Unlocking grants ${formatAchievementMoteFallReward(DEFAULT_MOTE_FALL_REWARD_DEFINITION)}.`,
+    description: `Earn 10 ${spireName} glyphs.`,
     condition: () => getSpireGlyphCount(spireId) >= 10,
     progress: () => {
       const glyphs = getSpireGlyphCount(spireId);
@@ -508,7 +478,7 @@ function generateSpireAchievements(spireId, spireName, spireIcon) {
     subtitle: 'Advanced',
     icon: spireIcon,
     rewardFlux: ACHIEVEMENT_REWARD_FLUX * 5,
-    description: `Earn 100 ${spireName} glyphs. Unlocking grants ${formatAchievementMoteFallReward(DEFAULT_MOTE_FALL_REWARD_DEFINITION)}.`,
+    description: `Earn 100 ${spireName} glyphs.`,
     condition: () => getSpireGlyphCount(spireId) >= 100,
     progress: () => {
       const glyphs = getSpireGlyphCount(spireId);
@@ -550,7 +520,7 @@ function generateSecretAchievements() {
       subtitle: gem.name,
       icon: '?',
       rewardFlux: ACHIEVEMENT_REWARD_FLUX * (index + 1),
-      description: `Obtain a ${gem.name} gem. ${hint} Unlocking grants ${formatAchievementMoteFallReward(DEFAULT_MOTE_FALL_REWARD_DEFINITION)}.`,
+      description: `Obtain a ${gem.name} gem. ${hint}`,
       condition: () => {
         const { moteGemInventory } = getContext();
         if (!moteGemInventory) {
@@ -586,9 +556,7 @@ function generateStoryAchievements() {
     subtitle: 'Finish the Prologue Chapter',
     icon: '🌙',
     rewardFlux: ACHIEVEMENT_REWARD_FLUX * 2,
-    moteFallAdditive: 1,
-    description:
-      'Complete the full prologue chapter to awaken as a scholar. Unlocking grants +1 mote fall rate in the Well of Inspiration.',
+    description: 'Complete the full prologue chapter to awaken as a scholar.',
     condition: () => {
       return PROLOGUE_CHAPTER_LEVEL_IDS.every(levelId => isLevelCompleted(levelId));
     },
@@ -645,8 +613,6 @@ export async function generateLevelAchievements() {
         achievementState.delete(key);
       }
     });
-
-    refreshAchievementPowderRate();
 
     if (achievementGridEl) {
       renderAchievementGrid();
@@ -734,42 +700,6 @@ function toggleDropdown(categoryId) {
       }
     });
   }
-}
-
-// Calculate total bonuses for a category
-function calculateCategoryBonuses(categoryAchievements) {
-  const claimed = categoryAchievements.filter(def => {
-    const state = achievementState.get(def.id);
-    return state?.earned && state?.claimed;
-  });
-  const totalMoteFallAdditive = claimed.reduce((sum, def) => {
-    const bonus = getAchievementMoteFallBonus(def);
-    return sum + bonus.additive;
-  }, 0);
-  const doublingCount = claimed.reduce((sum, def) => {
-    const bonus = getAchievementMoteFallBonus(def);
-    return sum + (bonus.multiplier > 1 ? 1 : 0);
-  }, 0);
-  return { count: claimed.length, totalMoteFallAdditive, doublingCount };
-}
-
-// Render bonuses summary for a category
-function renderBonusSummary(categoryAchievements) {
-  const { count, totalMoteFallAdditive, doublingCount } = calculateCategoryBonuses(categoryAchievements);
-  if (count === 0) {
-    return null;
-  }
-  
-  const summary = document.createElement('div');
-  summary.className = 'achievement-category-bonuses';
-  summary.innerHTML = `
-    <p class="achievement-category-bonuses__title">Bonuses Earned:</p>
-    <ul class="achievement-category-bonuses__list">
-      <li>${formatGameNumber(doublingCount)} mote-rate doublers claimed</li>
-      <li>+${formatGameNumber(totalMoteFallAdditive)} Well mote fall rate</li>
-    </ul>
-  `;
-  return summary;
 }
 
 // Helper to create an icon element (supports both emoji and SVG)
@@ -868,12 +798,6 @@ function renderAchievementGrid() {
     dropdownContent.dataset.dropdownContent = category.id;
     dropdownContent.hidden = true;
     dropdownContent.style.display = 'none';
-
-    // Add bonus summary
-    const bonusSummary = renderBonusSummary(categoryAchievements);
-    if (bonusSummary) {
-      dropdownContent.append(bonusSummary);
-    }
 
     // Add achievements grid
     const achievementsGrid = document.createElement('div');
@@ -1122,7 +1046,7 @@ function presentAchievementCinematic(id) {
   // Hide the status line when achievement is claimed, keep only the reward line
   overlayEls.status.hidden = !statusText || isClaimed;
 
-  overlayEls.reward.textContent = `Reward · ${formatAchievementMoteFallReward(definition)}.`;
+  overlayEls.reward.textContent = 'Achievement recorded.';
 
   overlayEls.content.classList.remove('text-visible');
   overlayEls.hint.hidden = false;
@@ -1214,7 +1138,6 @@ function dismissAchievementCinematic() {
 export function bindAchievements() {
   renderAchievementGrid();
   evaluateAchievements();
-  refreshAchievementPowderRate();
   const { updateResourceRates, updatePowderLedger } = getContext();
   if (typeof updateResourceRates === 'function') {
     updateResourceRates();
@@ -1251,7 +1174,7 @@ function updateAchievementStatus(definition, element, state) {
     }
     
     if (status) {
-      status.textContent = `Claimed · ${formatAchievementMoteFallReward(definition)} secured.`;
+      status.textContent = 'Claimed · Achievement recorded.';
     }
     if (container && status) {
       container.setAttribute('aria-label', `${definition.title} achievement. ${status.textContent} Activate to view details.`);
@@ -1330,25 +1253,6 @@ function updateCategoryButtonCounts() {
       }
     }
     
-    // Update bonus summary if dropdown is open
-    if (openDropdowns.has(category.id)) {
-      const dropdownContent = document.querySelector(`[data-dropdown-content="${category.id}"]`);
-      if (dropdownContent) {
-        const existingSummary = dropdownContent.querySelector('.achievement-category-bonuses');
-        const newSummary = renderBonusSummary(categoryAchievements);
-        
-        if (newSummary && existingSummary) {
-          existingSummary.replaceWith(newSummary);
-        } else if (newSummary && !existingSummary) {
-          const achievementsGrid = dropdownContent.querySelector('.achievement-tiles-grid');
-          if (achievementsGrid) {
-            dropdownContent.insertBefore(newSummary, achievementsGrid);
-          }
-        } else if (!newSummary && existingSummary) {
-          existingSummary.remove();
-        }
-      }
-    }
   });
 }
 
@@ -1411,15 +1315,9 @@ function claimAchievement(definition) {
   updateAchievementStatus(definition, element, state);
   
   // Build list of rewards to display
-  const rewards = [];
-  rewards.push(formatAchievementMoteFallReward(definition));
-  
-  // Show golden text animation for rewards
-  showGoldenTextRewards(rewards);
+  showGoldenTextRewards(['Achievement recorded']);
   
   const { recordPowderEvent, updateResourceRates, updatePowderLedger, updateStatusDisplays } = getContext();
-
-  refreshAchievementPowderRate();
 
   if (typeof updateResourceRates === 'function') {
     updateResourceRates();
@@ -1534,30 +1432,6 @@ export function notifyAchievementsTabVisibilityChange(visible) {
       });
     });
   }
-}
-
-// Recomputes the idle powder reward provided by unlocked achievements.
-export function refreshAchievementPowderRate() {
-  const claimedDefinitions = achievementDefinitions.filter((definition) => {
-    const state = achievementState.get(definition.id);
-    return state?.earned && state?.claimed;
-  });
-  const totalAdditive = claimedDefinitions.reduce((sum, definition) => {
-    const bonus = getAchievementMoteFallBonus(definition);
-    return sum + bonus.additive;
-  }, 0);
-  const totalMultipliers = claimedDefinitions.reduce((sum, definition) => {
-    const bonus = getAchievementMoteFallBonus(definition);
-    return sum + (bonus.multiplier > 1 ? 1 : 0);
-  }, 0);
-  // Apply additive bonuses before doublers so the prologue +1 scales with later achievement doublers.
-  achievementPowderRate = (1 + totalAdditive) * ACHIEVEMENT_DEFAULT_MOTE_FALL_MULTIPLIER ** totalMultipliers;
-  return achievementPowderRate;
-}
-
-// Exposes the cached idle powder reward rate for resource calculations.
-export function getAchievementPowderRate() {
-  return achievementPowderRate;
 }
 
 // Notifies the achievement system that a tower was placed within a defense.

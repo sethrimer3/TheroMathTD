@@ -1,24 +1,20 @@
-// Coordinates page lifecycle listeners for autosaving, idle tracking, and audio suppression.
+// Coordinates page lifecycle listeners for autosaving and audio suppression.
 
 /**
  * Bind page visibility and lifecycle events to shared autosave/audio hooks.
  * @param {object} options - Wiring hooks from the main orchestrator.
  * @param {Function} options.commitAutoSave - Persists the latest save state.
- * @param {Function} options.markLastActive - Records the last interaction timestamp.
  * @param {Function} options.suppressAudioPlayback - Mutes music/SFX for a given reason.
  * @param {Function} options.releaseAudioSuppression - Re-enables audio for a given reason.
  * @param {Function} options.refreshTabMusic - Resumes tab-specific music routing.
- * @param {Function} options.checkOfflineRewards - Reconciles idle progression when returning.
  * @param {object} [options.audioManager] - Optional audio manager for hard stops on unload.
  * @returns {Function} Cleanup function that removes all registered listeners.
  */
 export function bindPageLifecycleEvents({
   commitAutoSave,
-  markLastActive,
   suppressAudioPlayback,
   releaseAudioSuppression,
   refreshTabMusic,
-  checkOfflineRewards,
   audioManager,
 }) {
   // Prepare helper that halts any active soundtrack before the session exits.
@@ -32,15 +28,12 @@ export function bindPageLifecycleEvents({
   const handleVisibilityChange = () => {
     if (document.visibilityState === 'hidden') {
       commitAutoSave?.();
-      markLastActive?.();
       suppressAudioPlayback?.('document-hidden');
       return;
     }
     if (document.visibilityState === 'visible') {
       releaseAudioSuppression?.('document-hidden');
       refreshTabMusic?.();
-      checkOfflineRewards?.();
-      markLastActive?.();
     }
   };
 
@@ -58,7 +51,6 @@ export function bindPageLifecycleEvents({
   // Persist state when the page is hidden during navigation transitions.
   const handlePageHide = () => {
     commitAutoSave?.();
-    markLastActive?.();
     suppressAudioPlayback?.('pagehide');
     stopMusicIfAvailable();
   };
@@ -72,7 +64,6 @@ export function bindPageLifecycleEvents({
   // Persist state before unloading the page to cover hard exits.
   const handleBeforeUnload = () => {
     commitAutoSave?.();
-    markLastActive?.();
     stopMusicIfAvailable();
   };
 

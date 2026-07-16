@@ -42,11 +42,8 @@ Manages the `AudioManager` wiring, slider bindings, audio persistence, activatio
 ## Spire Bank Management Helpers
 `assets/spireResourceBanks.js` encapsulates the Lamed/Tsadi bank normalization logic and glyph currency reconciliation math. Main.js now requests a tiny helper surface for updating bank values rather than defining dozens of inline functions tied to the spire menu controller.
 
-## Offline Overlay & Persistence Plumbing
-Handles storage key constants, powder log bookkeeping, offline overlay animation state, and timer coordination for idle rewards.
-
 ## Powder Simulation Bridging
-Acts as the bridge between the powder simulation and the rest of the game by managing mote drop queues, idle mote banking, powder save throttling, and integration points for the simulation instance.
+Acts as the bridge between the powder simulation and the rest of the game by managing active mote drop queues, powder save throttling, and integration points for the simulation instance.
 
 ## Playfield Gameplay Class
 Isolates the `Playfield` class definition, its constructor wiring, UI bindings, input handling, geometry calculations, floater animation scaffolding, and tower placement logic.

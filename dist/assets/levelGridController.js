@@ -16,7 +16,6 @@ export function createLevelGridController({
   levelConfigs,
   levelLookup,
   levelSetEntries,
-  idleLevelRuns,
 
   // ── Level query helpers ─────────────────────────────────────────────
   isLevelUnlocked,
@@ -918,7 +917,6 @@ export function createLevelGridController({
         }
       }
 
-      const runner = idleLevelRuns.get(level.id) || null;
       const lastResultEl = card.querySelector('.level-last-result');
       if (lastResultEl) {
         if (unlocked) {
@@ -926,7 +924,7 @@ export function createLevelGridController({
             const seen = Boolean(state?.storySeen);
             lastResultEl.textContent = seen ? 'Story viewed.' : 'Story ready to read.';
           } else {
-            lastResultEl.textContent = describeLevelLastResult(level, state || null, runner);
+            lastResultEl.textContent = describeLevelLastResult(level, state || null);
           }
         } else {
           lastResultEl.textContent = 'Locked until preceding defenses are sealed.';

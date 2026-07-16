@@ -11,7 +11,6 @@ export function createLevelOverlayController({
   describeLevelLastResult,
   getLevelSummary,
   getLevelState = () => null,
-  getIdleLevelRunner = () => null,
   getLevelById = () => null,
   getActiveLevelId = () => null,
   revealOverlay,
@@ -159,8 +158,7 @@ export function createLevelOverlayController({
     }
     if (overlayLastResultEl && typeof describeLevelLastResult === 'function') {
       const state = getLevelState ? getLevelState(level.id) : null;
-      const runner = getIdleLevelRunner ? getIdleLevelRunner(level.id) : null;
-      overlayLastResultEl.textContent = describeLevelLastResult(level, state, runner);
+      overlayLastResultEl.textContent = describeLevelLastResult(level, state);
     }
     if (overlayInstructionEl) {
       if (overlayRequiresLevelExit) {

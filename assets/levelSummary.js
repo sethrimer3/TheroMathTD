@@ -1,14 +1,12 @@
 import { formatGameNumber } from '../scripts/core/formatting.js';
-import { formatDuration, formatRewards, formatRelativeTime } from './formatHelpers.js';
+import { formatRewards, formatRelativeTime } from './formatHelpers.js';
 
 /**
  * Factory for level summary helpers that keep formatting logic outside main.js.
  * @param {Object} options dependency bag sourced from main orchestrator
  * @param {Function} options.getCompletedInteractiveLevelCount counts cleared interactive levels
  * @param {Function} options.getStartingTheroMultiplier resolves multiplier for starting Thero
- * @param {Function} options.isInteractiveLevel predicate for interactive levels
  * @param {Map} options.levelConfigs live interactive level configuration map
- * @param {Map} options.idleLevelConfigs live idle level configuration map
  * @param {Function} options.getBaseStartThero getter for the configured baseline starting Thero
  * @param {string} options.theroSymbol glyph used to describe Thero
  * @param {Function} [options.isDeveloperInfiniteTheroEnabled] flags whether developer infinite Thero is toggled on
@@ -16,9 +14,7 @@ import { formatDuration, formatRewards, formatRelativeTime } from './formatHelpe
 export function createLevelSummaryHelpers({
   getCompletedInteractiveLevelCount,
   getStartingTheroMultiplier,
-  isInteractiveLevel,
   levelConfigs,
-  idleLevelConfigs,
   getBaseStartThero,
   theroSymbol,
   isDeveloperInfiniteTheroEnabled,
@@ -29,7 +25,7 @@ export function createLevelSummaryHelpers({
     const levelLabel = levelsBeaten === 1 ? 'level' : 'levels';
     const beatenText = `${levelsBeaten} ${levelLabel} sealed`;
     const multiplierLabel = formatGameNumber(multiplier);
-    return `+1 Mote Gems/min · Thero Multiplier ×${multiplierLabel} (${beatenText})`;
+    return `Thero Multiplier ×${multiplierLabel} (${beatenText})`;
   }
 
   function describeLevelStartingThero(level, configOverride = null) {
@@ -83,32 +79,18 @@ export function createLevelSummaryHelpers({
       };
     }
 
-    const config = idleLevelConfigs.get(level.id);
     return {
-      mode: 'Idle Simulation',
-      duration: config ? `${formatDuration(config.runDuration)} auto-run` : 'Idle simulation',
-      rewards: config
-        ? formatRewards(config.rewardScore, config.rewardFlux, config.rewardEnergy, formatGameNumber)
-        : '—',
+      mode: 'Unavailable',
+      duration: '—',
+      rewards: '—',
       start: '—',
       startAria: 'Starting Thero not applicable.',
     };
   }
 
-  function describeLevelLastResult(level, state, runner) {
-    if (runner) {
-      const percent = Math.min(100, Math.max(0, Math.round((runner.progress || 0) * 100)));
-      const remainingSeconds = Number.isFinite(runner.remainingMs)
-        ? Math.ceil(runner.remainingMs / 1000)
-        : null;
-      const remainingLabel = remainingSeconds === null
-        ? 'Finishing'
-        : `${formatDuration(remainingSeconds)} remaining`;
-      return `Auto-run ${percent}% · ${remainingLabel}.`;
-    }
-
+  function describeLevelLastResult(_level, state) {
     if (state?.running) {
-      return level && isInteractiveLevel(level.id) ? 'Manual defense active.' : 'Auto-run initializing.';
+      return 'Manual defense active.';
     }
 
     if (!state || !state.lastResult) {

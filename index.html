@@ -71,36 +71,6 @@
       </div>
     </div>
     <div
-      class="offline-overlay"
-      id="offline-overlay"
-      role="dialog"
-      aria-modal="true"
-      aria-hidden="true"
-      tabindex="-1"
-      hidden
-    >
-      <div class="offline-overlay__content">
-        <p class="offline-overlay__title" id="offline-overlay-title">While asleep…</p>
-        <div class="offline-overlay__equation-group" aria-live="polite">
-          <div class="offline-overlay__equation-row" id="offline-aleph-row" aria-label="Well of Inspiration idle gains">
-            <span class="offline-overlay__label offline-overlay__label--placeholder" aria-hidden="true"></span>
-            <div class="offline-overlay__equation">
-              <span class="offline-symbol">×</span>
-              <span class="offline-number" id="offline-aleph-multiplier">0</span>
-              <span class="offline-symbol">=</span>
-              <span class="offline-number" id="offline-aleph-total">0</span>
-              <span class="offline-symbol offline-symbol--glyph" aria-hidden="true">ℵ</span>
-              <span class="offline-symbol">−</span>
-              <span class="offline-resource__label">Motes</span>
-            </div>
-          </div>
-        </div>
-        <p class="offline-overlay__prompt" id="offline-prompt" aria-live="polite">
-          <em>Press anywhere to continue.</em>
-        </p>
-      </div>
-    </div>
-    <div
       class="level-story-overlay"
       id="level-story-overlay"
       role="dialog"
@@ -2115,18 +2085,6 @@
                   <dt>Height to Next Glyph</dt>
                   <dd id="powder-next-glyph-progress">—</dd>
                 </div>
-                <div>
-                  <dt>Mote Bank</dt>
-                  <dd id="powder-mote-bank">0 Motes</dd>
-                </div>
-                <div>
-                  <dt>Fall Rate</dt>
-                  <dd id="powder-mote-rate">1.00 Motes/sec</dd>
-                </div>
-                <div>
-                  <dt>Idle Multiplier</dt>
-                  <dd id="powder-idle-multiplier">0 achievements</dd>
-                </div>
               </dl>
             </article>
           </section>
@@ -2155,7 +2113,7 @@
           hidden
         >
           <header class="panel-header">Achievements</header>
-          <p class="achievement-note">Each sealed proof adds <strong>+1 mote per minute</strong> to the idle bank.</p>
+          <p class="achievement-note">Seal proofs to complete the achievement collection.</p>
           <div class="achievement-grid" id="achievement-grid" role="list"></div>
         </section>
 
@@ -2576,31 +2534,7 @@
                     Start every defense with limitless Thero for sandbox testing.
                   </p>
                 </div>
-                <div class="developer-control-field">
-                  <label for="developer-mote-bank">Idle mote bank</label>
-                  <input
-                    type="number"
-                    id="developer-mote-bank"
-                    data-developer-field="moteBank"
-                    min="0"
-                    step="1"
-                    inputmode="numeric"
-                  />
-                  <p class="developer-control-hint">Override the stored mote reserve.</p>
-                </div>
                 <!-- Compact basin autosave removed per task 24 - it is now the only save method -->
-                <div class="developer-control-field">
-                  <label for="developer-mote-rate">Mote fall rate</label>
-                  <input
-                    type="number"
-                    id="developer-mote-rate"
-                    data-developer-field="moteRate"
-                    min="0"
-                    step="0.01"
-                    inputmode="decimal"
-                  />
-                  <p class="developer-control-hint">Set motes dispensed per second.</p>
-                </div>
                 <div class="developer-control-field">
                   <label for="developer-start-thero">Base start þ</label>
                   <input

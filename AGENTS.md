@@ -32,8 +32,8 @@ conventions for all AI collaborators working anywhere inside this repository.
 
 ## Vision Snapshot
 - **Platform targets:** iOS and Android builds 
-- **Core loop:** A tower-defense idle hybrid inspired by titles such as *The Tower*,
-  *Exponential Idle*, and *The Powder Game*.
+- **Core loop:** An active tower-defense game with mathematical progression and
+  a hands-on falling-powder side activity inspired by *The Powder Game*.
 - **Mathematical identity:** Gameplay, upgrades, and narrative should lean into a
   "mystically mathematical" aesthetic. Enemies, towers, and UI elements should use
   Greek letters, mathematical symbols, and textbook-style or chalk on blackboard script fonts.
@@ -41,7 +41,7 @@ conventions for all AI collaborators working anywhere inside this repository.
   per enemy kill, sand-dune height scaling income multipliers).
 - **Upgrade philosophy:** Many upgrades manipulate math expressions (e.g., exponents,
   multipliers, factorial-like growth) that cascade into gameplay modifiers such as
-  projectile count, damage curves, spawn rates, or idle income.
+  projectile count, damage curves, spawn rates, or active resource gains.
 
 ## Aesthetic Guidelines
 1. **Palette:** Prefer monochrome (black, white, subtle gray). Use color sparingly to
@@ -60,8 +60,8 @@ conventions for all AI collaborators working anywhere inside this repository.
   prime-number spawns, Fibonacci-based health scaling) where practical.
 - **Powder bonuses:** Any sand/powder subsystem should feed back into the main loop via
   calculable modifiers. Document new formulas inline when implemented.
-- **Idle features:** Persist idle gains with clear math-driven rules (e.g., integrals
-  over offline time, logarithmic diminishing returns) and document them.
+- **Active progression:** Rewards must come from deliberate play. Do not add offline
+  rewards, automated level runs, passive idle banks, or time-skip boosts.
 
 ## Collaboration Conventions
 1. **Documentation:** Whenever introducing a new formula or mechanic, leave inline

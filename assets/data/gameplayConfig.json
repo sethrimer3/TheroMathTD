@@ -386,60 +386,6 @@
       "example": "Trial: No fixed path—adapt to radial enemy spawns."
     },
     {
-      "set": "Trials",
-      "id": "Trial - 2",
-      "campaign": "Challenges",
-      "title": "Fractal Recursion",
-      "path": "Self-similar spiral manifesting at multiple scales.",
-      "focus": "Navigate recursive patterns and exponential growth.",
-      "example": "Trial: Master scaling complexity."
-    },
-    {
-      "set": "Trials",
-      "id": "Trial - 3",
-      "campaign": "Challenges",
-      "title": "Temporal Paradox",
-      "path": "Time-shifted lanes where past and future collide.",
-      "focus": "Coordinate defenses across temporal layers.",
-      "example": "Trial: Synchronize your strategy across time."
-    },
-    {
-      "set": "Trials",
-      "id": "Trial - 4",
-      "campaign": "Challenges",
-      "title": "Dimensional Rift",
-      "path": "Overlapping realities with shifting phase planes.",
-      "focus": "Manage multiple dimensions simultaneously.",
-      "example": "Trial: Master multi-planar warfare."
-    },
-    {
-      "set": "Trials",
-      "id": "Trial - 5",
-      "campaign": "Challenges",
-      "title": "Infinite Descent",
-      "path": "Endlessly spiraling inward toward singularity.",
-      "focus": "Survive the collapse into mathematical infinity.",
-      "example": "Trial: Endure the infinite descent."
-    },
-    {
-      "set": "Trials",
-      "id": "Trial - 6",
-      "campaign": "Challenges",
-      "title": "Chaos Theory",
-      "path": "Unpredictable butterfly effects cascade through lanes.",
-      "focus": "Adapt to exponentially diverging outcomes.",
-      "example": "Trial: Navigate deterministic chaos."
-    },
-    {
-      "set": "Trials",
-      "id": "Trial - 7",
-      "campaign": "Challenges",
-      "title": "Final Theorem",
-      "path": "The ultimate proof—all concepts converge.",
-      "focus": "Master every mechanic in the ultimate challenge.",
-      "example": "Trial: Prove your mastery of all theorems."
-    },
-    {
       "set": "Glyph Trials",
       "id": "Glyph Trial - 1",
       "campaign": "Challenges",
@@ -749,60 +695,6 @@
       "focus": "Learn more about the scholars and their journey.",
       "example": "Story: Chapter 6 narrative conclusion.",
       "isStoryLevel": true
-    },
-    {
-      "set": "Challenge Set 1",
-      "id": "Challenge-1-1",
-      "campaign": "Challenges",
-      "title": "Endurance Trial I",
-      "path": "Extended wave sequences.",
-      "focus": "Test sustained defense.",
-      "example": "Challenge 1: Survive escalating waves."
-    },
-    {
-      "set": "Challenge Set 1",
-      "id": "Challenge-1-2",
-      "campaign": "Challenges",
-      "title": "Endurance Trial II",
-      "path": "Extended wave sequences.",
-      "focus": "Test sustained defense.",
-      "example": "Challenge 1: Survive escalating waves."
-    },
-    {
-      "set": "Challenge Set 1",
-      "id": "Challenge-1-3",
-      "campaign": "Challenges",
-      "title": "Endurance Trial III",
-      "path": "Extended wave sequences.",
-      "focus": "Test sustained defense.",
-      "example": "Challenge 1: Survive escalating waves."
-    },
-    {
-      "set": "Challenge Set 2",
-      "id": "Challenge-2-1",
-      "campaign": "Challenges",
-      "title": "Speed Run I",
-      "path": "Race against time.",
-      "focus": "Quick elimination required.",
-      "example": "Challenge 2: Clear waves rapidly."
-    },
-    {
-      "set": "Challenge Set 2",
-      "id": "Challenge-2-2",
-      "campaign": "Challenges",
-      "title": "Speed Run II",
-      "path": "Race against time.",
-      "focus": "Quick elimination required.",
-      "example": "Challenge 2: Clear waves rapidly."
-    },
-    {
-      "set": "Challenge Set 2",
-      "id": "Challenge-2-3",
-      "campaign": "Challenges",
-      "title": "Speed Run III",
-      "path": "Race against time.",
-      "focus": "Quick elimination required.",
-      "example": "Challenge 2: Clear waves rapidly."
     },
     {
       "set": "Developer",

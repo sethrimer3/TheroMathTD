@@ -13,7 +13,6 @@ import {
   setLevelBlueprints,
   setLevelConfigs,
   initializeInteractiveLevelProgression,
-  populateIdleLevelConfigs,
   pruneLevelState,
   getStartingTheroMultiplier,
 } from './levels.js';
@@ -186,7 +185,6 @@ async function applyGameplayConfigInternal(config = {}) {
   setLevelBlueprints(gameplayConfigData.maps);
   setLevelConfigs(gameplayConfigData.levels);
   initializeInteractiveLevelProgression();
-  populateIdleLevelConfigs(baseResourcesRef);
   pruneLevelState();
 
   await generateLevelAchievements();

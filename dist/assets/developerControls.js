@@ -5,8 +5,6 @@ let developerContext = null;
 const developerControlElements = {
   container: null,
   fields: {
-    moteBank: null,
-    moteRate: null,
     startThero: null,
     theroMultiplier: null,
     glyphsAleph: null,
@@ -52,38 +50,6 @@ function refreshWellDisplay() {
 function setDeveloperInfiniteTheroEnabled(active) {
   getContext().setDeveloperInfiniteTheroEnabled?.(Boolean(active));
   recordDeveloperAdjustment('infinite-thero', active ? 'enabled' : 'disabled');
-}
-
-function setDeveloperIdleMoteBank(value) {
-  if (!Number.isFinite(value)) {
-    return;
-  }
-  const normalized = Math.max(0, Math.floor(value));
-  const context = getContext();
-  const simulation = context.getPowderSimulation?.();
-  if (simulation) {
-    simulation.idleBank = normalized;
-  }
-  context.handlePowderIdleBankChange?.(simulation?.idleBank ?? normalized, 'sand');
-  recordDeveloperAdjustment('idle-mote-bank', normalized);
-  refreshWellDisplay();
-}
-
-function setDeveloperIdleMoteRate(value) {
-  if (!Number.isFinite(value)) {
-    return;
-  }
-  const normalized = Math.max(0, value);
-  const context = getContext();
-  const simulation = context.getPowderSimulation?.();
-  if (simulation) {
-    simulation.idleDrainRate = normalized;
-  }
-  if (context.powderState) {
-    context.powderState.idleDrainRate = normalized;
-  }
-  recordDeveloperAdjustment('idle-mote-rate', normalized);
-  refreshWellDisplay();
 }
 
 function setDeveloperBaseStartThero(value) {
@@ -136,8 +102,6 @@ function setDeveloperGlyphs(value) {
 }
 
 const developerFieldHandlers = {
-  moteBank: setDeveloperIdleMoteBank,
-  moteRate: setDeveloperIdleMoteRate,
   startThero: setDeveloperBaseStartThero,
   theroMultiplier: setDeveloperTheroMultiplier,
   glyphsAleph: setDeveloperGlyphs,
@@ -146,12 +110,6 @@ const developerFieldHandlers = {
 function syncDeveloperControlValues() {
   const { fields, toggles } = developerControlElements;
   const context = getContext();
-  if (fields.moteBank) {
-    fields.moteBank.value = formatDeveloperInteger(context.getCurrentIdleMoteBank?.());
-  }
-  if (fields.moteRate) {
-    fields.moteRate.value = formatDeveloperFloat(context.getCurrentMoteDispenseRate?.());
-  }
   if (fields.startThero) {
     fields.startThero.value = formatDeveloperInteger(context.getBaseStartThero?.());
   }

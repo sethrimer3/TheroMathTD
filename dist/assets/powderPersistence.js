@@ -3,8 +3,8 @@ import { migrateWellOfInspirationSave } from './saveCompatibility.js';
 
 const WELL_STATE_FIELDS = [
   'sandOffset', 'duneHeight', 'charges', 'simulatedDuneGain', 'wallGlyphsLit', 'glyphsAwarded',
-  'idleMoteBank', 'idleDrainRate', 'pendingMoteDrops', 'motePalette', 'wallGapTarget', 'viewTransform',
-  'alephWallTier', 'alephTierAlephValue', 'alephBaseIdleDrainRate', 'alephTierTransitionCheckpoint',
+  'pendingMoteDrops', 'motePalette', 'wallGapTarget', 'viewTransform',
+  'alephWallTier', 'alephTierAlephValue', 'alephTierTransitionCheckpoint',
 ];
 
 /** Persist only the surviving Well of Inspiration simulation. */

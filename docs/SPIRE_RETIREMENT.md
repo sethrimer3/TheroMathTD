@@ -2,7 +2,9 @@
 
 The active game has one surviving Spire experience: the **Well of Inspiration**, formerly presented as the Aleph Spire. Achievements and the Achievements tab remain active.
 
-Bet, Lamed, Tsadi, Shin, and Kuf Spires are retired from navigation, progression, tutorials, resources, offline rewards, autosave scheduling, initialization, update/render/resize lifecycles, and developer controls. Their old save branches are ignored when loading. Retired storage-key constants remain available only so old data can be recognized or removed safely; the active autosave loop does not write Shin or Kuf snapshots.
+Bet, Lamed, Tsadi, Shin, and Kuf Spires are retired from navigation, progression, tutorials, resources, autosave scheduling, initialization, update/render/resize lifecycles, and developer controls. Their old save branches are ignored when loading. The former Terrarium source and artwork have been deleted. Retired storage-key constants remain available only so old data can be recognized or removed safely; the active autosave loop does not write Shin or Kuf snapshots.
+
+All idle progression is retired: there are no automated level runs, offline-return rewards, passive mote banks, achievement rate bonuses, or idle time-skip boosts. Existing `glyph-defense-idle:*` storage-key names remain unchanged solely to preserve compatibility with installed saves.
 
 The user-facing name is **Well of Inspiration**. Compatibility-sensitive internal names remain in place where renaming would create a broad migration: `powder`, `aleph`, `alephSpire`, `powderState`, `PowderSimulation`, Aleph wall/tier fields, Aleph glyph IDs, the `powder` tab and panel IDs, and existing `glyph-defense-idle:*` storage keys. `assets/saveCompatibility.ts` and `assets/state/spireResourceState.ts` normalize historical Well/Aleph shapes while ignoring retired branches.
 

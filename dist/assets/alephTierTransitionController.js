@@ -73,13 +73,6 @@ export function createAlephTierTransitionController(deps) {
     };
   }
 
-  function resolveAlephTierRate(baseRate, tier) {
-    const normalizedBaseRate = Number.isFinite(baseRate) ? Math.max(0, baseRate) : 0;
-    const normalizedTier = Number.isFinite(tier) ? Math.max(1, Math.floor(tier)) : 1;
-    // 1 next-tier mote represents 100 current-tier motes, so higher tiers run at baseRate / 100^(tier - 1).
-    return normalizedBaseRate / 100 ** Math.max(0, normalizedTier - 1);
-  }
-
   // ── Transition mechanics ─────────────────────────────────────────────
 
   function getTierAdvanceCount() {
@@ -296,12 +289,6 @@ export function createAlephTierTransitionController(deps) {
       ? Math.max(0, Math.floor(tierProgress.alephInTier))
       : 0;
 
-    const currentRate = Number.isFinite(powderState.idleDrainRate) ? Math.max(0, powderState.idleDrainRate) : 0;
-    if (!Number.isFinite(powderState.alephBaseIdleDrainRate) || powderState.alephBaseIdleDrainRate <= 0) {
-      powderState.alephBaseIdleDrainRate = currentRate;
-    }
-    const effectiveRate = resolveAlephTierRate(powderState.alephBaseIdleDrainRate, tier);
-    powderState.idleDrainRate = effectiveRate;
     const tierPalette = resolveAlephTierStubPalette(tier);
     powderState.motePalette = mergeMotePalette(tierPalette);
     const sandSimulation = getSandSimulation();
@@ -312,8 +299,7 @@ export function createAlephTierTransitionController(deps) {
       applyMindGatePaletteToDom(powderState.motePalette);
     }
 
-    if (sandSimulation && Number.isFinite(effectiveRate)) {
-      sandSimulation.idleDrainRate = effectiveRate;
+    if (sandSimulation) {
       if (typeof sandSimulation.setMotePalette === 'function') {
         sandSimulation.setMotePalette(tierPalette);
       }
@@ -324,7 +310,6 @@ export function createAlephTierTransitionController(deps) {
 
   return {
     resolveAlephTierStubPalette,
-    resolveAlephTierRate,
     getTierVisualGlyphCount,
     setAlephTierTransitionVisualState,
     setAlephTierTransitionSpawnState,

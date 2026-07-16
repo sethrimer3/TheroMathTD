@@ -223,7 +223,7 @@ import {
 When adjusting formulas:
 1. Test progression from level 0 to max
 2. Compare with adjacent tower tiers
-3. Consider idle/offline time scaling
+3. Keep rewards tied to active play; offline and idle progression are retired
 4. Document why formula was chosen
 5. Update `docs/PROGRESSION.md`
 

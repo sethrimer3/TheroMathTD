@@ -4,7 +4,6 @@ export function createResourceHud({
   formatWholeNumber,
   getStartingTheroMultiplier,
   getGlyphCurrency,
-  getCurrentIdleMoteBank,
   powderState,
 }) {
   const resourceElements = {
@@ -12,7 +11,6 @@ export function createResourceHud({
     glyphsAlephTotal: null,
     glyphsAlephUnused: null,
     tabGlyphBadge: null,
-    tabMoteBadge: null,
   };
   const statusRefreshCallbacks = new Set();
 
@@ -21,7 +19,6 @@ export function createResourceHud({
     resourceElements.glyphsAlephTotal = document.getElementById('tower-glyphs-aleph-total');
     resourceElements.glyphsAlephUnused = document.getElementById('tower-glyphs-aleph-unused');
     resourceElements.tabGlyphBadge = document.getElementById('tab-glyph-badge');
-    resourceElements.tabMoteBadge = document.getElementById('tab-mote-badge');
     updateStatusDisplays();
   }
 
@@ -49,14 +46,6 @@ export function createResourceHud({
       resourceElements.tabGlyphBadge.setAttribute('aria-label', `${label} unused Well glyphs`);
       resourceElements.tabGlyphBadge.toggleAttribute('hidden', unusedGlyphs <= 0);
       resourceElements.tabGlyphBadge.setAttribute('aria-hidden', unusedGlyphs > 0 ? 'false' : 'true');
-    }
-
-    if (resourceElements.tabMoteBadge) {
-      const label = formatGameNumber(getCurrentIdleMoteBank());
-      resourceElements.tabMoteBadge.textContent = label;
-      resourceElements.tabMoteBadge.setAttribute('aria-label', `${label} motes in bank`);
-      resourceElements.tabMoteBadge.removeAttribute('hidden');
-      resourceElements.tabMoteBadge.setAttribute('aria-hidden', 'false');
     }
 
     statusRefreshCallbacks.forEach((callback) => {

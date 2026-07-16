@@ -185,31 +185,9 @@ Spending nothing compounds into a nearly limitless multiplier, rewarding an "idl
 
 ---
 
-## Spires (Idle Games)
+## Well of Inspiration
 
-Spires are self-contained idle games — not towers. Each spire runs its own physics-based simulation and rewards the player with one of the six glyph types used to alter tower equations.
-
-### Powder Spire
-**Math concept:** Cellular automata / Particle physics  
-**Idle mechanic:** Runs a real-time falling-sand simulation in a basin. Grains obey gravity, slumping, and wall rules on a cell grid. The kinetic energy of colliding and sliding grains accumulates into glyph production — a probabilistic, emergent system rather than a fixed formula. Players earn **Aleph glyphs (ℵ)** from powder interactions.
-
----
-
-### Fluid Spire (Bet)
-**Math concept:** Shallow-water equations / Fluid dynamics  
-**Idle mechanic:** Simulates a water column model with velocity tracking, ripple equalization, and geyser bursts on high-flow events. Glyph production is proportional to flow intensity; a sudden geyser spike acts as a bonus burst. Players earn **Bet glyphs (ב)** from fluid dynamics.
-
----
-
-### Lamed Spire (ל)
-**Math concept:** Orbital mechanics / Gravitational physics  
-**Idle mechanic:** Stars orbit a central celestial body governed by Newtonian gravity and drag. As the central mass grows (Proto-star → Red Giant → Black Hole), its gravitational pull strengthens. Stars that are absorbed add to the mass; absorbed mass converts into glyph production. Trajectory trails are color-coded by velocity. Players earn **Lamed glyphs (ל)** from orbital mechanics.
-
----
-
-### Tsadi Spire (צ)
-**Math concept:** Particle fusion / Elastic collision mechanics  
-**Idle mechanic:** Particles bounce in a 2D arena; when two same-tier particles collide elastically, they fuse into a higher tier, conserving momentum. The highest tier reached determines the glyph reward. A Van der Waals binding-agent system lets advanced molecules form, unlocking combination bonuses. Players earn **Tsadi glyphs (צ)** from particle fusion.
+The Well is an active falling-mote simulation, not an idle game. Motes earned through active defenses enter its cellular-automata basin; rising powder illuminates Aleph glyphs (ℵ) used to alter tower equations.
 
 ---
 
@@ -231,16 +209,6 @@ Spires are self-contained idle games — not towers. Each spire runs its own phy
 
 ---
 
-## Terrarium Achievement Objects
-
-Fractal visualizations that are earned as rewards and placed in the player's achievements terrarium — a collectible display filled with mathematical curiosities.
-
-### Shin (ש) — Fractal Tree
-**Math concept:** Fractal tree / L-system recursive geometry  
-**Terrarium role:** A decorative ink-style fractal tree with configurable branch factor, length decay, max depth, gravity bend, and angle jitter. The branching structure represents recursive self-similar geometry — each branch a scaled copy of the whole. This is not a combat tower; it is a terrarium reward object that grows and evolves as the player progresses through the Shin Spire idle game.
-
----
-
 ## Gate Structures
 
 ### Mind Gate (𝔊)
@@ -252,3 +220,4 @@ When the Mind Gate is destroyed the run ends — it anchors all inspiration and 
 ### Shadow Gate (℘)
 **Role:** Enemy spawn nexus at the lane origin.  
 The Shadow Gate is the source term of the enemy wave function — all enemies emanate from it. Its Weierstrass ℘ symbol (an elliptic function with poles) evokes an infinite singularity that continuously outputs threat.
+

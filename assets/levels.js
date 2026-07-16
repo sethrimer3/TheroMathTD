@@ -1,12 +1,11 @@
 // Shared level configuration helpers for Thero Idle.
-// This module stores the interactive and idle level blueprints alongside utility functions for progression logic.
+// This module stores interactive level blueprints alongside utility functions for progression logic.
 
 import { parseCompactWaveString, ENEMY_TYPES } from './waveEncoder.js';
 
 export let levelBlueprints = [];
 export let levelLookup = new Map();
 export const levelConfigs = new Map();
-export const idleLevelConfigs = new Map();
 export const levelState = new Map();
 export let interactiveLevelOrder = [];
 export const unlockedLevels = new Set();
@@ -170,29 +169,6 @@ export function initializeInteractiveLevelProgression() {
     unlockedLevels.add(interactiveLevelOrder[0]);
   }
   return interactiveLevelOrder;
-}
-
-// Build idle level payout data using the provided baseline resource rates.
-export function populateIdleLevelConfigs(baseResources = {}) {
-  idleLevelConfigs.clear();
-  levelBlueprints.forEach((level, index) => {
-    if (!level || !level.id || levelConfigs.has(level.id)) {
-      return;
-    }
-    const levelNumber = index + 1;
-    const runDuration = 90 + levelNumber * 12;
-    const rewardMultiplier = 1 + levelNumber * 0.08;
-    const rewardScore = (baseResources.scoreRate || 0) * (runDuration / 12) * rewardMultiplier;
-    const rewardFlux = 45 + levelNumber * 10;
-    const rewardThero = 35 + levelNumber * 8;
-    idleLevelConfigs.set(level.id, {
-      runDuration,
-      rewardScore,
-      rewardFlux,
-      rewardThero,
-    });
-  });
-  return idleLevelConfigs;
 }
 
 // Remove persisted level state entries for maps that no longer exist.
