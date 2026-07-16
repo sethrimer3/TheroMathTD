@@ -90,7 +90,7 @@ Before reporting completion, update this document in the same branch or commit s
 
 The obsolete-Spire retirement is an intentional product change, not a general migration phase. It removed active Bet, Lamed, Tsadi, Shin, and Kuf modules and added one typed compatibility boundary, `assets/saveCompatibility.ts`. The Aleph experience remains active under the user-facing name **Well of Inspiration**; compatibility-sensitive `powder`/`aleph` identifiers remain unchanged.
 
-Using the established count method, the current tree contains **56 authored `.ts` modules** and **229 authored `.js` modules without a same-path `.ts` sibling** (**285 total**). Phase 16 converted `assets/towerEquations/advancedTowers.js`, moving the live post-retirement baseline from 55 to 56 typed modules and from 230 to 229 remaining JavaScript modules without changing the total. That is **19.6% converted by module count**. A supplemental authored-line snapshot remains approximately **6.2% converted by source lines**; this lower figure reflects the large JavaScript integration modules still ahead. The disabled Achievements Terrarium/Bet Terrarium files referenced by older ledger entries are no longer present in the live tree, so there is no separate preserved-legacy subtraction in the current count. The retired `spireFloatingMenu` and `spireTabVisibility` TypeScript modules and the orphaned retired idle/developer controllers were removed because the one-Well navigation no longer imports or needs those multi-Spire managers. The former Collective Unconscious/Cognitive Realm runtime was removed after Phase 10, including its typed state module and two JavaScript UI modules; its earlier migration entries remain below as historical records.
+Using the established count method, the current tree contains **60 authored `.ts` modules** and **225 authored `.js` modules without a same-path `.ts` sibling** (**285 total**). Phases 17–20 converted the Sigma, Phi, Upsilon, and Tau advanced equation definitions, moving the live post-retirement baseline from 56 to 60 typed modules and from 229 to 225 remaining JavaScript modules without changing the total. That is **21.1% converted by module count**. A supplemental authored-line snapshot is approximately **6.7% converted by source lines**; this lower figure reflects the large JavaScript integration modules still ahead. The disabled Achievements Terrarium/Bet Terrarium files referenced by older ledger entries are no longer present in the live tree, so there is no separate preserved-legacy subtraction in the current count. The retired `spireFloatingMenu` and `spireTabVisibility` TypeScript modules and the orphaned retired idle/developer controllers were removed because the one-Well navigation no longer imports or needs those multi-Spire managers. The former Collective Unconscious/Cognitive Realm runtime was removed after Phase 10, including its typed state module and two JavaScript UI modules; its earlier migration entries remain below as historical records.
 
 **Plan created:** 2026-07-13  
 **Repository:** `sethrimer3/TheroMathTD`  
@@ -143,6 +143,10 @@ No TypeScript conversion phase is recorded as complete in this plan.
 | 14 | Mind Gate authored equation definition (`assets/towerEquations/mindGate.js`) | COMPLETE | See Phase 14 section and Implementation Log entry below |
 | 15 | Shadow Gate authored equation definition (`assets/towerEquations/shadowGate.js`) | COMPLETE | See Phase 15 section and Implementation Log entry below |
 | 16 | Advanced-equation barrel (`assets/towerEquations/advancedTowers.js`) | COMPLETE | See Phase 16 section and Implementation Log entry below |
+| 17 | Sigma advanced equation definition (`assets/towerEquations/advanced/sigmaEquation.js`) | COMPLETE | See Phase 17 section and Implementation Log entry below |
+| 18 | Phi advanced equation definition (`assets/towerEquations/advanced/phiEquation.js`) | COMPLETE | See Phase 18 section and Implementation Log entry below |
+| 19 | Upsilon advanced equation definition (`assets/towerEquations/advanced/upsilonEquation.js`) | COMPLETE | See Phase 19 section and Implementation Log entry below |
+| 20 | Tau advanced equation definition (`assets/towerEquations/advanced/tauEquation.js`) | COMPLETE | See Phase 20 section and Implementation Log entry below |
 
 ---
 
@@ -866,6 +870,60 @@ Suite total: **78/78 passing** (58 pre-existing from Phases 2–5A + 20 new).
 
 ---
 
+## Phase 17 — Sigma Advanced Equation Definition (COMPLETE)
+
+**Status:** COMPLETE (2026-07-16)
+**Migration type:** Behavior-preserving migration
+
+**Verified starting point and baseline:** Phases 17–20 were executed together on `codex/phase-16-advanced-equation-barrel` from completed Phase 16 commit `7d2aa7b2386b3adfcaceb73a78e706cb0632bb08`. A fresh fetch showed the clean stacked branch eight commits ahead and zero behind `origin/main` at Build 742. Pre-edit typecheck/build/lint, 162/162 core tests plus retired-Spire checks, and recursive smoke validation all passed.
+
+**Files, contracts, and behavior:** The sole Sigma implementation became strict `assets/towerEquations/advanced/sigmaEquation.ts`; its `.js` sibling remains generated with the same formatting/context imports and named export. The presenter-owned contract now records the three number formatters already supplied to sub-equation callbacks plus the existing base-equation value formatter surface. Narrow property reads preserve canonical-before-prefixed Sigma stat lookup, nullish fallback, inherited/getter access, Number coercion, finite/nonnegative validation, and the strict `prestige === true` branch. Exact metadata, formula strings, stored/absorbed variable order, optional last-release line, result behavior, and formatter order remain unchanged; no `any`, assertion, suppression, or runtime wrapper was added.
+
+**Tests, validation, and counts:** Four generated-output tests cover metadata, canonical/prefixed precedence, coercion and invalid fallbacks, imported formatting, prestige/non-prestige arrays, optional release output, absorbed lines, number-only result acceptance, and base formatter order. The core suite rose from 162 to **166 tests** for this phase. Counts moved from 56 to **57 authored TypeScript modules** and from 229 to **228 remaining JavaScript modules**; total authored modules remain **285**.
+
+**Browser/manual verification:** No browser, Electron, touch, or physical-device verification was performed or claimed. Sigma's definition is DOM-free; generated-output characterization and recursive smoke validation cover the migrated boundary.
+
+---
+
+## Phase 18 — Phi Advanced Equation Definition (COMPLETE)
+
+**Status:** COMPLETE (2026-07-16)
+**Migration type:** Behavior-preserving migration
+
+**Scope and behavior:** After Sigma, Phi was the smallest remaining advanced definition by authored lines. The sole implementation became strict `assets/towerEquations/advanced/phiEquation.ts`; its generated `.js` sibling retains all three formatting imports, the shared context import, the dormant context resolver, five mathematical constants, and the same named export. All four variables, exact Fibonacci/golden-angle strings, formatting fallbacks, result coercion, `Infinity × 0` yielding `NaN`, and base callback order remain unchanged.
+
+**Tests, validation, and counts:** Three generated-output tests cover exact metadata/constants, every variable's malformed-value fallback and formatter order, coercive result math, the inherited `NaN` edge, and base-equation formatting. The core suite rose from 166 to **169 tests** for this phase. Counts moved from 57 to **58 authored TypeScript modules** and from 228 to **227 remaining JavaScript modules**; total authored modules remain **285**.
+
+**Browser/manual verification:** No browser, Electron, touch, or physical-device verification was performed or claimed. Phi's definition is deterministic and DOM-free; generated-output tests and recursive smoke validation cover its runtime boundary.
+
+---
+
+## Phase 19 — Upsilon Advanced Equation Definition (COMPLETE)
+
+**Status:** COMPLETE (2026-07-16)
+**Migration type:** Behavior-preserving migration
+
+**Scope and behavior:** The sole Upsilon implementation became strict `assets/towerEquations/advanced/upsilonEquation.ts`; its generated `.js` sibling retains its formatting/context imports, named export, and exact four-variable order. Metadata, glyph labels, base/step values, exponential rounded cost curves, finite fallbacks, rank derivation, formatter calls, Number coercion, minimum fleet behavior, inherited `Infinity × 0` `NaN` edge, and mixed base-equation formatting remain unchanged.
+
+**Tests, validation, and counts:** Three generated-output tests cover metadata, all four cost curves, all variable equation builders and malformed defaults, result coercion/`NaN`, and base callback/formatter order. The core suite rose from 169 to **172 tests** for this phase. Counts moved from 58 to **59 authored TypeScript modules** and from 227 to **226 remaining JavaScript modules**; total authored modules remain **285**.
+
+**Browser/manual verification:** No browser, Electron, touch, or physical-device verification was performed or claimed. Upsilon's equation owner is DOM-free; generated-output tests and recursive smoke validation cover the migrated formulas.
+
+---
+
+## Phase 20 — Tau Advanced Equation Definition (COMPLETE)
+
+**Status:** COMPLETE (2026-07-16)
+**Migration type:** Behavior-preserving migration
+
+**Scope and behavior:** The sole Tau implementation became strict `assets/towerEquations/advanced/tauEquation.ts`; its generated `.js` sibling retains all formatting/context imports and the same named export. Exact metadata, five-variable order, Gamma dependency lookup, the finite Gamma branch's two callback invocations, three Aleph formulas, fixed two-turn value, implicit numeric coercion, particle minimum, result math, and base formatter order remain unchanged.
+
+**Tests, validation, and counts:** Four generated-output tests cover live Gamma helper mutation/call counts and invalid fallback, exact metadata/fixed turns, all three Aleph equation builders and formatter order, string-number result coercion, particle clamping, and base formatting. The core suite rose from 172 to **176 tests** for this phase. Counts moved from 59 to **60 authored TypeScript modules** and from 226 to **225 remaining JavaScript modules**; total authored modules remain **285**. Completion is **21.1% by module count** and approximately **6.7% by authored source lines**. Build 742 advanced exactly once to Build 743 for the combined committed change.
+
+**Browser/manual verification:** No browser, Electron, touch, or physical-device verification was performed or claimed. Tau's definition is DOM-free; generated-output tests and recursive smoke validation cover its context and formula behavior.
+
+---
+
 ## Tentative Later Migration Areas
 
 These are not authorized active phases. Their order must be reevaluated after Phase 1.
@@ -936,13 +994,13 @@ Do not treat this list as a fixed roadmap. Each completed phase must recommend t
 
 ## Next Suggested Step
 
-**Recommended Phase 17: `assets/towerEquations/advanced/sigmaEquation.js` (first advanced formula definition).**
+**Recommended Phase 21: `assets/towerEquations/advanced/rhoEquation.js` (enemy-yield income definition).**
 
-Phase 16 types the advanced aggregation seam. The smallest advanced formula owner is the 107-line Sigma definition, whose behavior is deterministic and limited to formatting, dynamic stat lookup, prestige-sensitive sub-equations, and a stored-damage result. It is the safest first step into the individual advanced definitions.
+After Phases 17–20, Rho is the smallest remaining advanced definition by authored lines. Its two-variable income formula is bounded but exercises a richer JavaScript-originated dynamic context than Phi/Upsilon/Tau, making it the next useful step for validating the shared presenter contracts without expanding into simulations or playfield ownership.
 
-**Bounded scope:** Convert only `assets/towerEquations/advanced/sigmaEquation.js` to strict TypeScript. Reuse presenter/context contracts and add only narrow runtime guards needed for the JavaScript-originated dynamic context. Add deterministic generated-output tests with formatting/context stubs for canonical and prefixed stat keys, number coercion, invalid/negative fallbacks, formatting, prestige branches, optional last-release output, exact sub-equation arrays, result behavior, and base-equation formatting. Do not convert another advanced definition, Infinity/basic/Greek definitions, Towers tab, simulations, playfield systems, or main integration.
+**Bounded scope:** Convert only `assets/towerEquations/advanced/rhoEquation.js` to strict TypeScript. Reuse the presenter/context contracts and add only narrow guards for the enemy-yield and range dynamic inputs already read by the module. Add deterministic generated-output tests for metadata, costs, level/rank handling, dynamic-context key precedence, invalid/negative fallbacks, both sub-equation branches, income result behavior, formatter order, and base-equation formatting. Do not convert another advanced definition, Infinity/basic/Greek definitions, Towers tab, simulations, playfield systems, or main integration.
 
-**Acceptance criteria:** Preserve exact metadata, strings, formula comments, key precedence, Number coercion, finite/nonnegative validation, falsey formatting fallback, prestige identity check, sub-equation order and conditional append behavior, stored-damage result, formatter callback order/output, `.js` imports, barrel identity, and registry compatibility; add no `any` or suppressions; typecheck/build/lint/unit/smoke pass; update counts/build number once and record browser availability honestly.
+**Acceptance criteria:** Preserve exact metadata, strings, formulas, dynamic-context lookup/coercion semantics, clamping, upgrade cost and rank behavior, sub-equation order, result math, formatter callback order/output, `.js` imports, barrel identity, and registry compatibility; add no `any`, assertions, or suppressions; typecheck/build/lint/unit/smoke pass; update counts/build number once and record browser availability honestly.
 
 ---
 
@@ -1293,3 +1351,18 @@ Phase 16 branched as `codex/phase-16-advanced-equation-barrel` from verified loc
 - No browser, Electron, touch, or physical-device verification was performed or claimed. Identity tests and recursive smoke validation cover this DOM-free aggregation boundary.
 
 **Next suggested step:** Execute the bounded Phase 17 recommendation above for `assets/towerEquations/advanced/sigmaEquation.js`; keep other advanced definitions, Infinity/basic/Greek definitions, Towers tab, simulations, playfield systems, and main integration out of scope.
+
+### 2026-07-16 — Phases 17–20 executed
+
+**Status:** COMPLETE
+
+Phases 17–20 were implemented together from verified Phase 16 commit `7d2aa7b2386b3adfcaceb73a78e706cb0632bb08`. A fresh fetch confirmed the clean stacked branch was eight commits ahead and zero behind `origin/main` at Build 742. Direct source inventory selected Sigma for the planned Phase 17, then the three smallest remaining deterministic advanced owners—Phi, Upsilon, and Tau—for Phases 18–20. Pre-edit typecheck/build/lint/162-test/retired-Spire/smoke validation passed.
+
+- Converted `sigmaEquation.js`, `phiEquation.js`, `upsilonEquation.js`, and `tauEquation.js` to strict same-path `.ts` sources; their browser-facing `.js` siblings are generated and all barrel/registry `.js` specifiers and object identities remain compatible.
+- Extended the presenter type boundary only with the live sub-equation formatter functions and base-equation value formatting context already supplied by the JavaScript overlay. Sigma adds narrow dynamic property reads; no `any`, assertion, suppression, global weakening, or runtime type dependency was introduced.
+- Added 14 isolated generated-output tests with recording formatting/context stubs, increasing the core suite from 162/162 to **176/176**. Coverage includes exact metadata/order/strings, stat precedence and coercion, prestige/release branches, Fibonacci constants, every migrated variable builder, cost curves, live Gamma callback count, malformed fallbacks, formatter order, result coercion and inherited `NaN` edges, and base-equation output.
+- Final `npm run typecheck`, `npm run build`, `npm run lint`, `npm run test:unit` (176/176 plus retired-Spire checks), and `npm test` passed. Generated-output, import/export, forbidden-pattern, `dist` TypeScript-exclusion, hash, and diff audits are recorded in this session's closeout.
+- Recalculated counts by the documented full-tree method: 56 to **60** authored TypeScript modules, 229 to **225** remaining JavaScript modules, and **285** authored modules total. Completion is **21.1% by module count** and approximately **6.7% by authored source lines**. Build 742 advanced exactly once to Build 743.
+- No browser, Electron, touch, or physical-device verification was performed or claimed. Generated-output characterization plus recursive smoke validation covers these four DOM-free equation definitions.
+
+**Next suggested step:** Execute the bounded Phase 21 recommendation above for `assets/towerEquations/advanced/rhoEquation.js`; keep other advanced definitions, Infinity/basic/Greek definitions, Towers tab, simulations, playfield systems, and main integration out of scope.

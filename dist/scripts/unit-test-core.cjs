@@ -253,6 +253,57 @@ async function importAdvancedEquationBarrelModule() {
   return { barrelModule, exportNames, advancedDir };
 }
 
+// Import one compiled advanced equation against recording formatting/context stubs
+// so formula behavior is exercised without loading the Towers-tab integration graph.
+async function importAdvancedEquationModule(exportName) {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), `thero-unit-test-${exportName}-equation-`));
+  fs.writeFileSync(path.join(tmpDir, 'package.json'), JSON.stringify({ type: 'module' }));
+  const equationDest = path.join(
+    tmpDir,
+    'assets',
+    'towerEquations',
+    'advanced',
+    `${exportName}Equation.js`,
+  );
+  const contextDest = path.join(tmpDir, 'assets', 'towerEquations', 'blueprintContext.js');
+  const formattingDest = path.join(tmpDir, 'scripts', 'core', 'formatting.js');
+  fs.mkdirSync(path.dirname(equationDest), { recursive: true });
+  fs.mkdirSync(path.dirname(contextDest), { recursive: true });
+  fs.mkdirSync(path.dirname(formattingDest), { recursive: true });
+  fs.copyFileSync(
+    path.join(rootDir, 'assets', 'towerEquations', 'advanced', `${exportName}Equation.js`),
+    equationDest,
+  );
+  fs.writeFileSync(
+    contextDest,
+    `export const blueprintContext = { calculateTowerEquationResult: null };`,
+  );
+  fs.writeFileSync(
+    formattingDest,
+    `export const formatCalls = [];
+     export function formatWholeNumber(value) {
+       formatCalls.push(['whole', value]);
+       return \`whole:\${String(value)}\`;
+     }
+     export function formatDecimal(value, digits) {
+       formatCalls.push(['decimal', value, digits]);
+       return \`decimal:\${String(value)}:\${String(digits)}\`;
+     }
+     export function formatGameNumber(value) {
+       formatCalls.push(['game', value]);
+       return \`game:\${String(value)}\`;
+     }`,
+  );
+  const equationModule = await import(pathToFileURL(equationDest).href);
+  const contextModule = await import(pathToFileURL(contextDest).href);
+  const formattingModule = await import(pathToFileURL(formattingDest).href);
+  return {
+    equation: equationModule[exportName],
+    blueprintContext: contextModule.blueprintContext,
+    formatCalls: formattingModule.formatCalls,
+  };
+}
+
 // Import a fresh compiled shared-context module for each state-sensitive test.
 function importBlueprintContextModule() {
   return importAsEsm('assets/towerEquations/blueprintContext.js');
@@ -1623,6 +1674,286 @@ async function run() {
       );
       assert.equal(barrelModule[exportName], sourceModule[exportName]);
     }
+  });
+
+  // --- assets/towerEquations/advanced/sigmaEquation.js ------------------
+  await test('Sigma equation: metadata, variable order, and dynamic stat precedence remain exact', async () => {
+    const { equation: sigma } = await importAdvancedEquationModule('sigma');
+    assert.equal(sigma.mathSymbol, String.raw`\sigma`);
+    assert.equal(sigma.baseEquation, String.raw`\( \sigma = \text{stored} \)`);
+    assert.deepEqual(sigma.variables.map((variable) => variable.key), [
+      'storedDamage',
+      'totalAbsorbed',
+    ]);
+    const [stored, absorbed] = sigma.variables;
+    assert.equal(stored.computeValue({ dynamicContext: {
+      stats: { storedDamage: '12.5', sigmaStoredDamage: 99 },
+    } }), 12.5);
+    assert.equal(stored.computeValue({ dynamicContext: {
+      stats: { storedDamage: null, sigmaStoredDamage: '8' },
+    } }), 8);
+    assert.equal(stored.computeValue({ dynamicContext: {
+      stats: { storedDamage: 0, sigmaStoredDamage: 9 },
+    } }), 0);
+    assert.equal(absorbed.computeValue({ dynamicContext: {
+      stats: { sigmaTotalAbsorbed: '21' },
+    } }), 21);
+    for (const rawValue of [-1, Infinity, 'invalid', undefined]) {
+      assert.equal(stored.computeValue({ dynamicContext: {
+        stats: { storedDamage: rawValue },
+      } }), 0);
+    }
+  });
+
+  await test('Sigma equation: stored sub-equations preserve prestige and optional release branches', async () => {
+    const { equation: sigma } = await importAdvancedEquationModule('sigma');
+    const calls = [];
+    const formatGame = (value) => {
+      calls.push(value);
+      return `fmt:${value}`;
+    };
+    assert.deepEqual(sigma.variables[0].getSubEquations({
+      value: NaN,
+      dynamicContext: { prestige: true, stats: { lastRelease: '4.5' } },
+      formatGameNumber: formatGame,
+    }), [
+      { expression: String.raw`\( \text{stored} = \sum \text{ally dmg} \)` },
+      { expression: String.raw`\( \text{stored} \le 10^{120} \)` },
+      { values: String.raw`\( fmt:0\,\text{dmg} \)`, variant: 'values' },
+      { expression: String.raw`\( \text{shot}_{\sigma} = \text{stored} \)` },
+      { expression: String.raw`\( \text{stored}_{\text{next}} = \text{stored} \)` },
+      { values: String.raw`\( \text{last shot} = fmt:4.5\,\text{dmg} \)`, variant: 'values' },
+    ]);
+    assert.deepEqual(calls, [0, 4.5]);
+    calls.length = 0;
+    const nonPrestige = sigma.variables[0].getSubEquations({
+      value: -3,
+      dynamicContext: { prestige: 1, stats: { lastRelease: 0 } },
+      formatGameNumber: formatGame,
+    });
+    assert.equal(nonPrestige.length, 5);
+    assert.deepEqual(nonPrestige[4], {
+      expression: String.raw`\( \text{stored}_{\text{next}} = 0 \)`,
+    });
+    assert.deepEqual(calls, [0]);
+  });
+
+  await test('Sigma equation: absorption lines and imported value formatting preserve fallbacks', async () => {
+    const { equation: sigma, formatCalls } = await importAdvancedEquationModule('sigma');
+    assert.equal(sigma.variables[0].format(-2), 'game:0 dmg');
+    assert.equal(sigma.variables[1].format(7), 'game:7 dmg');
+    assert.deepEqual(formatCalls, [['game', 0], ['game', 7]]);
+    const calls = [];
+    const lines = sigma.variables[1].getSubEquations({
+      value: Infinity,
+      formatGameNumber(value) {
+        calls.push(value);
+        return `fmt:${value}`;
+      },
+    });
+    assert.deepEqual(lines, [
+      { expression: String.raw`\( \text{absorbed} = \sum \text{ally dmg} \)` },
+      { values: String.raw`\( fmt:0\,\text{dmg} \)`, variant: 'values' },
+      { expression: String.raw`\( \text{absorbed} \ge \text{stored} \)` },
+    ]);
+    assert.deepEqual(calls, [0]);
+  });
+
+  await test('Sigma equation: result and base-value formatting retain number-only finite acceptance', async () => {
+    const { equation: sigma } = await importAdvancedEquationModule('sigma');
+    assert.equal(sigma.computeResult({ storedDamage: 9 }), 9);
+    assert.equal(sigma.computeResult({ storedDamage: -4 }), 0);
+    assert.equal(sigma.computeResult({ storedDamage: '9' }), 0);
+    assert.equal(sigma.computeResult({ storedDamage: Infinity }), 0);
+    const calls = [];
+    const output = sigma.formatBaseEquationValues({
+      values: { storedDamage: 6 },
+      result: 6,
+      formatComponent(value) {
+        calls.push(value);
+        return `component:${value}`;
+      },
+    });
+    assert.equal(output, 'component:6 = component:6');
+    assert.deepEqual(calls, [6, 6]);
+  });
+
+  // --- assets/towerEquations/advanced/phiEquation.js --------------------
+  await test('Phi equation: exact Fibonacci metadata and constants remain exposed', async () => {
+    const { equation: phi } = await importAdvancedEquationModule('phi');
+    assert.equal(phi.mathSymbol, String.raw`\phi`);
+    assert.equal(
+      phi.baseEquation,
+      String.raw`\( \phi = \text{seeds} \times \text{dmg}_{\text{seed}} \times \text{pierce} \)`,
+    );
+    assert.deepEqual(phi.variables.map(({ key, baseValue, upgradable, includeInMasterEquation }) => ({
+      key, baseValue, upgradable, includeInMasterEquation,
+    })), [
+      { key: 'seeds', baseValue: 32, upgradable: false, includeInMasterEquation: true },
+      { key: 'seedDamage', baseValue: 10, upgradable: false, includeInMasterEquation: true },
+      { key: 'pierce', baseValue: 2, upgradable: false, includeInMasterEquation: true },
+      { key: 'goldenAngle', baseValue: 137.5, upgradable: false, includeInMasterEquation: false },
+    ]);
+  });
+
+  await test('Phi equation: four variable equation builders preserve defaults and formatter order', async () => {
+    const { equation: phi, formatCalls } = await importAdvancedEquationModule('phi');
+    const [seeds, seedDamage, pierce, goldenAngle] = phi.variables;
+    assert.deepEqual(seeds.getSubEquations(), [
+      { expression: String.raw`\( \text{seeds} = 1 + 2 + 3 + 5 + 8 + 13 \)` },
+      { values: String.raw`\( whole:32 = \sum_{k=1}^{6} F_k \)`, variant: 'values' },
+    ]);
+    seedDamage.getSubEquations({ value: NaN });
+    pierce.getSubEquations({ value: NaN });
+    goldenAngle.getSubEquations({ value: NaN });
+    assert.deepEqual(formatCalls, [
+      ['whole', 32],
+      ['game', 10], ['game', 10],
+      ['whole', 2], ['whole', 2],
+      ['decimal', 137.5, 2], ['decimal', 1.61803398875, 3],
+    ]);
+  });
+
+  await test('Phi equation: coercive result math and base-equation callback order remain exact', async () => {
+    const { equation: phi } = await importAdvancedEquationModule('phi');
+    assert.equal(phi.computeResult({ seeds: '32', seedDamage: '10', pierce: '2' }), 640);
+    assert.equal(Number.isNaN(
+      phi.computeResult({ seeds: -1, seedDamage: Infinity, pierce: 0 }),
+    ), true);
+    const calls = [];
+    const output = phi.formatBaseEquationValues({
+      values: { seeds: '3', seedDamage: '4', pierce: '2' },
+      result: 24,
+      formatComponent(value) {
+        calls.push(value);
+        return `component:${value}`;
+      },
+    });
+    assert.equal(output, 'component:24 = component:3 × component:4 × component:2');
+    assert.deepEqual(calls, [24, 3, 4, 2]);
+  });
+
+  // --- assets/towerEquations/advanced/upsilonEquation.js ----------------
+  await test('Upsilon equation: metadata, upgrade order, and rounded cost curves remain exact', async () => {
+    const { equation: upsilon } = await importAdvancedEquationModule('upsilon');
+    assert.equal(upsilon.mathSymbol, String.raw`\upsilon`);
+    assert.deepEqual(upsilon.variables.map(({ key, baseValue, step, glyphLabel }) => ({
+      key, baseValue, step, glyphLabel,
+    })), [
+      { key: 'attack', baseValue: 1200, step: 260, glyphLabel: 'ℵ₁' },
+      { key: 'production', baseValue: 0.4, step: 0.08, glyphLabel: 'ℵ₂' },
+      { key: 'fleet', baseValue: 4, step: 1, glyphLabel: 'ℵ₃' },
+      { key: 'velocity', baseValue: 1.6, step: 0.18, glyphLabel: 'ℵ₄' },
+    ]);
+    assert.deepEqual(upsilon.variables.map((variable) => variable.cost(2.9)), [
+      457, 314, 344, 274,
+    ]);
+    assert.deepEqual(upsilon.variables.map((variable) => variable.cost(-5)), [
+      240, 180, 210, 170,
+    ]);
+  });
+
+  await test('Upsilon equation: variable formulas preserve finite defaults, clamping, and formatting', async () => {
+    const { equation: upsilon, formatCalls } = await importAdvancedEquationModule('upsilon');
+    const [attack, production, fleet, velocity] = upsilon.variables;
+    assert.deepEqual(attack.getSubEquations({ value: 1720 }), [
+      { expression: String.raw`\( atk = 1200 + 260 \times \aleph_{1} \)` },
+      { values: String.raw`\( game:1720 = 1200 + 260 \times whole:2 \)` },
+    ]);
+    production.getSubEquations({ value: NaN });
+    fleet.getSubEquations({ value: NaN });
+    velocity.getSubEquations({ value: NaN });
+    assert.deepEqual(formatCalls, [
+      ['game', 1720], ['whole', 2],
+      ['decimal', 0.4, 2], ['whole', 0],
+      ['whole', 4], ['whole', 0],
+      ['decimal', 1.6, 2], ['whole', 0],
+    ]);
+  });
+
+  await test('Upsilon equation: fleet result coercion and mixed base formatting remain exact', async () => {
+    const { equation: upsilon, formatCalls } = await importAdvancedEquationModule('upsilon');
+    assert.equal(upsilon.computeResult({ attack: '100', production: '0.5', fleet: '4' }), 200);
+    assert.equal(Number.isNaN(
+      upsilon.computeResult({ attack: -2, production: Infinity, fleet: 0 }),
+    ), true);
+    const calls = [];
+    const output = upsilon.formatBaseEquationValues({
+      values: { attack: '100', production: '0.5', fleet: '4' },
+      result: 200,
+      formatComponent(value) {
+        calls.push(value);
+        return `component:${value}`;
+      },
+    });
+    assert.equal(output, 'component:200 = component:100 × decimal:0.5:2 × whole:4');
+    assert.deepEqual(calls, [200, 100]);
+    assert.deepEqual(formatCalls, [['decimal', 0.5, 2], ['whole', 4]]);
+  });
+
+  // --- assets/towerEquations/advanced/tauEquation.js --------------------
+  await test('Tau equation: Gamma context lookup preserves callback count and finite fallback', async () => {
+    const { equation: tau, blueprintContext, formatCalls } =
+      await importAdvancedEquationModule('tau');
+    const calls = [];
+    blueprintContext.calculateTowerEquationResult = (towerId) => {
+      calls.push(towerId);
+      return 9;
+    };
+    assert.deepEqual(tau.variables[0].getSubEquations(), [
+      { expression: String.raw`\( \text{atk} = \gamma \)` },
+      { values: String.raw`\( game:9 = \gamma \)` },
+    ]);
+    assert.deepEqual(calls, ['gamma', 'gamma']);
+    assert.equal(tau.variables[0].computeValue(), 9);
+    assert.deepEqual(calls, ['gamma', 'gamma', 'gamma']);
+    blueprintContext.calculateTowerEquationResult = () => NaN;
+    assert.equal(tau.variables[0].computeValue(), 0);
+    assert.deepEqual(formatCalls, [['game', 9]]);
+  });
+
+  await test('Tau equation: exact metadata and fixed-turn behavior remain exposed', async () => {
+    const { equation: tau } = await importAdvancedEquationModule('tau');
+    assert.equal(tau.mathSymbol, String.raw`\tau`);
+    assert.equal(tau.baseEquation, String.raw`\( \tau = \text{atk} \times p \)`);
+    assert.deepEqual(tau.variables.map((variable) => variable.key), [
+      'attack', 'aleph1', 'aleph2', 'aleph3', 'turns',
+    ]);
+    assert.equal(tau.variables[4].computeValue(), 2);
+    assert.deepEqual(tau.variables[4].getSubEquations(), [
+      { expression: String.raw`\( \theta(u) = 2\pi \times \text{turns} \times u \)` },
+    ]);
+  });
+
+  await test('Tau equation: three Aleph sub-equations preserve clamping and formatter order', async () => {
+    const { equation: tau, formatCalls } = await importAdvancedEquationModule('tau');
+    const [, radius, speed, particles] = tau.variables;
+    radius.getSubEquations({ value: -2 });
+    speed.getSubEquations({ value: 3 });
+    particles.getSubEquations({ value: 2.9 });
+    assert.deepEqual(formatCalls, [
+      ['decimal', 1, 2], ['decimal', 0, 2],
+      ['decimal', 1.3, 2], ['whole', 3],
+      ['whole', 3], ['whole', 2.9],
+    ]);
+  });
+
+  await test('Tau equation: particle result coercion and base formatting remain exact', async () => {
+    const { equation: tau, formatCalls } = await importAdvancedEquationModule('tau');
+    assert.equal(tau.computeResult({ attack: '4', aleph3: '2.9' }), 12);
+    assert.equal(tau.computeResult({ attack: -4, aleph3: -9 }), 0);
+    const calls = [];
+    const output = tau.formatBaseEquationValues({
+      values: { attack: '4', aleph3: '2.9' },
+      result: 12,
+      formatComponent(value) {
+        calls.push(value);
+        return `component:${value}`;
+      },
+    });
+    assert.equal(output, 'component:12 = component:4 × whole:3');
+    assert.deepEqual(calls, [12, 4]);
+    assert.deepEqual(formatCalls, [['whole', 3]]);
   });
 
   // --- assets/towerEquations/index.js ------------------------------------

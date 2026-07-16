@@ -71,9 +71,16 @@ export interface TowerVariableSubEquationContext extends TowerVariableComputatio
   variable: TowerEquationVariable;
   values: TowerEquationValueMap;
   formatValue: () => string;
-  formatWholeNumber: unknown;
-  formatDecimal: unknown;
-  formatGameNumber: unknown;
+  formatWholeNumber: (value: number) => string;
+  formatDecimal: (value: number, fractionDigits?: number) => string;
+  formatGameNumber: (value: number) => string;
+}
+
+/** Context supplied to authored base-equation value formatters. */
+export interface TowerBaseEquationValueContext {
+  values: TowerEquationValueMap;
+  result: number;
+  formatComponent: (value: unknown) => string;
 }
 
 /** Context supplied to custom final-result callbacks. */
@@ -139,6 +146,7 @@ export interface TowerEquationBlueprint {
     values: TowerEquationValueMap,
     context: TowerResultComputationContext,
   ) => unknown;
+  formatBaseEquationValues?: (context: TowerBaseEquationValueContext) => string;
   formatGoldenEquation?: (context: GoldenEquationFormatContext) => string;
 }
 
