@@ -173,6 +173,11 @@ function importTowerEquationTooltipModule() {
   return importAsEsm('assets/towerEquationTooltip.js');
 }
 
+// Import the compiled dependency-free master-equation derivation utility.
+function importMasterEquationUtilsModule() {
+  return importAsEsm('assets/towerEquations/masterEquationUtils.js');
+}
+
 // Install a deterministic minimal DOM, timer, and animation-frame surface for tooltip tests.
 function withFakeTooltipDom(callback) {
   const savedDescriptors = new Map(
