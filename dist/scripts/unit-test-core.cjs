@@ -183,6 +183,49 @@ function importBlueprintContextModule() {
   return importAsEsm('assets/towerEquations/blueprintContext.js');
 }
 
+// Import the compiled equation registry with identity-marked stub definition groups.
+async function importTowerEquationIndexModule() {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thero-unit-test-equation-index-'));
+  fs.writeFileSync(path.join(tmpDir, 'package.json'), JSON.stringify({ type: 'module' }));
+  const equationDir = path.join(tmpDir, 'assets', 'towerEquations');
+  fs.mkdirSync(equationDir, { recursive: true });
+  fs.copyFileSync(
+    path.join(rootDir, 'assets', 'towerEquations', 'index.js'),
+    path.join(equationDir, 'index.js'),
+  );
+  const stubSources = {
+    'mindGate.js': ['mindGate'],
+    'shadowGate.js': ['shadowGate'],
+    'basicTowers.js': ['alpha', 'beta', 'gamma'],
+    'greekTowers.js': ['delta', 'epsilon', 'zeta', 'eta', 'theta', 'iota'],
+    'advancedTowers.js': [
+      'kappa', 'lambda', 'mu', 'nu', 'xi', 'omicron', 'pi', 'rho', 'sigma',
+      'tau', 'upsilon', 'phi', 'chi', 'psi', 'omega',
+    ],
+    'infinityTower.js': ['infinity'],
+  };
+  for (const [fileName, exportNames] of Object.entries(stubSources)) {
+    const source = exportNames
+      .map((exportName) => `export const ${exportName} = { sourceId: '${exportName}' };`)
+      .join('\n');
+    fs.writeFileSync(path.join(equationDir, fileName), source);
+  }
+  const registryModule = await import(pathToFileURL(path.join(equationDir, 'index.js')).href);
+  const sourceById = {};
+  for (const [fileName, exportNames] of Object.entries(stubSources)) {
+    const sourceModule = await import(pathToFileURL(path.join(equationDir, fileName)).href);
+    for (const exportName of exportNames) {
+      const registryId = exportName === 'mindGate'
+        ? 'mind-gate'
+        : exportName === 'shadowGate'
+          ? 'shadow-gate'
+          : exportName;
+      sourceById[registryId] = sourceModule[exportName];
+    }
+  }
+  return { registryModule, sourceById };
+}
+
 // Install a deterministic minimal DOM, timer, and animation-frame surface for tooltip tests.
 function withFakeTooltipDom(callback) {
   const savedDescriptors = new Map(
@@ -1363,6 +1406,72 @@ async function run() {
     controller.ensureTowerUpgradeState('authored').variables.power.level = 1;
     controller.clearTowerUpgradeState();
     assert.deepEqual(controller.getTowerUpgradeStateSnapshot(), {});
+  });
+
+  // --- assets/towerEquations/index.js ------------------------------------
+  await test('tower equation index: registry preserves all 27 keys, order, and imported identities', async () => {
+    const { registryModule, sourceById } = await importTowerEquationIndexModule();
+    const expectedIds = [
+      'mind-gate', 'shadow-gate', 'alpha', 'beta', 'gamma', 'delta', 'epsilon',
+      'eta', 'theta', 'iota', 'kappa', 'lambda', 'mu', 'zeta', 'nu', 'xi',
+      'omicron', 'pi', 'rho', 'sigma', 'tau', 'upsilon', 'phi', 'chi', 'psi',
+      'omega', 'infinity',
+    ];
+    assert.deepEqual(Object.keys(registryModule.TOWER_EQUATION_BLUEPRINTS), expectedIds);
+    for (const towerId of expectedIds) {
+      assert.equal(registryModule.TOWER_EQUATION_BLUEPRINTS[towerId], sourceById[towerId]);
+    }
+    assert.equal(Object.isFrozen(registryModule.TOWER_EQUATION_BLUEPRINTS), false);
+    assert.equal(Object.isSealed(registryModule.TOWER_EQUATION_BLUEPRINTS), false);
+  });
+
+  await test('tower equation index: canonical and mutable own-key lookups preserve identity', async () => {
+    const { registryModule, sourceById } = await importTowerEquationIndexModule();
+    for (const [towerId, blueprint] of Object.entries(sourceById)) {
+      assert.equal(registryModule.getTowerEquationBlueprint(towerId), blueprint);
+    }
+    const added = { added: true };
+    registryModule.TOWER_EQUATION_BLUEPRINTS.custom = added;
+    assert.equal(registryModule.getTowerEquationBlueprint('custom'), added);
+    registryModule.TOWER_EQUATION_BLUEPRINTS.alpha = null;
+    assert.equal(registryModule.getTowerEquationBlueprint('alpha'), null);
+  });
+
+  await test('tower equation index: falsy and unknown primitive lookups retain exact fallbacks', async () => {
+    const { registryModule } = await importTowerEquationIndexModule();
+    for (const towerId of [undefined, null, '', 0, -0, false, NaN]) {
+      assert.equal(registryModule.getTowerEquationBlueprint(towerId), null);
+    }
+    for (const towerId of ['missing', 1, 1n, true, Symbol('missing')]) {
+      assert.equal(registryModule.getTowerEquationBlueprint(towerId), null);
+    }
+    const symbolId = Symbol('custom');
+    const symbolBlueprint = { symbol: true };
+    registryModule.TOWER_EQUATION_BLUEPRINTS[symbolId] = symbolBlueprint;
+    assert.equal(registryModule.getTowerEquationBlueprint(symbolId), symbolBlueprint);
+  });
+
+  await test('tower equation index: inherited and coercible keys preserve bracket-access behavior', async () => {
+    const { registryModule, sourceById } = await importTowerEquationIndexModule();
+    assert.equal(
+      registryModule.getTowerEquationBlueprint('toString'),
+      Object.prototype.toString,
+    );
+    assert.equal(registryModule.getTowerEquationBlueprint(['beta']), sourceById.beta);
+    assert.equal(
+      registryModule.getTowerEquationBlueprint({ toString: () => 'alpha' }),
+      sourceById.alpha,
+    );
+    const expectedError = new Error('property coercion failed');
+    const throwingKey = {
+      [Symbol.toPrimitive]() {
+        throw expectedError;
+      },
+    };
+    assert.throws(
+      () => registryModule.getTowerEquationBlueprint(throwingKey),
+      (error) => error === expectedError,
+    );
   });
 
   // --- assets/towerEquations/blueprintContext.js -------------------------

@@ -90,7 +90,7 @@ Before reporting completion, update this document in the same branch or commit s
 
 The obsolete-Spire retirement is an intentional product change, not a general migration phase. It removed active Bet, Lamed, Tsadi, Shin, and Kuf modules and added one typed compatibility boundary, `assets/saveCompatibility.ts`. The Aleph experience remains active under the user-facing name **Well of Inspiration**; compatibility-sensitive `powder`/`aleph` identifiers remain unchanged.
 
-Using the established count method, the current tree contains **52 authored `.ts` modules** and **233 authored `.js` modules without a same-path `.ts` sibling** (**285 total**). Phase 12 converted `assets/towerEquations/blueprintContext.js`, moving the live post-retirement baseline from 51 to 52 typed modules and from 234 to 233 remaining JavaScript modules without changing the total. The disabled Achievements Terrarium/Bet Terrarium files referenced by older ledger entries are no longer present in the live tree, so there is no separate preserved-legacy subtraction in the current count. The retired `spireFloatingMenu` and `spireTabVisibility` TypeScript modules and the orphaned retired idle/developer controllers were removed because the one-Well navigation no longer imports or needs those multi-Spire managers. The former Collective Unconscious/Cognitive Realm runtime was removed after Phase 10, including its typed state module and two JavaScript UI modules; its earlier migration entries remain below as historical records.
+Using the established count method, the current tree contains **53 authored `.ts` modules** and **232 authored `.js` modules without a same-path `.ts` sibling** (**285 total**). Phase 13 converted `assets/towerEquations/index.js`, moving the live post-retirement baseline from 52 to 53 typed modules and from 233 to 232 remaining JavaScript modules without changing the total. The disabled Achievements Terrarium/Bet Terrarium files referenced by older ledger entries are no longer present in the live tree, so there is no separate preserved-legacy subtraction in the current count. The retired `spireFloatingMenu` and `spireTabVisibility` TypeScript modules and the orphaned retired idle/developer controllers were removed because the one-Well navigation no longer imports or needs those multi-Spire managers. The former Collective Unconscious/Cognitive Realm runtime was removed after Phase 10, including its typed state module and two JavaScript UI modules; its earlier migration entries remain below as historical records.
 
 **Plan created:** 2026-07-13  
 **Repository:** `sethrimer3/TheroMathTD`  
@@ -139,6 +139,7 @@ No TypeScript conversion phase is recorded as complete in this plan.
 | 10 | Tower-equation tooltip DOM owner (`assets/towerEquationTooltip.js`) | COMPLETE | See Phase 10 section and Implementation Log entry below |
 | 11 | Master-equation derivation utility (`assets/towerEquations/masterEquationUtils.js`) | COMPLETE | See Phase 11 section and Implementation Log entry below |
 | 12 | Tower-blueprint shared dependency context (`assets/towerEquations/blueprintContext.js`) | COMPLETE | See Phase 12 section and Implementation Log entry below |
+| 13 | Tower-equation registry and lookup (`assets/towerEquations/index.js`) | COMPLETE | See Phase 13 section and Implementation Log entry below |
 
 ---
 
@@ -788,6 +789,25 @@ Suite total: **78/78 passing** (58 pre-existing from Phases 2–5A + 20 new).
 
 ---
 
+## Phase 13 — Tower-Equation Registry and Lookup (COMPLETE)
+
+**Status:** COMPLETE (2026-07-15)
+**Migration type:** Behavior-preserving migration
+
+**Verified starting point and baseline:** Phase 13 branched as `codex/phase-13-equation-registry` directly from completed local Phase 12 commit `d8edefe5953c71536d5b6b29b2355f10a287402a`. The worktree was clean at Build 738, Phase 12's source/generated/tests/ledger state was present, and the live recommendation still named this exact 60-line registry. Before editing, typecheck/build/lint, 149/149 core tests plus retired-Spire checks, and the recursive smoke test all passed.
+
+**Live imports and consumers:** The registry retains six runtime source-group imports: `mindGate.js`, `shadowGate.js`, `basicTowers.js`, `greekTowers.js`, `advancedTowers.js`, and `infinityTower.js`. Its sole direct runtime consumer is the already-typed `assets/towerBlueprintPresenter.ts`, whose generated JavaScript continues importing `./towerEquations/index.js`. No equation definition/group, Towers-tab module, simulation, playfield system, or main-integration file was edited.
+
+**Files and types:** The sole authored implementation became strict `assets/towerEquations/index.ts`; the `.js` sibling remains generated at the same path with the same six runtime imports and two named exports. `TOWER_EQUATION_BLUEPRINTS` uses the existing `TowerEquationBlueprint` contract through a type-only reverse boundary and `satisfies`, so the generated registry acquires no presenter import or runtime cycle. `TowerEquationId` is derived from the registry's exact keys. A trusted known-id overload returns a blueprint, while the implementation retains an `unknown` JavaScript boundary for malformed/coercible keys.
+
+**Behavior characterized and preserved:** The registry retains the exact 27 keys, insertion order, imported object identities, plain mutable object/prototype, and unfrozen/unsealed state. The lookup still returns `null` for falsy and missing values, sees later own-key mutations, returns inherited truthy properties such as `toString`, applies JavaScript property-key coercion to arrays and objects, accepts symbol keys, returns `null` for falsey stored values, and propagates property-coercion exceptions. No own-property filtering, freezing, cloning, validation, or string normalization was introduced.
+
+**Tests, validation, and counts:** Four deterministic tests load generated `assets/towerEquations/index.js` against identity-marked stub definition groups, raising the core suite from 149 to **153 tests**. They cover all keys/order/identities, registry mutability, canonical/custom/falsey entries, nullish and primitive inputs, symbol properties, inherited keys, array/object coercion, and throwing coercion. Final typecheck/build/lint/unit/retired-Spire/smoke validation and generated/import audits are recorded in the Implementation Log. Counts moved from 52 to **53 authored TypeScript modules** and from 233 to **232 remaining JavaScript modules**; total authored modules remain **285**. Build 738 advanced exactly once to Build 739.
+
+**Browser/manual verification:** No browser, Electron, touch, or physical-device verification was performed or claimed. The registry is DOM-free; isolated generated-output tests verify its aggregation and lookup behavior, while the recursive smoke test verifies the real six-module runtime graph. No requested behavior remained unverifiable within that boundary.
+
+---
+
 ## Tentative Later Migration Areas
 
 These are not authorized active phases. Their order must be reevaluated after Phase 1.
@@ -858,13 +878,13 @@ Do not treat this list as a fixed roadmap. Each completed phase must recommend t
 
 ## Next Suggested Step
 
-**Recommended Phase 13: `assets/towerEquations/index.js` (tower-equation registry and lookup).**
+**Recommended Phase 14: `assets/towerEquations/mindGate.js` (first authored equation definition).**
 
-Phase 12 types the shared injection seam without entering authored tower formulas. The next bounded inward owner is the 60-line, DOM-free registry that imports six existing equation groups, preserves the canonical 27-key insertion order, exports `TOWER_EQUATION_BLUEPRINTS`, and performs the registry's direct lookup. Its sole direct runtime importer is the already-typed presenter, so this phase can make the registry boundary explicit before any large equation-definition migration.
+Phase 13 types the registry without changing any authored formula. The next smallest meaningful inward step is the 76-line Mind Gate blueprint: one formatting import, two upgrade variables, two deterministic sub-equation builders, one product result, and one golden-equation formatter. It is substantially safer than the Codex-coupled Shadow Gate or the 400–1,600-line grouped definition files and can establish the missing typed sub-equation callback surface before broader definition migrations.
 
-**Bounded scope:** Convert only `assets/towerEquations/index.js` to strict TypeScript, using the existing `TowerEquationBlueprint` contract through a type-only boundary and keeping all six imported equation groups in JavaScript. Preserve every import path, export name, registry key, key order, exact imported object identity, registry mutability, and the lookup's current truthiness/property-coercion/prototype behavior for malformed JavaScript inputs. Add deterministic compiled-output tests with stubbed equation groups so registry behavior is isolated without converting definitions. Do not convert `mindGate.js`, `shadowGate.js`, `basicTowers.js`, `greekTowers.js`, `advancedTowers.js`, `infinityTower.js`, advanced definitions, Towers tab, simulations, playfield systems, or main integration.
+**Bounded scope:** Convert only `assets/towerEquations/mindGate.js` to strict TypeScript. Narrowly extend the presenter-owned variable/blueprint contracts only for the real `getSubEquations` result shape used by this definition, and type callback inputs without changing formulas, text, mojibake-preserved glyph labels, cost behavior, or formatter calls. Add deterministic compiled-output tests against a stub formatting dependency for variable metadata, malformed/fractional levels and values, exact sub-equation arrays/text/flags, cost functions, result fallbacks/product, and golden-equation callback order/output. Do not convert Shadow Gate, grouped/basic/Greek/advanced definitions, the registry, Towers tab, simulations, playfield systems, or main integration.
 
-**Acceptance criteria:** Verify all 27 live registry entries and their insertion order; preserve the sole presenter's `.js` import specifier and all six definition-group imports; accurately type the trusted registry while keeping the public lookup permissive for omitted, nullish, primitive, coercible-object, inherited-property, and unknown-id inputs; introduce no runtime type-only cycle, `any`, suppressions, or definition rewrites; generated sibling/typecheck/build/lint/unit/smoke pass; update counts/build number once and record browser availability honestly.
+**Acceptance criteria:** Preserve exact exported `mindGate` object shape, variable order, strings, `String.raw` output, `Number.isFinite` fallback/clamping, formatter call values, `Math.max` cost semantics, product calculation, and golden formatter call order; add only owner-accurate sub-equation contracts with no `any` or suppressions; generated sibling keeps the formatting `.js` import and registry compatibility; typecheck/build/lint/unit/smoke pass; update counts/build number once and record browser availability honestly.
 
 ---
 
@@ -1155,3 +1175,19 @@ Phase 12 branched as `codex/phase-12-blueprint-context` from verified local Phas
 - No browser, Electron, touch, or physical-device verification was performed or claimed. Deterministic generated-JavaScript tests are the direct verification for this dependency-free, DOM-free state boundary; no requested behavior remained unverifiable within that boundary.
 
 **Next suggested step:** Execute the bounded Phase 13 recommendation above for `assets/towerEquations/index.js`; keep all equation definitions/groups, Towers tab, simulations, playfield systems, and main integration out of scope.
+
+### 2026-07-15 — Phase 13 executed
+
+**Status:** COMPLETE
+
+Phase 13 branched as `codex/phase-13-equation-registry` from verified local Phase 12 commit `d8edefe5953c71536d5b6b29b2355f10a287402a` with a clean worktree and Build 738. The 27-entry registry, six source imports, two exports, sole presenter consumer, and unusual bracket-lookup behavior were characterized before editing; the pre-edit typecheck/build/lint/149-test/retired-Spire/smoke baseline passed.
+
+- Converted `assets/towerEquations/index.js` to strict `assets/towerEquations/index.ts`; its generated sibling retains the same six `.js` definition imports, `TOWER_EQUATION_BLUEPRINTS`, and `getTowerEquationBlueprint` exports.
+- Reused `TowerEquationBlueprint` through a type-only import, applied `satisfies` to the canonical registry, derived `TowerEquationId` from its keys, and retained an `unknown` overload for JavaScript-originated lookup values. No runtime presenter import or circular dependency was emitted.
+- Preserved all 27 keys and insertion order, exact imported object identities, registry/prototype mutability, falsey/missing fallback timing, later mutations, inherited properties, property-key coercion, symbol keys, and coercion-error propagation.
+- Added four isolated generated-output tests with stub definition groups, increasing the core suite from 149/149 to 153/153. Coverage includes every registry entry/order/identity, canonical/custom/falsey lookup, nullish/primitive/symbol inputs, inherited keys, array/object coercion, and throwing coercion.
+- Final `npm run typecheck`, `npm run build`, `npm run lint`, `npm run test:unit` (153/153 plus retired-Spire checks), and `npm test` passed. `git diff --check`, generated-sibling/dist hashes, exact import/export inspection, presenter-specifier verification, no-runtime-type-import/cycle inspection, scoped forbidden-pattern checks, and the no-TypeScript-in-`dist` audit passed.
+- Recalculated counts by the documented full-tree method: 52 to **53** authored TypeScript modules, 233 to **232** remaining JavaScript modules, and **285** authored modules total. Build 738 advanced exactly once to Build 739.
+- No browser, Electron, touch, or physical-device verification was performed or claimed. Generated-output tests and the recursive real-graph smoke test fully cover the requested DOM-free registry boundary.
+
+**Next suggested step:** Execute the bounded Phase 14 recommendation above for `assets/towerEquations/mindGate.js`; keep Shadow Gate, grouped definitions, Towers tab, simulations, playfield systems, and main integration out of scope.
