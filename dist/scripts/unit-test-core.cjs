@@ -1804,6 +1804,422 @@ async function run() {
     assert.deepEqual(calls, [-20, 4, 0]);
   });
 
+  // --- assets/towerEquations/advanced/kappaEquation.js -----------------
+  await test('Kappa equation: metadata, references, and all cost curves remain exact', async () => {
+    const { equation: kappa } = await importAdvancedEquationModule('kappa');
+    assert.equal(kappa.mathSymbol, String.raw`\kappa`);
+    assert.equal(kappa.baseEquation, String.raw`\( \kappa = \gamma \times \beta \times \alpha \)`);
+    assert.deepEqual(kappa.variables.map((variable) => variable.key), [
+      'gamma', 'beta', 'alpha', 'chargeRate', 'rangeMeters', 'amplitudeMultiplier',
+    ]);
+    assert.deepEqual(kappa.variables.slice(0, 3).map((variable) => variable.reference), [
+      'gamma', 'beta', 'alpha',
+    ]);
+    const [chargeRate, rangeMeters, amplitudeMultiplier] = kappa.variables.slice(3);
+    assert.deepEqual([chargeRate.baseValue, chargeRate.step], [0.16, 0.025]);
+    assert.deepEqual([rangeMeters.baseValue, rangeMeters.step], [2, 0.4]);
+    assert.deepEqual([amplitudeMultiplier.baseValue, amplitudeMultiplier.step], [5, 0.75]);
+    assert.deepEqual([
+      chargeRate.cost(2.9), rangeMeters.cost(2.9), amplitudeMultiplier.cost(2.9),
+    ], [144, 405, 231]);
+    assert.deepEqual([
+      chargeRate.cost(-4), rangeMeters.cost(-4), amplitudeMultiplier.cost(-4),
+    ], [60, 45, 80]);
+    assert.deepEqual([
+      chargeRate.cost(Infinity), rangeMeters.cost(Infinity), amplitudeMultiplier.cost(Infinity),
+    ], [60, 45, 80]);
+  });
+
+  await test('Kappa equation: upstream lookup order and non-finite harmonic fallbacks remain exact', async () => {
+    const { equation: kappa, blueprintContext, formatCalls } =
+      await importAdvancedEquationModule('kappa');
+    const lookupCalls = [];
+    const results = { gamma: Infinity, beta: -3, alpha: 2 };
+    blueprintContext.calculateTowerEquationResult = (towerId) => {
+      lookupCalls.push(towerId);
+      return results[towerId];
+    };
+    assert.deepEqual(kappa.variables[0].getSubEquations(), [
+      { expression: String.raw`\( atk = \gamma \times \beta \times \alpha \)` },
+      {
+        values: String.raw`\( game:0 = game:0 \times game:0 \times game:2 \)`,
+        variant: 'values',
+      },
+    ]);
+    assert.deepEqual(lookupCalls, ['gamma', 'beta', 'alpha']);
+    assert.deepEqual(formatCalls, [
+      ['game', 0], ['game', 0], ['game', 0], ['game', 2],
+    ]);
+    blueprintContext.calculateTowerEquationResult = null;
+    assert.equal(kappa.variables[0].getSubEquations()[1].values,
+      String.raw`\( game:0 = game:0 \times game:0 \times game:0 \)`);
+  });
+
+  await test('Kappa equation: upgrade sub-equations preserve flooring, fallbacks, and formatter order', async () => {
+    const { equation: kappa, formatCalls } = await importAdvancedEquationModule('kappa');
+    const [chargeRate, rangeMeters, amplitudeMultiplier] = kappa.variables.slice(3);
+    const chargeLines = chargeRate.getSubEquations({ level: 2.9, value: NaN });
+    assert.equal(chargeLines[1].values,
+      String.raw`\( decimal:0.21000000000000002:3 = 0.16 + 0.025 \times whole:2 \)`);
+    assert.equal(chargeLines[3].values,
+      String.raw`\( decimal:4.761904761904762:2\,\text{s} = 1 / decimal:0.21000000000000002:3 \)`);
+    rangeMeters.getSubEquations({ level: Infinity, value: -5 });
+    amplitudeMultiplier.getSubEquations({ level: -2, value: Infinity });
+    assert.deepEqual(formatCalls, [
+      ['decimal', 0.21000000000000002, 3], ['whole', 2],
+      ['decimal', 4.761904761904762, 2], ['decimal', 0.21000000000000002, 3],
+      ['decimal', 0, 2], ['whole', 0],
+      ['decimal', 5, 2], ['whole', 0],
+    ]);
+  });
+
+  await test('Kappa equation: result and base formatting retain number-only finite acceptance', async () => {
+    const { equation: kappa } = await importAdvancedEquationModule('kappa');
+    assert.equal(kappa.computeResult({ gamma: 2, beta: 3, alpha: 4 }), 24);
+    assert.equal(kappa.computeResult({ gamma: '2', beta: 3, alpha: 4 }), 0);
+    assert.equal(kappa.computeResult({ gamma: Infinity, beta: 3, alpha: 4 }), 0);
+    const calls = [];
+    const output = kappa.formatBaseEquationValues({
+      values: { gamma: 2, beta: '3', alpha: 4 },
+      result: 999,
+      formatComponent(value) {
+        calls.push(value);
+        return `component:${value}`;
+      },
+    });
+    assert.equal(output, 'component:0 = component:2 × component:0 × component:4');
+    assert.deepEqual(calls, [0, 2, 0, 4]);
+  });
+
+  // --- assets/towerEquations/advanced/lambdaEquation.js ----------------
+  await test('Lambda equation: metadata and every upgrade cost curve remain exact', async () => {
+    const { equation: lambda } = await importAdvancedEquationModule('lambda');
+    assert.equal(lambda.mathSymbol, String.raw`\lambda`);
+    assert.deepEqual(lambda.variables.map((variable) => variable.key), [
+      'kappa', 'enemyWeight', 'rangeMeters', 'rate',
+    ]);
+    const [, enemyWeight, rangeMeters, rate] = lambda.variables;
+    assert.deepEqual([enemyWeight.cost(2.9), rangeMeters.cost(2.9), rate.cost(2.9)], [
+      8, 252, 384,
+    ]);
+    assert.deepEqual([enemyWeight.cost(-3), rangeMeters.cost(-3), rate.cost(-3)], [
+      2, 120, 150,
+    ]);
+    assert.deepEqual([enemyWeight.cost(Infinity), rangeMeters.cost(Infinity), rate.cost(Infinity)], [
+      2, 120, 150,
+    ]);
+  });
+
+  await test('Lambda equation: presenter-owned upgrade state drives weight and logarithmic rate', async () => {
+    const { equation: lambda, blueprintContext } = await importAdvancedEquationModule('lambda');
+    const calls = [];
+    blueprintContext.ensureTowerUpgradeState = (towerId, blueprint) => {
+      calls.push([towerId, blueprint]);
+      return { variables: { enemyWeight: { level: 4 }, rate: { level: 3 } } };
+    };
+    assert.equal(lambda.variables[1].computeValue({ blueprint: lambda, towerId: 'lambda' }), 5);
+    const expectedRate = 0.2 + 0.3 * (1 - 1 / (1 + Math.log1p(3)));
+    assert.equal(lambda.variables[3].computeValue({ blueprint: lambda, towerId: 'lambda' }), expectedRate);
+    assert.deepEqual(calls, [['lambda', lambda], ['lambda', lambda]]);
+    blueprintContext.ensureTowerUpgradeState = () => ({ variables: {
+      enemyWeight: { level: -4 }, rate: { level: -4 },
+    } });
+    assert.equal(lambda.variables[1].computeValue({ blueprint: lambda, towerId: 'lambda' }), 1);
+    assert.equal(lambda.variables[3].computeValue({ blueprint: lambda, towerId: 'lambda' }), 0.2);
+  });
+
+  await test('Lambda equation: Kappa sub-equation preserves helper order and finite fallbacks', async () => {
+    const { equation: lambda, blueprintContext, formatCalls } =
+      await importAdvancedEquationModule('lambda');
+    const calls = [];
+    const fallbackBlueprint = { fallback: true };
+    blueprintContext.getTowerEquationBlueprint = (towerId) => {
+      calls.push(['blueprint', towerId]);
+      return fallbackBlueprint;
+    };
+    blueprintContext.computeTowerVariableValue = (towerId, variableKey, blueprint) => {
+      calls.push(['variable', towerId, variableKey, blueprint]);
+      return Infinity;
+    };
+    assert.deepEqual(lambda.variables[0].getSubEquations({
+      blueprint: null, towerId: 'lambda', value: -7,
+    }), [
+      { expression: String.raw`\( atk = \kappa \times N_{\text{eff}} \)` },
+      {
+        values: String.raw`\( game:0 = game:0 \times decimal:1:2 \)`,
+        variant: 'values',
+      },
+    ]);
+    assert.deepEqual(calls, [
+      ['blueprint', 'lambda'],
+      ['variable', 'lambda', 'enemyWeight', fallbackBlueprint],
+    ]);
+    assert.deepEqual(formatCalls, [['game', 0], ['game', 0], ['decimal', 1, 2]]);
+  });
+
+  await test('Lambda equation: result and base formatting preserve default enemy weight', async () => {
+    const { equation: lambda } = await importAdvancedEquationModule('lambda');
+    assert.equal(lambda.computeResult({ kappa: 7, enemyWeight: 3 }), 21);
+    assert.equal(lambda.computeResult({ kappa: 7, enemyWeight: '3' }), 7);
+    assert.equal(lambda.computeResult({ kappa: '7', enemyWeight: 3 }), 0);
+    const calls = [];
+    const output = lambda.formatBaseEquationValues({
+      values: { kappa: 7, enemyWeight: Infinity },
+      result: 999,
+      formatComponent(value) {
+        calls.push(value);
+        return `component:${value}`;
+      },
+    });
+    assert.equal(output, 'component:7 = component:7 × component:1');
+    assert.deepEqual(calls, [7, 7, 1]);
+  });
+
+  // --- assets/towerEquations/advanced/muEquation.js --------------------
+  await test('Mu equation: metadata and all Aleph cost curves preserve native numeric behavior', async () => {
+    const { equation: mu } = await importAdvancedEquationModule('mu');
+    assert.equal(mu.mathSymbol, String.raw`\mu`);
+    assert.deepEqual(mu.variables.map((variable) => variable.key), [
+      'aleph1', 'range', 'aleph2', 'aleph3',
+    ]);
+    assert.deepEqual([mu.variables[0].cost(3), mu.variables[2].cost(3), mu.variables[3].cost(3)], [
+      8, 14, 9,
+    ]);
+    assert.deepEqual([mu.variables[0].cost(-2), mu.variables[2].cost(-2), mu.variables[3].cost(-2)], [
+      1, 1, 1,
+    ]);
+    assert.equal(mu.variables[0].cost(Infinity), Infinity);
+  });
+
+  await test('Mu equation: tier sub-equations retain Lambda lookup, rounding, and formatter order', async () => {
+    const { equation: mu, blueprintContext, formatCalls } = await importAdvancedEquationModule('mu');
+    const calls = [];
+    blueprintContext.calculateTowerEquationResult = (towerId) => {
+      calls.push(towerId);
+      return towerId === 'lambda' ? 5 : 0;
+    };
+    const lines = mu.variables[0].getSubEquations({ level: 2.4, value: 3.6 });
+    assert.equal(lines[1].values, String.raw`\( game:200 = game:5 \times (whole:4 \times 10) \)`);
+    assert.equal(lines[3].values, String.raw`\( whole:4 = \max(1, whole:4) \)`);
+    assert.deepEqual(calls, ['lambda']);
+    assert.deepEqual(formatCalls, [
+      ['game', 200], ['game', 5], ['whole', 4], ['whole', 4], ['whole', 4],
+    ]);
+  });
+
+  await test('Mu equation: capacity, generation, result, and base formatting retain exact fallbacks', async () => {
+    const { equation: mu, blueprintContext, formatCalls } = await importAdvancedEquationModule('mu');
+    mu.variables[1].getSubEquations({ value: Infinity });
+    mu.variables[2].getSubEquations({ level: 2.6, value: NaN });
+    mu.variables[3].getSubEquations({ level: 2.6, value: -3 });
+    assert.deepEqual(formatCalls, [
+      ['decimal', 3, 2],
+      ['whole', 8], ['whole', 3],
+      ['decimal', 0.5, 2], ['whole', 0],
+    ]);
+    const lookupCalls = [];
+    blueprintContext.calculateTowerEquationResult = (towerId) => {
+      lookupCalls.push(towerId);
+      return 7;
+    };
+    assert.equal(mu.computeResult({ aleph1: 2.6 }), 210);
+    assert.equal(mu.computeResult({ aleph1: '4' }), 70);
+    const componentCalls = [];
+    const output = mu.formatBaseEquationValues({
+      values: { aleph1: Infinity }, result: 70,
+      formatComponent(value) {
+        componentCalls.push(value);
+        return `component:${value}`;
+      },
+    });
+    assert.equal(output, 'component:70 = component:7 × component:10');
+    assert.deepEqual(componentCalls, [70, 7, 10]);
+    assert.deepEqual(lookupCalls, ['lambda', 'lambda', 'lambda']);
+  });
+
+  // --- assets/towerEquations/advanced/nuEquation.js --------------------
+  await test('Nu equation: metadata and dynamic statistics preserve finite-only clamping', async () => {
+    const { equation: nu } = await importAdvancedEquationModule('nu');
+    assert.equal(nu.mathSymbol, String.raw`\nu`);
+    assert.deepEqual(nu.variables.map((variable) => variable.key), [
+      'mu', 'damageTotal', 'kills', 'lamed1', 'attackSpeed', 'rangeMeters',
+    ]);
+    const [, damageTotal, kills, , attackSpeed, rangeMeters] = nu.variables;
+    const dynamicContext = { stats: { nuOverkillTotal: 2500, nuKills: 6 } };
+    assert.equal(damageTotal.computeValue({ dynamicContext }), 2500);
+    assert.equal(kills.computeValue({ dynamicContext }), 6);
+    assert.equal(attackSpeed.computeValue({ dynamicContext }), 1.6);
+    assert.equal(rangeMeters.computeValue({ dynamicContext }), 3.3);
+    for (const malformed of [null, 4, { stats: { nuOverkillTotal: '9', nuKills: Infinity } }]) {
+      assert.equal(damageTotal.computeValue({ dynamicContext: malformed }), 0);
+      assert.equal(kills.computeValue({ dynamicContext: malformed }), 0);
+    }
+  });
+
+  await test('Nu equation: Mu sub-equation preserves every helper lookup and fallback in order', async () => {
+    const { equation: nu, blueprintContext, formatCalls } = await importAdvancedEquationModule('nu');
+    const calls = [];
+    const nuBlueprint = { id: 'nu-blueprint' };
+    const piBlueprint = { id: 'pi-blueprint' };
+    blueprintContext.getTowerEquationBlueprint = (towerId) => {
+      calls.push(['blueprint', towerId]);
+      return towerId === 'pi' ? piBlueprint : nuBlueprint;
+    };
+    blueprintContext.computeTowerVariableValue = (towerId, variableKey, blueprint) => {
+      calls.push(['variable', towerId, variableKey, blueprint]);
+      if (variableKey === 'damageTotal') return 2000;
+      if (variableKey === 'kills') return 3;
+      if (variableKey === 'lamed1') return 2;
+      return 0;
+    };
+    const lines = nu.variables[0].getSubEquations({
+      blueprint: null, towerId: 'nu', value: 10,
+    });
+    assert.equal(lines[1].values,
+      String.raw`\( game:68.33329631010781 = game:10 \times (whole:4^{\ln(decimal:4:2)}) \)`);
+    assert.deepEqual(calls, [
+      ['blueprint', 'nu'],
+      ['variable', 'nu', 'damageTotal', nuBlueprint],
+      ['variable', 'nu', 'kills', nuBlueprint],
+      ['blueprint', 'pi'],
+      ['variable', 'pi', 'lamed1', piBlueprint],
+    ]);
+    assert.deepEqual(formatCalls, [
+      ['game', 68.33329631010781], ['game', 10], ['whole', 4], ['decimal', 4, 2],
+    ]);
+  });
+
+  await test('Nu equation: Pi Lamed lookup and dynamic sub-equations retain formatter order', async () => {
+    const { equation: nu, blueprintContext, formatCalls } = await importAdvancedEquationModule('nu');
+    const piBlueprint = { id: 'pi' };
+    const calls = [];
+    blueprintContext.getTowerEquationBlueprint = (towerId) => {
+      calls.push(['blueprint', towerId]);
+      return piBlueprint;
+    };
+    blueprintContext.computeTowerVariableValue = (towerId, variableKey, blueprint) => {
+      calls.push(['variable', towerId, variableKey, blueprint]);
+      return -4;
+    };
+    assert.equal(nu.variables[3].computeValue(), 1);
+    nu.variables[1].getSubEquations({
+      dynamicContext: { stats: { nuKills: 7 } }, value: Infinity,
+    });
+    nu.variables[4].getSubEquations({
+      dynamicContext: { stats: { nuKills: 7 } }, value: Infinity,
+    });
+    nu.variables[5].getSubEquations({
+      dynamicContext: { stats: { nuKills: 7 } }, value: Infinity,
+    });
+    assert.deepEqual(calls, [
+      ['blueprint', 'pi'], ['variable', 'pi', 'lamed1', piBlueprint],
+    ]);
+    assert.deepEqual(formatCalls, [
+      ['decimal', 0, 2], ['whole', 7],
+      ['decimal', 1.7000000000000002, 2], ['whole', 7],
+      ['decimal', 3.35, 2], ['whole', 7],
+    ]);
+  });
+
+  await test('Nu equation: result and base formatting retain logarithmic clamps and non-finite fallback', async () => {
+    const { equation: nu, formatCalls } = await importAdvancedEquationModule('nu');
+    assert.equal(
+      nu.computeResult({ mu: 10, damageTotal: 2000, kills: 3, lamed1: 2 }),
+      68.33329631010781,
+    );
+    assert.equal(nu.computeResult({ mu: '10', damageTotal: 2000, kills: 3, lamed1: 2 }), 0);
+    assert.equal(nu.computeResult({ mu: 10, damageTotal: Infinity, kills: Infinity, lamed1: 2 }), 10);
+    const calls = [];
+    const output = nu.formatBaseEquationValues({
+      values: { mu: 10, damageTotal: 2000, kills: 3, lamed1: 2 },
+      result: 68.33329631010781,
+      formatComponent(value) {
+        calls.push(value);
+        return `component:${value}`;
+      },
+    });
+    assert.equal(output,
+      'component:68.33329631010781 = component:10 × (component:4^{decimal:1.3862943611198906:3})');
+    assert.deepEqual(calls, [68.33329631010781, 10, 4]);
+    assert.deepEqual(formatCalls, [['decimal', Math.log(4), 3]]);
+  });
+
+  // --- assets/towerEquations/advanced/xiEquation.js --------------------
+  await test('Xi equation: metadata and all five direct cost formulas remain exact', async () => {
+    const { equation: xi } = await importAdvancedEquationModule('xi');
+    assert.equal(xi.mathSymbol, String.raw`\xi`);
+    assert.deepEqual(xi.variables.map((variable) => variable.key), [
+      'nu', 'aleph1', 'aleph2', 'aleph3', 'aleph4', 'aleph5',
+    ]);
+    assert.deepEqual(xi.variables.slice(1).map((variable) => variable.cost(2.5)), [
+      7, 8, 4.5, 15, 23,
+    ]);
+    assert.deepEqual(xi.variables.slice(1).map((variable) => variable.cost(-10)), [
+      1, 1, 1, 1, 1,
+    ]);
+    assert.deepEqual(xi.variables.slice(1).map((variable) => variable.cost(Infinity)), [
+      Infinity, Infinity, Infinity, Infinity, Infinity,
+    ]);
+  });
+
+  await test('Xi equation: Nu sub-equation preserves chain helper order, rounding, and fallbacks', async () => {
+    const { equation: xi, blueprintContext, formatCalls } = await importAdvancedEquationModule('xi');
+    const calls = [];
+    const fallbackBlueprint = { id: 'xi' };
+    blueprintContext.getTowerEquationBlueprint = (towerId) => {
+      calls.push(['blueprint', towerId]);
+      return fallbackBlueprint;
+    };
+    blueprintContext.computeTowerVariableValue = (towerId, variableKey, blueprint) => {
+      calls.push(['variable', towerId, variableKey, blueprint]);
+      return variableKey === 'aleph4' ? 2.6 : 4;
+    };
+    const lines = xi.variables[0].getSubEquations({
+      blueprint: null, towerId: 'xi', value: 10,
+    });
+    assert.equal(lines[1].values,
+      String.raw`\( game:122.86035066475314 = game:10 \times whole:6^{decimal:1.4:2} \)`);
+    assert.deepEqual(calls, [
+      ['blueprint', 'xi'],
+      ['variable', 'xi', 'aleph4', fallbackBlueprint],
+      ['variable', 'xi', 'aleph5', fallbackBlueprint],
+    ]);
+    assert.deepEqual(formatCalls, [
+      ['game', 122.86035066475314], ['game', 10], ['whole', 6], ['decimal', 1.4, 2],
+    ]);
+  });
+
+  await test('Xi equation: Aleph sub-equations preserve fractional values and formatter order', async () => {
+    const { equation: xi, formatCalls } = await importAdvancedEquationModule('xi');
+    for (const variable of xi.variables.slice(1)) {
+      variable.getSubEquations({ level: 2.5, value: NaN });
+    }
+    assert.deepEqual(formatCalls, [
+      ['decimal', 2.25, 2], ['whole', 2.5],
+      ['decimal', 6.25, 2], ['whole', 2.5],
+      ['decimal', 1.25, 2], ['whole', 2.5],
+      ['whole', 5.5], ['whole', 2.5],
+      ['decimal', 1.25, 2], ['whole', 2.5],
+    ]);
+  });
+
+  await test('Xi equation: result remains Nu-only while base formatting preserves callback order', async () => {
+    const { equation: xi } = await importAdvancedEquationModule('xi');
+    assert.equal(xi.computeResult({ nu: 8, aleph5: 100 }), 8);
+    assert.equal(xi.computeResult({ nu: -8, aleph5: 100 }), 0);
+    assert.equal(xi.computeResult({ nu: '8', aleph5: 100 }), 0);
+    const calls = [];
+    const output = xi.formatBaseEquationValues({
+      values: { nu: -8 }, result: 5,
+      formatComponent(value) {
+        calls.push(value);
+        return `component:${value}`;
+      },
+    });
+    assert.equal(output, 'component:5 = component:0 × (\\text{chain}^{\\text{exp}})');
+    assert.deepEqual(calls, [5, 0]);
+  });
+
   // --- assets/towerEquations/advanced/sigmaEquation.js ------------------
   await test('Sigma equation: metadata, variable order, and dynamic stat precedence remain exact', async () => {
     const { equation: sigma } = await importAdvancedEquationModule('sigma');

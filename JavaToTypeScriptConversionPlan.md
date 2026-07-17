@@ -20,7 +20,7 @@ This file serves four functions:
 
 | Item | Current state |
 |---|---|
-| Repository baseline | Build 754 on `main`, including the completed Phase 22 Kappa -> Xi equation-chain migration |
+| Repository baseline | Build 755 on `main`, including the completed Phase 22 Kappa -> Xi equation-chain migration |
 | Completed migration history | Phases 0-22 remain complete; historical phase identities are preserved |
 | Next authorized implementation | **Phase 23 only:** Omicron, Pi, Chi, Psi, and Omega terminal equations |
 | Delivery branch | Work directly on `main`; create or switch to another branch only when the user explicitly requests it |
@@ -179,7 +179,7 @@ The original statement that no conversion phase was complete is superseded by th
 | 19 | Upsilon advanced equation definition (`assets/towerEquations/advanced/upsilonEquation.js`) | COMPLETE | See Phase 19 section and Implementation Log entry below |
 | 20 | Tau advanced equation definition (`assets/towerEquations/advanced/tauEquation.js`) | COMPLETE | See Phase 20 section and Implementation Log entry below |
 | 21 | Rho advanced equation definition (`assets/towerEquations/advanced/rhoEquation.js`) | COMPLETE | Builds 751-752 on `codex/phase-21-rho-equation`; see the Phase 21 execution card and implementation log |
-| 22 | Kappa -> Lambda -> Mu -> Nu -> Xi advanced equation chain | COMPLETE | Build 754 on `main`; see the Phase 22 authorization card and implementation log |
+| 22 | Kappa -> Lambda -> Mu -> Nu -> Xi advanced equation chain | COMPLETE | Implementation checkpoint `87f6afe` and Build 755 closeout on `main`; see the Phase 22 authorization card and implementation log |
 
 ---
 
@@ -433,6 +433,28 @@ Convert those files to strict `.ts` sources and regenerate only their same-path 
 **Required characterization:** exact metadata and variable order; every cost/base/step formula; missing and malformed helper/state/dynamic inputs; Number/Boolean coercion, `NaN`, Infinity, negative and fractional cases; upstream lookup names and callback order; cycle/visited behavior exposed through the existing presenter; every sub-equation branch and formatter order; result and base-equation math; advanced-barrel identity and registry lookup. Tests must be deterministic and must pass against original JavaScript before conversion and generated output afterward.
 
 **Completion gate:** use the standard implementation gate and phase record. No formula cleanup, balance change, broad assertion, `any`, suppression, duplicated shared contract, or sixth converted definition is authorized. Browser equation inspection is optional for this math-only slice but must be reported honestly. Completion must refresh counts, inventory coverage, Build metadata, and exactly one next authorization.
+
+**Completion record:** Phase 22 converted exactly the five authorized equation definitions, retained all `.js` import/export specifiers and barrel/registry identities, and reused the presenter/context contracts. The only shared owner change adds the already-authored `lockedNote` field to `TowerEquationVariable`. Nineteen focused tests passed first against the original JavaScript and then against generated TypeScript output. Final command evidence and the unperformed optional browser inspection are recorded in the Phase 22 implementation-log entry.
+
+#### Phase 23 authorization card
+
+**Intent:** migrate the five remaining terminal advanced-equation definitions after Phase 22 completed the Kappa-to-Xi dependency chain. These files share the same presenter/context boundary and collectively close the individually authored advanced-definition group before the broader grouped-equation phases.
+
+**Exact authored sources:**
+
+- `assets/towerEquations/advanced/omicronEquation.js` (215 lines at authorization)
+- `assets/towerEquations/advanced/piEquation.js` (192 lines)
+- `assets/towerEquations/advanced/chiEquation.js` (191 lines)
+- `assets/towerEquations/advanced/psiEquation.js` (220 lines)
+- `assets/towerEquations/advanced/omegaEquation.js` (213 lines)
+
+Convert those files to strict `.ts` sources and regenerate only their same-path `.js` siblings. Retain all `.js` import/export specifiers and exact advanced-barrel/registry identity.
+
+**Dependency boundary:** Omicron reads Delta/Xi results and Delta's Aleph variable; Pi reads Omicron and its own `bet1` variable through the shared context; Chi reads Phi; Psi and Omega complete the terminal authored set. Reuse `TowerEquationBlueprint`, presenter-owned value types, and `blueprintContext`. Do not convert grouped basic/Greek/Infinity definitions, tower simulations, Towers tab, playfield, or main.
+
+**Required characterization:** exact metadata and variable order; every cost/base/step formula; each upstream lookup name, repeated getter/helper call count, and fallback; Number/Boolean coercion, `NaN`, Infinity, negative and fractional cases; every sub-equation branch and formatter order; result/base-equation behavior; advanced-barrel identity and registry lookup. Tests must be deterministic and pass against original JavaScript before conversion and generated output afterward.
+
+**Completion gate:** use the standard implementation gate and phase record. No formula cleanup, balance change, broad assertion, `any`, suppression, grouped-definition conversion, simulation edit, or sixth definition is authorized. Browser equation inspection is optional for this math-only slice but must be reported as performed or not performed. Completion must refresh counts, inventory coverage, Build metadata, and exactly one next authorization.
 
 ---
 
@@ -1292,17 +1314,29 @@ The equipment/gem retirement removed five active JavaScript modules from future 
 
 ## Next Suggested Step
 
-**Recommended Phase 22: Kappa -> Lambda -> Mu -> Nu -> Xi authored-equation chain.** The normative implementation checklist is the [Phase 22 authorization card](#phase-22-authorization-card).
+**Recommended Phase 23: Omicron, Pi, Chi, Psi, and Omega terminal authored equations.** The normative implementation checklist is the [Phase 23 authorization card](#phase-23-authorization-card).
 
-Phase 21 proved that an upgrade-backed advanced definition can reuse the presenter/context contracts while preserving JavaScript getter, coercion, formula, formatter, barrel, and registry behavior. The next coherent dependency unit is the five-file Kappa-to-Xi chain; splitting it further would encourage duplicated local context types and repeated cross-equation compatibility work.
+Phase 22 completed the Kappa-to-Xi dependency chain, proved the dynamic-stat and upgrade-state guards against generated output, and added the real `lockedNote` field to the canonical presenter-owned variable contract. The five remaining individual advanced definitions now form the coherent terminal slice before grouped basic, Infinity, and Greek equation owners.
 
-**Bounded scope:** Convert only `kappaEquation.js`, `lambdaEquation.js`, `muEquation.js`, `nuEquation.js`, and `xiEquation.js` to strict TypeScript. Reuse presenter/context owners and add only narrow guards required by the values those definitions already read. Do not include the terminal advanced equations, grouped definitions, Towers tab, simulations, playfield systems, or main integration.
+**Bounded scope:** Convert only `omicronEquation.js`, `piEquation.js`, `chiEquation.js`, `psiEquation.js`, and `omegaEquation.js` to strict TypeScript. Reuse presenter/context owners and add only narrow guards required by existing values and callbacks. Do not include grouped definitions, Towers tab, simulations, playfield systems, or main integration.
 
-**Acceptance criteria:** Preserve exact metadata, strings, formulas, upstream lookup names/order, dynamic-context and upgrade-state coercion, clamping, costs, sub-equation order, result math, formatter callback order/output, `.js` imports, barrel identity, and registry compatibility; add no `any`, broad assertions, or suppressions; typecheck/build/lint/unit/smoke and roadmap checks pass; update counts/build number and record browser availability honestly.
+**Acceptance criteria:** Preserve exact metadata, strings, formulas, repeated helper/getter calls, upstream lookup names/order, coercion, clamping, every cost curve, sub-equation order, result math, formatter callback order/output, `.js` imports, barrel identity, and registry compatibility; add no `any`, broad assertions, or suppressions; typecheck/build/lint/unit/smoke and roadmap checks pass; update counts/build number and record browser availability honestly.
 
 ---
 
 ## Implementation Log
+
+### 2026-07-16 — Phase 22 Kappa-to-Xi equation chain conversion executed
+
+- **Baseline:** clean, synchronized `main` at Build 753 after the two fully merged conversion branches were deleted locally and from `origin`. Roadmap check, typecheck, build, lint, 165/165 unit tests plus retired-Spire checks, smoke test, and divergence checks passed before implementation.
+- **Authorized boundary:** only `kappaEquation.js`, `lambdaEquation.js`, `muEquation.js`, `nuEquation.js`, and `xiEquation.js` moved to strict `.ts`; their generated siblings, nineteen focused tests, one evidence-backed presenter contract field, roadmap/inventory records, generated `dist/`, and build metadata are included. No sixth definition, grouped equation owner, Towers tab, simulation, playfield, main, formula, balance, or UI behavior entered scope.
+- **Dependency audit:** Kappa retains Alpha/Beta/Gamma lookups; Lambda retains presenter-owned upgrade-state reads; Mu retains Lambda result reads; Nu retains Mu/Pi and dynamic-stat reads; Xi retains Nu-chain calculations. `advancedTowers.ts` and the registry keep their `.js` specifiers and exact object identities.
+- **Behavior oracle:** nineteen deterministic tests passed first against the original JavaScript and then against generated TypeScript output, increasing the suite from 165 to 184. They cover exact metadata/order, every cost curve, negative/fractional/`NaN`/Infinity inputs, missing helpers, lookup and formatter order, upgrade-state and dynamic-stat fallbacks, sub-equation branches, result math, and base-equation callbacks. Existing presenter recursion, advanced-barrel identity, and registry lookup suites remain green.
+- **Contracts:** all five sources end with `satisfies TowerEquationBlueprint`; Lambda reuses `TowerUpgradeState`; narrow guards preserve number-only finite checks, native coercion, and repeated dynamic getter timing. `TowerEquationVariable.lockedNote?: string` is the only shared owner edit because that field is already authored across multiple equation definitions. No `any`, broad assertion, suppression, non-null assertion, or duplicate shared contract was added.
+- **Output and counts:** auto-sync checkpoint `87f6afe` captured the authored conversion and tests on `main`; Build 755 closes the generated/dist/documentation evidence without rewriting that history. Counts are 66 TypeScript sources, 66 generated siblings, 168 active authored JavaScript modules, and 45 decision candidates (28.2% of 234 active authored modules converted).
+- **Automated evidence:** `npm run check:migration-roadmap` passes at 66/66/168/45; `npm run typecheck`, `npm run build`, `npm run lint`, `npm run test:unit` (184/184 plus retired-Spire checks), `npm test`, generated-output/source-dist parity, forbidden-pattern audit, no-TypeScript-in-`dist` audit, and `git diff --check` pass. The malformed-storage fixture prints its expected parse diagnostic while the unit command exits 0.
+- **Manual evidence:** optional browser equation-display verification was not performed; this math-only phase changes no DOM, input, Canvas, audio, save, or Electron path. Compiled-output formula, helper-order, barrel, registry, and smoke coverage provide the acceptance evidence.
+- **Residual risk and handoff:** no known behavior gap or temporary compatibility seam remains. Phase 22 is complete; only Phase 23 is authorized next under its five-file terminal-equation card.
 
 ### 2026-07-16 — Phase 21 Rho equation conversion executed
 

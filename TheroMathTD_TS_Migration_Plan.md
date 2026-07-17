@@ -1,6 +1,6 @@
 # TheroMathTD — Archived JavaScript → TypeScript Migration Orientation
 
-> **Archived orientation notice (2026-07-16):** This document preserves the original higher-altitude audit for historical context. Its counts, largest-file snapshot, references to deleted systems, and next-phase recommendations are intentionally stale. The authoritative dashboard, reconciled history, dependency-aware Phases 21-55, single authorized Phase 22 card, and exact 173-module coverage are in [`JavaToTypeScriptConversionPlan.md`](JavaToTypeScriptConversionPlan.md) and [`docs/TypeScriptMigrationRoadmapInventory.md`](docs/TypeScriptMigrationRoadmapInventory.md). Run `npm run check:migration-roadmap` against those documents. Do not authorize or schedule work from this archived file.
+> **Archived orientation notice (2026-07-16):** This document preserves the original higher-altitude audit for historical context. Its counts, largest-file snapshot, references to deleted systems, and next-phase recommendations are intentionally stale. The authoritative dashboard, reconciled history, dependency-aware Phases 21-55, single authorized Phase 23 card, and exact 168-module coverage are in [`JavaToTypeScriptConversionPlan.md`](JavaToTypeScriptConversionPlan.md) and [`docs/TypeScriptMigrationRoadmapInventory.md`](docs/TypeScriptMigrationRoadmapInventory.md). Run `npm run check:migration-roadmap` against those documents. Do not authorize or schedule work from this archived file.
 
 **Audit date:** 2026-07-13
 **Auditor:** Claude Code (planning only — no code changes made)
