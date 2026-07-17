@@ -132,6 +132,13 @@ function assertSameSet(actual, documented, label) {
   }
 }
 
+// Require one exact human-facing statement so machine markers cannot hide stale prose.
+function assertContains(markdown, expected, label) {
+  if (!markdown.includes(expected)) {
+    throw new Error(`${label} is missing or stale:\n${expected}`);
+  }
+}
+
 // Parse one machine-readable count marker shared by the ledger and inventory appendix.
 function readCountMarker(markdown, label) {
   const match = markdown.match(/<!-- migration-roadmap-counts: ts=(\d+) generated=(\d+) active_js=(\d+) candidates=(\d+) -->/);
@@ -159,6 +166,29 @@ function readInventoryPhaseCounts(activeSection) {
   return counts;
 }
 
+// Check that every decision-row count matches its own exact file list.
+function readDecisionGroupCount(candidateSection) {
+  let total = 0;
+  for (const line of candidateSection.split(/\r?\n/)) {
+    if (!line.startsWith('|')) {
+      continue;
+    }
+    const columns = line.split('|');
+    const declaredCount = Number(columns[2]);
+    if (!Number.isInteger(declaredCount)) {
+      continue;
+    }
+    const paths = extractJavaScriptPaths(columns[4] ?? '');
+    if (declaredCount !== paths.length) {
+      throw new Error(
+        `Decision group "${columns[1].trim()}" count mismatch: declared=${declaredCount}, files=${paths.length}`,
+      );
+    }
+    total += declaredCount;
+  }
+  return total;
+}
+
 // Parse the explicit module count embedded in each future-phase scope cell.
 function readPlanPhaseCounts(planMarkdown) {
   const counts = new Map();
@@ -179,6 +209,23 @@ function readPlanPhaseCounts(planMarkdown) {
     counts.set(Number(phaseMatch[1]), Number(countMatch[1]));
   }
   return counts;
+}
+
+// Preserve exactly one implementation authorization while keeping later phases tentative.
+function verifyAuthorizationBoundary(planMarkdown) {
+  const roadmapRows = planMarkdown.split(/\r?\n/).filter((line) => (
+    /^\|\s*(?:2[1-9]|3\d|4\d|5[0-5])\s*\|/.test(line)
+    && (line.includes('**AUTHORIZED NEXT**') || line.includes('**TENTATIVE'))
+  ));
+  if (roadmapRows.length !== 35) {
+    throw new Error(`Expected 35 Phase 21-55 roadmap rows, found ${roadmapRows.length}`);
+  }
+  const authorized = roadmapRows
+    .filter((line) => line.includes('**AUTHORIZED NEXT**'))
+    .map((line) => Number(line.match(/^\|\s*(\d+)/)[1]));
+  if (authorized.length !== 1 || authorized[0] !== 21) {
+    throw new Error(`Exactly Phase 21 must be authorized; found ${authorized.join(', ') || 'none'}`);
+  }
 }
 
 // Build the live classification from the source tree and browser import graph.
@@ -236,6 +283,36 @@ for (const [label, marker] of [
   }
 }
 
+// Protect the visible dashboard, summaries, and reconciliation rules from count drift.
+const activeTotal = actualCounts.ts + actualCounts.activeJs;
+const rawTotal = activeTotal + actualCounts.candidates;
+const conversionPercent = (actualCounts.ts / activeTotal * 100).toFixed(1);
+const visibleCountStatements = [
+  [planMarkdown, `| Active authored modules | ${activeTotal} total: ${actualCounts.ts} TypeScript and ${actualCounts.activeJs} JavaScript |`, 'Main dashboard active count'],
+  [planMarkdown, `| Compatibility output | ${actualCounts.generated} generated \`.js\` siblings; they are runtime output, not backlog |`, 'Main dashboard generated count'],
+  [planMarkdown, `| Decision candidates | ${actualCounts.candidates} unreachable authored \`.js\` files requiring retirement, integration, or archival decisions |`, 'Main dashboard candidate count'],
+  [planMarkdown, `- **${actualCounts.activeJs} active authored \`.js\` modules**`, 'Main baseline active count'],
+  [planMarkdown, `- **${activeTotal} active authored modules** in total, so active module-count conversion is **${conversionPercent}%** (\`${actualCounts.ts} / ${activeTotal}\`). The raw authored-language tree is ${rawTotal} modules when the ${actualCounts.candidates} decision candidates are included.`, 'Main baseline total'],
+  [planMarkdown, `Phases 21-55 cover all ${actualCounts.activeJs} active authored JavaScript modules.`, 'Main phase total'],
+  [inventoryMarkdown, `| Authored TypeScript source | ${actualCounts.ts} |`, 'Inventory TypeScript row'],
+  [inventoryMarkdown, `| Build-generated \`.js\` siblings of authored \`.ts\` | ${actualCounts.generated} |`, 'Inventory generated row'],
+  [inventoryMarkdown, `| Active authored JavaScript | ${actualCounts.activeJs} |`, 'Inventory active row'],
+  [inventoryMarkdown, `| Retirement/deletion candidates or ambiguous authored JavaScript | ${actualCounts.candidates} |`, 'Inventory candidate row'],
+  [inventoryMarkdown, `The repository therefore has ${activeTotal} active authored JS/TS modules: ${actualCounts.ts} TypeScript plus ${actualCounts.activeJs} active JavaScript. The raw authored-language tree has ${rawTotal} modules when the ${actualCounts.candidates} decision candidates are included. Active conversion is ${conversionPercent}% by module count (\`${actualCounts.ts} / ${activeTotal}\`).`, 'Inventory total summary'],
+  [inventoryMarkdown, `- Each of the ${actualCounts.activeJs} active authored \`.js\` paths appears in exactly one coverage row.`, 'Inventory reconciliation active count'],
+  [inventoryMarkdown, `- The ${actualCounts.candidates} decision candidates appear only in the retirement section and are excluded from phase totals.`, 'Inventory reconciliation candidate count'],
+];
+for (const [markdown, expected, label] of visibleCountStatements) {
+  assertContains(markdown, expected, label);
+}
+
+// Keep decision-group subtotals and the sole authorization boundary honest.
+const declaredDecisionTotal = readDecisionGroupCount(candidateSection);
+if (declaredDecisionTotal !== actualCounts.candidates) {
+  throw new Error(`Decision-group total mismatch: groups=${declaredDecisionTotal}, live=${actualCounts.candidates}`);
+}
+verifyAuthorizationBoundary(planMarkdown);
+
 // Require every conversion phase's advertised count to match its exact inventory row.
 const inventoryPhaseCounts = readInventoryPhaseCounts(activeSection);
 inventoryPhaseCounts.set(54, 0);
@@ -247,6 +324,12 @@ for (let phase = 21; phase <= 55; phase += 1) {
   if (planPhaseCounts.get(phase) !== inventoryPhaseCounts.get(phase)) {
     throw new Error(`Phase ${phase} count mismatch: plan=${planPhaseCounts.get(phase)}, inventory=${inventoryPhaseCounts.get(phase)}`);
   }
+}
+const assignedPhaseTotal = [...inventoryPhaseCounts.entries()]
+  .filter(([phase]) => phase !== 54)
+  .reduce((sum, [, count]) => sum + count, 0);
+if (assignedPhaseTotal !== actualCounts.activeJs) {
+  throw new Error(`Phase assignment total mismatch: phases=${assignedPhaseTotal}, live=${actualCounts.activeJs}`);
 }
 
 console.log(

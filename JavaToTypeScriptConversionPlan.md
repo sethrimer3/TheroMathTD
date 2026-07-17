@@ -19,7 +19,7 @@ This file serves four functions:
 
 | Item | Current state |
 |---|---|
-| Repository baseline | Build 749 planning update based on `main` at `0802d21`, after the equipment/gem retirement merge `c96df03` |
+| Repository baseline | Build 750 planning update based on `main` at `0802d21`, after the equipment/gem retirement merge `c96df03` |
 | Completed migration history | Phases 0-20 remain complete; historical phase identities are preserved |
 | Next authorized implementation | **Phase 21 only:** `assets/towerEquations/advanced/rhoEquation.js` -> `.ts` |
 | Active authored modules | 234 total: 60 TypeScript and 174 JavaScript |
@@ -228,6 +228,31 @@ Every future phase is behavior-preserving unless separately authorized. Every ph
 6. Manually verify the phase-specific surface listed below. DOM/input/render phases require a browser console check and portrait-mobile viewport; audio requires playback/mute/volume checks; save phases require reload/legacy-save checks; application roots require browser plus Electron startup.
 7. Exclude balance, formula, visual redesign, save-key renaming, retired-system resurrection, bundler adoption, and unrelated cleanup. Completion requires exact export/object identity compatibility, deterministic tests, clean validation, honest manual-test reporting, updated counts, and a new single-phase authorization decision.
 
+### Required phase execution record
+
+Every authorized phase must add one implementation-log entry using this structure. “Not performed” is a valid manual-verification result; an omitted result is not.
+
+| Record field | Required evidence |
+|---|---|
+| Baseline | Start branch, exact commit, build number, clean/mixed worktree state, fetch/divergence result, and baseline command outcomes |
+| Authorized boundary | Phase number, exact authored source files, allowed compatibility files, and explicit exclusions |
+| Dependency audit | Static imports, direct importers, dynamic/global/save/DOM boundaries, subsystem guidance read, and generated siblings identified |
+| Behavior oracle | Existing JavaScript cases or fixtures that define formulas, coercion, ordering, mutation, timing, serialization, rendering calls, and error behavior |
+| Contract ownership | Existing owner types reused, new owner types introduced, runtime validators added, and any temporary adapter with its removal phase |
+| Implementation output | Authored files converted/created/deleted, compatibility edits, generated output, build number, and commit sequence |
+| Automated evidence | Exact commands, exit codes, test counts, expected diagnostics, and inspection of generated/`dist/` drift |
+| Manual evidence | Browser console, portrait/mobile, desktop pointer, audio, save reload, Electron, or an explicit reason each applicable surface was not run |
+| Residual risk | Unverified behavior, inherited defects, deferred cleanup, temporary compatibility seams, and whether rollback/recovery remains straightforward |
+| Handoff | Final status, refreshed inventory totals, decision-log changes, and exactly one bounded next authorization or a named blocker |
+
+### Evidence ladder by risk class
+
+- **Low/pure/static:** exact export identity, frozen/golden inputs, coercion edges, malformed inputs, and property or round-trip tests where meaningful.
+- **State/persistence/configuration:** everything above plus unknown-at-entry validation, old/malformed fixtures, key/alias precedence, mutation order, reload, and save compatibility.
+- **DOM/input/controller:** deterministic event/timer fakes plus browser console, portrait touch, desktop pointer, focus, resize, and accessibility-state checks appropriate to the surface.
+- **Canvas/randomness/audio/animation:** seeded randomness, controlled clocks/RAF, render/audio call traces or state snapshots, lifecycle teardown, and a representative live visual/audio pass.
+- **Integration roots:** startup/configuration order, public API and global identity, save reload, complete level lifecycle, responsive browser checks, and Electron startup. Compilation alone never satisfies an integration-root phase.
+
 ### Proposed phase sequence
 
 Exact file lists and per-module risk notes are in the linked coverage appendix. “Consumer impact” identifies the direct high-value boundary, not every graph edge.
@@ -280,6 +305,25 @@ The most likely controlling chain is:
 
 The early leverage modules are `assets/gameUnits.js` (31 importers), `assets/colorSchemeUtils.js` (36), `assets/towersTab.js` (35), `assets/enemies.js` (15), and `assets/playfield/utils/formatting.js` (13). Their contracts must be owner-defined once and consumed downstream. The apparent detour through Powder is real: `colorSchemeUtils.js` imports PowderSimulation behavior, while most tower/render modules import `colorSchemeUtils.js`.
 
+### Contract ownership map
+
+This map prevents adjacent phases from inventing structurally similar local interfaces. A consumer may define a narrow `Pick`/capability view, but the underlying state/entity contract belongs to the named owner.
+
+| Contract family | Current or planned owner | Consumer rule |
+|---|---|---|
+| Tower definition identifiers and static records | `assets/data/towers/types.ts` (Phase 4) | Extend the owner only for proven definition data; do not duplicate tower-id unions downstream. |
+| Save envelopes and retirement compatibility | `assets/autoSave.ts`, `assets/saveCompatibility.ts`, `assets/spireResourcePersistence.ts` | State owners validate their own payloads; the autosave layer remains an adapter until all state owners are typed. |
+| Equation blueprints, values, variables, and upgrade state | `assets/towerBlueprintPresenter.ts` (Phase 8) | Equation files use `satisfies TowerEquationBlueprint` and narrow their own dynamic context without redefining presenter state. |
+| Shared equation dependency injection | `assets/towerEquations/blueprintContext.ts` (Phase 12) | Add a helper only when multiple definitions consume the same presenter-owned capability. |
+| Wave, unit, point, geometry, and math-token primitives | Phase 26 owners in the exact inventory row | Later config, tower, and playfield phases import these owners instead of creating parallel primitives. |
+| Level, gameplay configuration, and enemy records | Phase 27 configuration/enemy owners | Treat JSON/global inputs as `unknown`; combat/render consumers receive validated owner records. |
+| Powder cell, palette, persistence, and simulation state | Phase 29 utilities plus `PowderSimulation` in Phase 30 | UI and palette consumers use narrow views of the simulation owner rather than copying its mutable state shape. |
+| Runtime towers, upgrades, targeting, and projectiles | `assets/towersTab.js` in Phase 33, then shared tower helpers in Phase 34 | Phase 33 owns UI/runtime tower records; Phase 34 owns reusable simulation/projectile contracts consumed by later tower families. |
+| Playfield entities, damage, lifecycle, and injected capabilities | Geometry owners in Phase 40, system owners in 41-43, convergence owners in Phase 44 | Prefer small capability interfaces at system boundaries; no universal playfield context bag. |
+| Frame, layer, Canvas, and render scheduling contracts | `CanvasRenderer`/`RenderCoordinator` in Phase 47 | Effects and layers consume the renderer-owned frame contract; they do not redefine the compositor. |
+| Browser globals and developer hooks | Phase 53 central ambient declarations | One central augmentation owns each global; feature modules must not add competing declarations. |
+| Application startup/composition | Phase 54 extracted owners, then `assets/main.ts` in Phase 55 | `main` wires typed owners and retains no feature logic after the extraction gate. |
+
 ### Parallelizable work after contracts freeze
 
 - Phases 22 and 23 can be divided by equation file only after Phase 21 proves the shared presenter/context surface; one designated contract owner must make any shared `towerBlueprintPresenter.ts` edit.
@@ -300,6 +344,28 @@ Re-run the live inventory and revise affected tentative phases before authorizin
 - validation tooling, browser startup, Electron startup, or the generated-sibling build architecture changes.
 
 Tentative phases may be regrouped after a trigger, but completed phase numbers and scopes remain historical facts. Update the dashboard, inventory appendix, proposed sequence, decision log, and sole next authorization together. Never authorize several future phases merely to make the table look settled.
+
+### Interrupted-phase recovery and rollback protocol
+
+1. Audit before writing: record `git status -sb`, current branch/HEAD, recent log, upstream divergence, and any auto-sync or partial phase commit. Preserve existing commits and unrelated worktree changes.
+2. Reconstruct the phase boundary from the last ledger entry and actual diff. Do not infer completion from a generated `.js` sibling, a build number, or an `IN PROGRESS` label alone.
+3. Separate authored source changes from build-generated siblings and `dist/`. Never hand-repair generated TypeScript output; regenerate it from the retained authored source with the normal build.
+4. If behavior or validation cannot be recovered safely, mark the phase **PARTIAL** or **BLOCKED**, record the exact failing command/evidence, and leave the previous completed phase as the last trusted migration point.
+5. Do not use destructive reset/clean/history rewriting to make an interrupted phase appear tidy. If upstream divergence, overlapping user edits, or a product decision changes the safe recovery path, stop for explicit direction.
+6. A rollback is complete only when the previous phase's authored sources, generated siblings, import graph, build number/history, and validation state are again internally consistent. Record the rollback as a new historical event; never erase the failed attempt.
+
+### Definition of migration complete
+
+The active JavaScript-to-TypeScript migration is complete only when all of the following are true:
+
+- the runtime graph from `assets/main.js` contains zero active authored `.js` modules; every runtime `.js` source module is generated from an authored `.ts` source;
+- every former decision candidate has an explicit recorded outcome: deleted, archived outside the runtime/source inventory, or reactivated with an owner, tests, and completed migration phase;
+- Phase 54 leaves the application root composition-only, and Phase 55 converts that residual root without broad assertions, `any`, suppressions, or owned feature logic;
+- owner contracts are canonical, temporary adapters have named removal outcomes, and no hand-authored/generated sibling pair has diverged;
+- strict typecheck, build, lint, unit/retirement/smoke suites, roadmap reconciliation, generated-output inspection, browser portrait/desktop startup, save reload, representative gameplay, audio, and Electron startup are recorded cleanly;
+- save keys, progression, formulas, controls, accessibility state, rendering, timing, and mobile behavior remain compatible unless a separately authorized product change says otherwise;
+- the final decision log records whether `allowJs`, TypeScript-specific linting, and the unbundled generated-sibling architecture remain appropriate. Tooling changes are explicit follow-up decisions, not hidden completion requirements;
+- the dashboard is replaced with a completion snapshot and the ledger names any post-migration hardening work separately from conversion history.
 
 ### Deletion before migration
 
@@ -1138,6 +1204,10 @@ Do not treat this list as a fixed roadmap. Each completed phase must recommend t
 
 ## Decision Log
 
+### 2026-07-16 — Reinforce visible counts, authorization, recovery, and the end state
+
+The first checker version protected exact file classifications and machine-readable markers but could still allow nearby human-facing totals or decision-group subtotals to drift. It now validates the visible dashboard/baseline/inventory statements, each decision-row subtotal, the complete phase-assignment sum, all 35 Phase 21-55 rows, and the sole Phase 21 authorization. The plan also now requires a uniform phase execution record, establishes an evidence ladder and contract ownership map, defines non-destructive interrupted-phase recovery, and states the measurable end conditions for completing the active migration.
+
 ### 2026-07-16 — Make the migration inventory mechanically enforceable
 
 The equipment/gem retirement removed five active JavaScript modules from future phases and one unreachable candidate, but the primary ledger retained its earlier totals. The roadmap now carries matching machine-readable count markers, and `scripts/check-migration-roadmap.cjs` independently rebuilds the `assets/main.js` static graph, validates active and candidate assignments path-for-path, rejects duplicates, and compares every Phase 21-55 module count. A failing checker is a mandatory replan trigger.
@@ -1207,6 +1277,14 @@ After Phases 17–20, Rho is the smallest remaining advanced definition by autho
 ---
 
 ## Implementation Log
+
+### 2026-07-16 — Roadmap safeguards reinforced
+
+- Extended the roadmap checker to validate human-readable totals, decision-group subtotals, phase-assignment sums, roadmap-row completeness, and the single authorized phase in addition to path-level inventory consistency.
+- Added the required phase execution record, risk-based evidence ladder, contract ownership map, interrupted-phase recovery protocol, and explicit definition of migration completion.
+- Preserved Phase 21 as the sole authorized, not-started implementation slice; no production module was migrated.
+- Build 749 records the auto-synced checker reinforcement; Build 750 records this final documentation/build-output completion commit.
+- Final Build 750 validation passed: strengthened `npm run check:migration-roadmap`, `npm run typecheck`, `npm run build`, `npm run lint`, `npm run test:unit` (159/159 plus retired-Spire checks), `npm test`, generated-checker parity, and `git diff --check`. The unit suite emitted its expected malformed-JSON diagnostic while returning exit code 0.
 
 ### 2026-07-16 — Roadmap reconciled and execution controls developed
 

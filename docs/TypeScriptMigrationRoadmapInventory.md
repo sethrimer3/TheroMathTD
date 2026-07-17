@@ -10,7 +10,7 @@ This appendix is the mechanically checked coverage record for the long-range roa
 
 **Inventory base:** `main` at `0802d21`, after the equipment/gem retirement consolidation `c96df03`
 
-**Planning branch:** `codex/develop-typescript-conversion-plan` (Build 749)
+**Planning branch:** `codex/develop-typescript-conversion-plan` (Build 750)
 
 **Runtime root:** `index.html` -> `assets/main.js`
 
@@ -33,7 +33,7 @@ The repository therefore has 234 active authored JS/TS modules: 60 TypeScript pl
 4. Verified all resolved edges exist. The traversal found 233 reachable runtime `.js` modules: 59 generated siblings plus 174 authored JavaScript modules. The sixtieth generated sibling, `assets/data/towers/types.js`, is type-only output and is correctly not imported at runtime.
 5. Searched the 45 unreachable files in tests, retirement documentation, configuration, HTML harnesses, and recent retirement commits. Static reachability cannot prove runtime intent, so those files remain decision candidates rather than being deleted or migrated.
 6. Read representative owners at every risk tier, including equation definitions, core utilities, config loading, save boundaries, tower modules, powder simulation, playfield systems/managers/renderers, `assets/playfield.js`, and `assets/main.js`.
-7. Added `npm run check:migration-roadmap`, which repeats the source enumeration and static traversal, compares active and candidate paths to these tables, rejects duplicate assignments, compares count markers in both authoritative documents, and verifies each Phase 21-55 module count.
+7. Added `npm run check:migration-roadmap`, which repeats the source enumeration and static traversal; compares active and candidate paths to these tables; rejects duplicate assignments; verifies machine markers and visible count statements; checks decision-group subtotals, the total assigned backlog, and every Phase 21-55 module count; and enforces Phase 21 as the sole authorization.
 
 Limitations: the graph does not treat JSDoc `import()` references as runtime edges; the dynamic JSON-module constructor in `assets/gameplayConfigLoaders.js` loads data rather than authored JavaScript; ad-hoc HTML harnesses are not production entry roots; and future runtime registration could make a currently unreachable file relevant. These are reasons for a retirement audit, not reasons to inflate the active backlog.
 
