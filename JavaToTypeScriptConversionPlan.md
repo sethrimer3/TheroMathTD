@@ -15,19 +15,19 @@ This file serves four functions:
 
 ## Current Migration Dashboard
 
-<!-- migration-roadmap-counts: ts=94 generated=94 active_js=140 candidates=45 -->
-<!-- migration-roadmap-authorization: phase=29 -->
+<!-- migration-roadmap-counts: ts=97 generated=97 active_js=137 candidates=45 -->
+<!-- migration-roadmap-authorization: phase=30 -->
 
 | Item | Current state |
 |---|---|
-| Repository baseline | Build 761 on `claude/js-to-ts-game-conversion-ijybn5` (user-designated session branch off `main` checkpoint `f51f66c`), including the completed Phase 23-28 migrations |
-| Completed migration history | Phases 0-28 remain complete; historical phase identities are preserved |
-| Next authorized implementation | **Phase 29 only:** Powder grid/palette/data utilities |
+| Repository baseline | Build 762 on `claude/js-to-ts-game-conversion-ijybn5` (user-designated session branch off `main` checkpoint `f51f66c`), including the completed Phase 23-29 migrations |
+| Completed migration history | Phases 0-29 remain complete; historical phase identities are preserved |
+| Next authorized implementation | **Phase 30 only:** the `PowderSimulation` monolith |
 | Delivery branch | Work directly on `main`; create or switch to another branch only when the user explicitly requests it |
-| Active authored modules | 234 total: 94 TypeScript and 140 JavaScript |
-| Compatibility output | 94 generated `.js` siblings; they are runtime output, not backlog |
+| Active authored modules | 234 total: 97 TypeScript and 137 JavaScript |
+| Compatibility output | 97 generated `.js` siblings; they are runtime output, not backlog |
 | Decision candidates | 45 unreachable authored `.js` files requiring retirement, integration, or archival decisions |
-| Long-range sequence | Phases 29-55; Phase 54 is an extraction gate and assigns no backlog module |
+| Long-range sequence | Phases 30-55; Phase 54 is an extraction gate and assigns no backlog module |
 | Mechanical check | `npm run check:migration-roadmap` validates reachability, classifications, duplicate assignments, totals, and per-phase counts |
 
 The dashboard is the fast orientation surface. The historical ledger remains append-only evidence, while [`docs/TypeScriptMigrationRoadmapInventory.md`](docs/TypeScriptMigrationRoadmapInventory.md) is authoritative for exact future file assignments. Re-run the mechanical check and re-inventory the affected phases before changing any dashboard count.
@@ -112,12 +112,12 @@ The obsolete-Spire retirement is an intentional product change, not a general mi
 
 Inventory was originally recalculated from the live tree on **2026-07-16**, starting on `codex/phases-17-20-advanced-equations` at exact commit `2bad7891ca88baa20c1a084c31ecd939e11b4eca`, then continuing on the documentation-only branch `codex/typescript-migration-roadmap`. It was reconciled again after equipment/gem retirement merge `c96df03` and audited at `main` commit `0802d21`. The browser entry root is `index.html` -> `assets/main.js`.
 
-- **94 authored `.ts` modules** (excluding `.d.ts`; none exist).
-- **94 build-generated `.js` siblings** of those TypeScript modules. These are runtime output, not backlog.
-- **140 active authored `.js` modules**, verified reachable through static local imports from `assets/main.js`.
+- **97 authored `.ts` modules** (excluding `.d.ts`; none exist).
+- **97 build-generated `.js` siblings** of those TypeScript modules. These are runtime output, not backlog.
+- **137 active authored `.js` modules**, verified reachable through static local imports from `assets/main.js`.
 - **0 intentionally preserved legacy `.js` modules** with current repository evidence. The previously documented 19-file disabled Terrarium tree was deleted by `64ebc5e`.
 - **45 ambiguous or retirement/deletion-candidate `.js` modules**, all currently unreachable from the browser entry graph. They are excluded from the active backlog pending a separate decision.
-- **234 active authored modules** in total, so active module-count conversion is **40.2%** (`94 / 234`). The raw authored-language tree is 279 modules when the 45 decision candidates are included.
+- **234 active authored modules** in total, so active module-count conversion is **41.5%** (`97 / 234`). The raw authored-language tree is 279 modules when the 45 decision candidates are included.
 - Supplemental authored-line snapshot: **8,309 TypeScript lines** and **81,526 active JavaScript lines**. Line counts do not represent migration difficulty.
 
 Method: recursively enumerate `assets/` and `scripts/`; exclude `node_modules/`, `dist/`, `build/`, generated output, dependencies, fixtures, and non-source material; remove each `.js` file with a same-path `.ts` sibling; parse static relative `import`/`export ... from` edges; traverse from `assets/main.js`; and audit unreachable files against tests, retirement documentation, HTML harnesses, and recent commits. The full classification, dependency evidence, 168-module coverage map, and 45-file retirement list are in [`docs/TypeScriptMigrationRoadmapInventory.md`](docs/TypeScriptMigrationRoadmapInventory.md). Run `npm run check:migration-roadmap` to verify that classification against the current checkout.
@@ -186,6 +186,7 @@ The original statement that no conversion phase was complete is superseded by th
 | 26 | Pure utilities, tokens, units, geometry, wave codec, playfield facades, build data, Aleph registry (11 modules) | COMPLETE | Executed 2026-07-17 on `claude/js-to-ts-game-conversion-ijybn5`, Build 759; see the Phase 26 authorization card and implementation log |
 | 27 | Configuration, level, and enemy owners (4 modules) | COMPLETE | Executed 2026-07-17 on `claude/js-to-ts-game-conversion-ijybn5`, Build 760; see the Phase 27 authorization card and implementation log |
 | 28 | Tutorial and Powder state/queue/log/persistence owners (5 modules) | COMPLETE | Executed 2026-07-17 on `claude/js-to-ts-game-conversion-ijybn5`, Build 761; see the Phase 28 authorization card and implementation log |
+| 29 | Powder grid/palette/data utilities (3 modules) | COMPLETE | Executed 2026-07-17 on `claude/js-to-ts-game-conversion-ijybn5`, Build 762; see the Phase 29 authorization card and implementation log |
 
 ---
 
@@ -277,8 +278,8 @@ Exact file lists and per-module risk notes are in the linked coverage appendix. 
 | 26 | **COMPLETE** | Pure tokens, units, geometry, wave codec, playfield facades, build data, Aleph registry; 11 modules | 25 | Owner-defined `DecodedWave`/`EncodableWave`, `NormalizedPoint`, token span, unit, and Aleph chain contracts | 31 importers for units and 13 for playfield formatting consume unchanged export surfaces | Nine deterministic tests cover conversions, geometry, easing, trimming, tokenization, subscripts/durations, wave parse/encode/validate legacy behavior, and chain squaring; two pre-existing codec/regex defects recorded, not fixed. |
 | 27 | **COMPLETE** | Gameplay config loaders, levels, configuration, enemies; 4 modules | 26 and Phase 4 tower data | Owner-defined level/wave/blueprint/progress-snapshot, shell, and resource-container records; JSON/global inputs stay `unknown` at entry | Main, playfield, managers, and achievements keep the same validated records and call order | Seven deterministic tests cover fetch/embedded/module fallback order, malformed inputs, seeded shell assignment, compact-wave normalization, unlock chains, snapshot round trips, ladder mirrors, and setter guards. |
 | 28 | **COMPLETE** | Tutorial and Powder state/queue/log/persistence; 5 modules | 26-27 and existing save owners | Owner-defined Powder state/config/drop/log/persistence contracts; storage and legacy snapshots stay `unknown`-guarded through the shared migration helper | Autosave, main, Towers tab, and Powder UI keep the same hook shapes and persisted keys | Five deterministic tests cover storage keys/unlock flows, initial state wiring, drop normalization/clearing, ledger formats/retention, and snapshot clone/migrate/guarded-restore round trips. |
-| 29 | **AUTHORIZED NEXT** | Powder grid/palette/data utilities; 3 modules | 26, 28 | Cell/material/wall/mote/palette and narrow simulation adapter types | PowderSimulation and later palette/render consumers | Small-grid golden states, bounds, palette normalization, controlled randomness; exclude PowderSimulation class. |
-| 30 | **TENTATIVE NEAR-TERM** | `PowderSimulation`; 1 module | 29 | Owner-defined simulation state, cell buffers, lifecycle, persistence snapshot, viewport API | 13 direct importers including color, main, UI, render layers | Seeded step/render/save characterization, timer/RAF fakes, manual touch/resize/save; critical monolith risk; no feature extraction unless needed for type ownership and separately documented. |
+| 29 | **COMPLETE** | Powder grid/palette/data utilities; 3 modules | 26, 28 | Owner-defined grain/grid-metrics/wall-metrics/simulation-surface and RGB/palette contracts; static data identity retained | The still-JavaScript `PowderSimulation` and later palette/render consumers keep the same call surfaces | Six deterministic tests cover masks, cell stamping, depth scans, slump flanks, wall metrics/gap scaling with rebuild wiring, color parsing/mixing, palette merge/stop resolution, and seeded randomness. |
+| 30 | **AUTHORIZED NEXT** | `PowderSimulation`; 1 module | 29 | Owner-defined simulation state, cell buffers, lifecycle, persistence snapshot, viewport API | 13 direct importers including color, main, UI, render layers | Seeded step/render/save characterization, timer/RAF fakes, manual touch/resize/save; critical monolith risk; no feature extraction unless needed for type ownership and separately documented. |
 | 31 | **TENTATIVE NEAR-TERM** | Palette, performance, audio, lifecycle, rendering helper; 6 modules | 26, 30 | Palette/RGB, performance segment, audio manifest/settings, lifecycle interfaces | 36 palette importers plus playfield/tower/audio/main consumers | Palette/storage/audio/timer tests; manual theme switching and sound controls; preserve lazy browser behavior. |
 | 32 | **TENTATIVE NEAR-TERM** | Tower loadout and upgrade-overlay leaves; 2 modules | 21-28, 31 | Controller options, DOM element resolvers, callbacks, loadout and upgrade-overlay payloads | Sole owner consumer `towersTab.js` | DOM/timer/loadout characterization and portrait overlays; exclude Towers tab itself. |
 | 33 | **TENTATIVE NEAR-TERM** | Towers tab owner; 1 module | 25-28, 31-32 | Canonical runtime tower, upgrade, lookup, equation context and public controller types | 35 importers across towers, playfield, UI, and main | State/save/equation/DOM golden tests plus browser upgrade/loadout pass; critical 2,271-line owner; no balance or UI redesign. |
@@ -305,7 +306,7 @@ Exact file lists and per-module risk notes are in the linked coverage appendix. 
 | 54 | **TENTATIVE LATER** | Main responsibility-extraction gate; 0 backlog conversions | All active modules except `main.js` typed | Extract only still-owned cohesive responsibilities into new typed owners; define composition contract | Compatibility edits inside `assets/main.js` are expected, but it remains `.js` | Characterize startup order and globals before extraction; browser/Electron; completion means residual main is composition-only. No extension conversion yet. |
 | 55 | **TENTATIVE LATER** | Final `assets/main.js` → `assets/main.ts`; 1 module | 54 and every prior active-module phase | Typed application composition/startup/window API | `index.html` keeps loading generated `assets/main.js` | Startup order/global/API tests, browser portrait/desktop, save reload, full level, audio, and Electron. Complete only with no broad assertions and no owned feature logic left. |
 
-Phases 29-55 cover all 140 active authored JavaScript modules. Across Phases 21-55 there are **35 roadmap phases**: eight completed conversion phases, one authorized conversion phase, 25 tentative conversion phases, and one tentative zero-module extraction gate (Phase 54). The remaining 26 conversion phases assign the active backlog and the gate prepares the final root without double-counting it. No active module is assigned twice.
+Phases 30-55 cover all 137 active authored JavaScript modules. Across Phases 21-55 there are **35 roadmap phases**: nine completed conversion phases, one authorized conversion phase, 24 tentative conversion phases, and one tentative zero-module extraction gate (Phase 54). The remaining 25 conversion phases assign the active backlog and the gate prepares the final root without double-counting it. No active module is assigned twice.
 
 ### Critical path
 
@@ -383,7 +384,7 @@ The 45 unreachable JavaScript files are not migration backlog. The strongest ret
 
 ### Single next authorized phase
 
-Only Phase 29 is authorized. Later phases are sequencing hypotheses, not implementation authority.
+Only Phase 30 is authorized. Later phases are sequencing hypotheses, not implementation authority.
 
 #### Phase 21 execution card
 
@@ -562,6 +563,22 @@ Convert those files to strict `.ts` sources and regenerate only their same-path 
 **Required characterization:** small-grid golden states, bounds and neighbor logic, palette normalization/merge behavior, and static data identity, with controlled randomness where present. Tests must be deterministic and pass against original JavaScript before conversion and generated output afterward.
 
 **Completion gate:** use the standard implementation gate and phase record. No simulation-class conversion, behavior change, broad assertion, `any`, or suppression is authorized. Completion must refresh counts, inventory coverage, Build metadata, and exactly one next authorization.
+
+**Completion record:** Phase 29 converted exactly the three authorized utilities, retained every export surface, `.js` import specifier, grid/wall formula, color-parsing branch, and clamp. Owner contracts established: `PowderGrainRecord`/`PowderGridMetrics`/`PowderWallMetrics`/`PowderGridSimulation`/`ApplyWallGapOptions` (grid) and `MoteRgbColor`/`MotePalette` (palette); `powderTowerData.ts` keeps its `TWO_PI` re-export from the still-JavaScript shared `TowerUtils`. The `PowderGridSimulation` interface is the structural adapter the Phase 30 monolith conversion will absorb as the real owner. Six focused tests passed first against the original JavaScript and then against generated TypeScript output. Final command evidence is recorded in the Phase 29 implementation-log entry.
+
+#### Phase 30 authorization card
+
+**Intent:** convert the 2,326-line `PowderSimulation` class after Phases 28-29 typed every surrounding state, persistence, and utility contract. This is the roadmap's first Critical-risk monolith and the owner of the cell-buffer, lifecycle, persistence-snapshot, and viewport API surface consumed by thirteen direct importers.
+
+**Exact authored sources:** `scripts/features/towers/powderTower.js`.
+
+Convert the file to one strict `.ts` source and regenerate only its same-path `.js` sibling. Retain all `.js` import/export specifiers and the exported class/function identities.
+
+**Dependency boundary:** absorb the Phase 29 `PowderGridSimulation` structural adapter as the class's own typed surface; reuse the Phase 28/29 palette, drop, and persistence contracts. Do not convert Powder UI controllers, `colorSchemeUtils.js`, playfield systems, or main, and do not extract features unless type ownership requires it (documented separately if so).
+
+**Required characterization:** seeded step/render/save behavior with controlled randomness, timers, and animation frames; export/import state round trips; drop queue and lane math; wall and scroll interactions through the typed grid utilities; teardown. Tests must be deterministic and pass against original JavaScript before conversion and generated output afterward. A manual browser Well interaction/save/resize pass is strongly recommended and must be reported as performed or not performed.
+
+**Completion gate:** use the standard implementation gate and phase record. No visual redesign, balance change, broad assertion, `any`, or suppression is authorized. Completion must refresh counts, inventory coverage, Build metadata, and exactly one next authorization.
 
 ---
 
@@ -1424,17 +1441,28 @@ The equipment/gem retirement removed five active JavaScript modules from future 
 
 ## Next Suggested Step
 
-**Recommended Phase 29: Powder grid, palette, and data utilities.** The normative implementation checklist is the [Phase 29 authorization card](#phase-29-authorization-card).
+**Recommended Phase 30: the `PowderSimulation` monolith.** The normative implementation checklist is the [Phase 30 authorization card](#phase-30-authorization-card).
 
-Phase 28 typed the Powder state and persistence owners, so the three grid/palette/data utility modules are next. They establish the cell, material, wall, mote, and palette contracts the Phase 30 `PowderSimulation` conversion depends on.
+Phases 28-29 typed every state, persistence, and utility contract surrounding the Well of Inspiration, so the 2,326-line Canvas/timer/randomness `PowderSimulation` class is the sole remaining Powder module. It is Critical-risk: budget a dedicated session, characterize with seeded randomness and controlled clocks/frames before converting, and perform (or honestly report skipping) a live browser Well pass.
 
-**Bounded scope:** Convert only `scripts/features/towers/powderGridUtils.js`, `scripts/features/towers/powderPaletteUtils.js`, and `scripts/features/towers/powderTowerData.js` to strict TypeScript. Owner-define the shared cell/palette contracts here. Do not include `powderTower.js`, Powder UI controllers, playfield systems, or main integration.
+**Bounded scope:** Convert only `scripts/features/towers/powderTower.js` to strict TypeScript, absorbing the Phase 29 `PowderGridSimulation` structural adapter as the class's own typed surface. Do not include Powder UI controllers, `colorSchemeUtils.js`, playfield systems, or main integration, and do not extract features unless type ownership requires it.
 
-**Acceptance criteria:** Preserve grid math, palette normalization/merge behavior, and static data identity with deterministic small-grid and controlled-randomness tests that pass against original JavaScript first and generated output afterward; add no `any`, broad assertions, or suppressions; typecheck/build/lint/unit/smoke and roadmap checks pass; update counts/build number and record browser availability honestly.
+**Acceptance criteria:** Preserve seeded step/render/save behavior, export/import round trips, drop/lane/wall/scroll math, and teardown; deterministic tests pass against original JavaScript first and generated output afterward; add no `any`, broad assertions, or suppressions; typecheck/build/lint/unit/smoke and roadmap checks pass; update counts/build number and record browser verification honestly.
 
 ---
 
 ## Implementation Log
+
+### 2026-07-17 — Phase 29 Powder grid/palette/data utility conversion executed
+
+- **Baseline:** clean `claude/js-to-ts-game-conversion-ijybn5` at Phase 28 closeout commit `48779a2` (Build 761). Roadmap check (94/94/140/45), typecheck, build, lint, 242/242 unit tests plus retired-Spire checks, and smoke test all passed before implementation.
+- **Authorized boundary:** only `scripts/features/towers/powderGridUtils.js`, `powderPaletteUtils.js`, and `powderTowerData.js` moved to strict `.ts`; their generated siblings, six focused tests, roadmap/inventory records, generated `dist/`, and build metadata are included. The `PowderSimulation` class, Powder UI controllers, playfield systems, and main stayed untouched.
+- **Owner contracts established:** `PowderGrainRecord`, `PowderGridMetrics`, `PowderWallMetrics`, `PowderGridSimulation` (the structural adapter over the still-JavaScript simulation that Phase 30 absorbs), `ApplyWallGapOptions`, `MoteRgbColor`, and `MotePalette` (whose background fields stay `unknown` because merge intentionally passes legacy truthy values through). `powderTowerData.ts` retains its `TWO_PI` re-export from the shared JavaScript `TowerUtils`.
+- **Behavior oracle:** six deterministic tests were added, increasing the suite from 242 to 247, all passing first against the original JavaScript and then against generated TypeScript output. They cover wall masks and preserved-wall clears, placement bounds and cell stamping/clearing, support/aggregate depth scans, slump flank comparison, wall metrics with pixel fallbacks, gap scaling with inset rebalancing and the full rebuild call chain (collider recompute, height, render, notify) versus the notify-only and skipRebuild paths, hex/rgb/hsl/object color parsing, HSL conversion including hue wrap, mixing/clamping/rgba formatting, palette merge fallbacks and stop filtering, stop resolution deduping with boundary colors, seeded `randomInRange` clamps, and static constant/re-export identity. One fixture initially blocked the wrong grid column for the slump test and asserted a window-free theme fallback while an earlier DOM harness left a fake `window` global; both fixtures were corrected (the theme check now shields the globals) before conversion so every test passed against the original JavaScript.
+- **Output and counts:** Build 762. Counts are 97 TypeScript sources, 97 generated siblings, 137 active authored JavaScript modules, and 45 decision candidates (41.5% of 234 active authored modules converted). The supplemental line snapshot is 15,994 TypeScript lines and 73,416 active JavaScript lines.
+- **Automated evidence:** `npm run check:migration-roadmap` passes at 97/97/137/45; `npm run typecheck`, `npm run build`, `npm run lint`, `npm run test:unit` (247/247 plus retired-Spire checks), `npm test`, and `git diff --check` pass. The malformed-storage fixture prints its expected parse diagnostic while the unit command exits 0.
+- **Manual evidence:** no browser verification was performed; these utilities change no DOM, input, Canvas, audio, save, or Electron path, and their math is covered by exact compiled-output tests.
+- **Residual risk and handoff:** no known behavior gap or temporary compatibility seam remains. Phase 29 is complete; only Phase 30 (the Critical-risk `PowderSimulation` monolith) is authorized next under its single-file card, and it deserves a dedicated session.
 
 ### 2026-07-17 — Phase 28 tutorial and Powder state/persistence conversion executed
 

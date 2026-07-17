@@ -4837,6 +4837,242 @@ async function run() {
     assert.deepEqual(paletteCalls, [{ sand: '#fff' }, { sand: '#123' }]);
   });
 
+  // --- scripts/features/towers/powderTowerData.js --------------------------
+  await test('powder tower data: constants, re-export identity, and seeded random remain exact', async () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thero-unit-test-powder-data-'));
+    fs.writeFileSync(path.join(tmpDir, 'package.json'), JSON.stringify({ type: 'module' }));
+    const towersDir = path.join(tmpDir, 'scripts', 'features', 'towers');
+    fs.mkdirSync(path.join(towersDir, 'shared'), { recursive: true });
+    fs.copyFileSync(
+      path.join(rootDir, 'scripts', 'features', 'towers', 'powderTowerData.js'),
+      path.join(towersDir, 'powderTowerData.js'),
+    );
+    fs.writeFileSync(
+      path.join(towersDir, 'shared', 'TowerUtils.js'),
+      `export const TWO_PI = 'two-pi-marker';`,
+    );
+    const data = await import(pathToFileURL(path.join(towersDir, 'powderTowerData.js')).href);
+    assert.deepEqual(
+      [data.MIN_MOTE_LANE_CELL_PX, data.POWDER_CELL_SIZE_PX, data.MOTE_RENDER_SCALE, data.MOTE_COLLISION_SCALE],
+      [4, 1, 1, 1],
+    );
+    assert.deepEqual(
+      [data.MIN_STAR_SIZE, data.MAX_STAR_SIZE, data.STAR_MAX_SPEED, data.GOLD_STAR_PROBABILITY],
+      [0.5, 2.5, 0.0002, 0.3],
+    );
+    assert.deepEqual(
+      [data.STAR_MIN_LIFETIME_SECONDS, data.STAR_MAX_LIFETIME_SECONDS, data.STAR_FADE_MIN_SECONDS, data.STAR_FADE_MAX_SECONDS],
+      [6, 12, 1.25, 2.4],
+    );
+    assert.equal(data.TWO_PI, 'two-pi-marker');
+    const originalRandom = Math.random;
+    try {
+      Math.random = () => 0.25;
+      assert.equal(data.randomInRange(4, 8), 5);
+      assert.equal(data.randomInRange(8, 4), 5);
+      assert.equal(data.randomInRange(NaN, 8), NaN);
+      assert.equal(data.randomInRange(4, Infinity), 4);
+    } finally {
+      Math.random = originalRandom;
+    }
+  });
+
+  // --- scripts/features/towers/powderPaletteUtils.js -----------------------
+  await test('powder palette utils: clamps, color parsing, and mixing remain exact', async () => {
+    const palette = await importAsEsm('scripts/features/towers/powderPaletteUtils.js');
+    assert.equal(palette.clampUnitInterval(NaN), 0);
+    assert.equal(palette.clampUnitInterval(2), 1);
+    assert.equal(palette.clampUnitInterval(-1), 0);
+    assert.equal(palette.normalizeFiniteNumber(NaN, 7), 7);
+    assert.equal(palette.normalizeFiniteNumber(1.5), 1.5);
+    assert.equal(palette.normalizeFiniteInteger(2.6), 3);
+    assert.equal(palette.normalizeFiniteInteger(Infinity, 9), 9);
+    assert.equal(palette.cloneMoteColor(null), null);
+    assert.equal(palette.cloneMoteColor({ r: 1, g: NaN, b: 3 }), null);
+    assert.deepEqual(palette.cloneMoteColor({ r: -5, g: 300, b: 12.6 }), { r: 0, g: 255, b: 13 });
+    assert.deepEqual(palette.hslToRgbColor(0, 0, 0.5), { r: 128, g: 128, b: 128 });
+    assert.deepEqual(palette.hslToRgbColor(0, 1, 0.5), { r: 255, g: 0, b: 0 });
+    assert.deepEqual(palette.hslToRgbColor(480, 1, 0.5), { r: 0, g: 255, b: 0 });
+    assert.deepEqual(palette.parseCssColor('#fff'), { r: 255, g: 255, b: 255 });
+    assert.deepEqual(palette.parseCssColor('#0f10184d'), { r: 15, g: 16, b: 24 });
+    assert.deepEqual(palette.parseCssColor('rgb(10, 20.5, 30)'), { r: 10, g: 20.5, b: 30 });
+    assert.deepEqual(palette.parseCssColor('hsl(0, 100%, 50%)'), { r: 255, g: 0, b: 0 });
+    assert.deepEqual(palette.parseCssColor({ r: NaN, g: 4, b: 5 }), { r: 0, g: 4, b: 5 });
+    assert.deepEqual(palette.parseCssColor({ h: 0, s: 1, l: 0.5 }), { r: 255, g: 0, b: 0 });
+    assert.equal(palette.parseCssColor('not-a-color'), null);
+    assert.equal(palette.parseCssColor(''), null);
+    assert.deepEqual(palette.mixRgbColors({ r: 0, g: 100, b: 200 }, { r: 100, g: 0, b: 100 }, 0.5), {
+      r: 50, g: 50, b: 150,
+    });
+    assert.deepEqual(palette.mixRgbColors(null, { r: 100, g: 60, b: 40 }, 2), { r: 100, g: 60, b: 40 });
+    assert.equal(palette.colorToRgbaString({ r: 300, g: -5, b: 20.4 }, 0.5), 'rgba(255, 0, 20, 0.500)');
+    assert.equal(palette.colorToRgbaString(null, 9), 'rgba(0, 0, 0, 1.000)');
+  });
+
+  await test('powder palette utils: merge, stop resolution, and theme fallback remain exact', async () => {
+    const palette = await importAsEsm('scripts/features/towers/powderPaletteUtils.js');
+    const defaults = palette.mergeMotePalette(null);
+    assert.deepEqual(defaults.stops, [
+      { r: 247, g: 213, b: 101 },
+      { r: 247, g: 213, b: 101 },
+      { r: 247, g: 213, b: 101 },
+    ]);
+    assert.notEqual(defaults.stops[0], palette.DEFAULT_MOTE_PALETTE.stops[0]);
+    assert.deepEqual(
+      [defaults.restAlpha, defaults.freefallAlpha, defaults.backgroundTop, defaults.backgroundBottom],
+      [0.9, 0.6, '#000000', '#000000'],
+    );
+    const merged = palette.mergeMotePalette({
+      stops: [{ r: 1, g: 2, b: 3 }, 'invalid', { h: 0, s: 1, l: 0.5 }],
+      restAlpha: NaN,
+      freefallAlpha: 0.3,
+      backgroundTop: '',
+      backgroundBottom: '#123456',
+    });
+    assert.deepEqual(merged.stops, [
+      { r: 1, g: 2, b: 3 },
+      { r: 255, g: 0, b: 0 },
+    ]);
+    assert.deepEqual(
+      [merged.restAlpha, merged.freefallAlpha, merged.backgroundTop, merged.backgroundBottom],
+      [0.9, 0.3, '#000000', '#123456'],
+    );
+    const resolved = palette.resolvePaletteColorStops({
+      backgroundTop: '#010203',
+      stops: [{ r: 1, g: 2, b: 3 }, { r: 9, g: 9, b: 9 }],
+      backgroundBottom: { r: 9, g: 9, b: 9 },
+    });
+    assert.deepEqual(resolved, [
+      { r: 1, g: 2, b: 3 },
+      { r: 9, g: 9, b: 9 },
+    ]);
+    const single = palette.resolvePaletteColorStops({
+      backgroundTop: '#040404',
+      stops: [{ r: 4, g: 4, b: 4 }],
+      backgroundBottom: '#040404',
+    });
+    assert.deepEqual(single, [{ r: 4, g: 4, b: 4 }, { r: 4, g: 4, b: 4 }]);
+    assert.notEqual(single[0], single[1]);
+    // With no window global, the theme sampler falls back to the merged
+    // defaults (earlier DOM harnesses may have left one on globalThis).
+    const originalWindow = globalThis.window;
+    const originalThemeDocument = globalThis.document;
+    try {
+      delete globalThis.window;
+      delete globalThis.document;
+      assert.deepEqual(palette.computeMotePaletteFromTheme(), palette.mergeMotePalette(null));
+    } finally {
+      if (originalWindow !== undefined) globalThis.window = originalWindow;
+      if (originalThemeDocument !== undefined) globalThis.document = originalThemeDocument;
+    }
+  });
+
+  // --- scripts/features/towers/powderGridUtils.js --------------------------
+  await test('powder grid utils: masks, cell stamping, and depth scans remain exact', async () => {
+    const grid = await importAsEsm('scripts/features/towers/powderGridUtils.js');
+    const simulation = {
+      rows: 4,
+      cols: 6,
+      wallInsetLeftCells: 1,
+      wallInsetRightCells: 2,
+      grid: Array.from({ length: 4 }, () => new Array(6).fill(0)),
+      grains: [],
+      computeColliderSize: (size) => size,
+    };
+    grid.applyWallMask(simulation);
+    assert.deepEqual(simulation.grid[0], [-1, 0, 0, 0, -1, -1]);
+    simulation.grid[1][2] = 7;
+    grid.clearGridPreserveWalls(simulation);
+    assert.deepEqual(simulation.grid[1], [-1, 0, 0, 0, -1, -1]);
+    assert.equal(grid.canPlaceGrain(simulation, 1, 0, 2), true);
+    assert.equal(grid.canPlaceGrain(simulation, -1, 0, 1), false);
+    assert.equal(grid.canPlaceGrain(simulation, 5, 0, 2), false);
+    assert.equal(grid.canPlaceGrain(simulation, 4, 0, 1), false);
+    const grain = { id: 9, x: 2, y: 2, colliderSize: 2.4, inGrid: false };
+    grid.fillCells(simulation, grain);
+    assert.deepEqual(simulation.grid[2], [-1, 0, 9, 9, -1, -1]);
+    assert.deepEqual(simulation.grid[3], [-1, 0, 9, 9, -1, -1]);
+    assert.equal(grid.canPlaceGrain(simulation, 2, 2, 1), false);
+    grain.inGrid = true;
+    grid.clearCells(simulation, grain);
+    assert.deepEqual(simulation.grid[2], [-1, 0, 0, 0, -1, -1]);
+    assert.equal(grain.inGrid, false);
+    simulation.grid[3][2] = 5;
+    assert.equal(grid.getSupportDepth(simulation, 2, 1), 2);
+    assert.equal(grid.getSupportDepth(simulation, 2, 0), 3);
+    assert.equal(grid.getSupportDepth(simulation, -1, 0), 0);
+    assert.equal(grid.getAggregateDepth(simulation, 2, 2, 2), 1.5);
+    assert.equal(grid.getAggregateDepth(simulation, 5, 2, 3), 0);
+    // Slump compares the columns flanking the grain: blocking the left column
+    // makes the right side deeper, and clearing it balances both flanks.
+    const slumpGrain = { x: 2, y: 0, colliderSize: 1 };
+    simulation.grid[2][1] = 4;
+    assert.equal(grid.getSlumpDirection(simulation, slumpGrain), 1);
+    simulation.grid[2][1] = 0;
+    assert.equal(grid.getSlumpDirection(simulation, slumpGrain), 0);
+  });
+
+  await test('powder grid utils: wall metrics, gap scaling, and rebuild wiring remain exact', async () => {
+    const grid = await importAsEsm('scripts/features/towers/powderGridUtils.js');
+    const calls = [];
+    const simulation = {
+      rows: 4,
+      cols: 10,
+      width: 100,
+      height: 40,
+      cellSize: 10,
+      wallInsetLeftCells: 2,
+      wallInsetRightCells: 3,
+      wallInsetLeftPx: NaN,
+      wallInsetRightPx: 35,
+      wallGapCellsTarget: NaN,
+      wallGapReferenceCols: 0,
+      scrollOffsetCells: 0,
+      grainSizes: [1, 2, 3],
+      grains: [],
+      grid: Array.from({ length: 4 }, () => new Array(10).fill(0)),
+      computeColliderSize(size) {
+        calls.push(['collider', size]);
+        return size;
+      },
+      updateMaxDropSize() { calls.push(['maxDrop']); },
+      updateHeightFromGrains(flag) { calls.push(['height', flag]); },
+      render() { calls.push(['render']); },
+      notifyWallMetricsChange() { calls.push(['notify']); },
+    };
+    const metrics = grid.getWallMetrics(simulation);
+    assert.deepEqual(metrics, {
+      leftCells: 2, rightCells: 3, gapCells: 5,
+      leftPixels: 20, rightPixels: 35, gapPixels: 100 - 20 - 35,
+      cellSize: 10, rows: 4, cols: 10, width: 100, height: 40,
+    });
+    assert.equal(grid.resolveScaledWallGap(simulation), null);
+    simulation.wallGapCellsTarget = 40;
+    assert.equal(grid.resolveScaledWallGap(simulation), 5);
+    assert.equal(grid.setWallGapTarget(simulation, 0), false);
+    assert.equal(simulation.wallGapCellsTarget, null);
+    assert.deepEqual(calls.filter(([name]) => name === 'maxDrop').length, 1);
+    calls.length = 0;
+    // Applying a 6-cell target rebalances insets 2/2 and rebuilds the grid.
+    assert.equal(grid.setWallGapTarget(simulation, 6.4), true);
+    assert.equal(simulation.wallGapCellsTarget, 6);
+    assert.equal(simulation.wallGapReferenceCols, 10);
+    assert.equal(simulation.wallInsetLeftCells, 2);
+    assert.equal(simulation.wallInsetRightCells, 2);
+    assert.deepEqual([simulation.wallInsetLeftPx, simulation.wallInsetRightPx], [20, 20]);
+    assert.deepEqual(calls.map(([name]) => name), [
+      'collider', 'maxDrop', 'height', 'render', 'notify',
+    ]);
+    assert.deepEqual(simulation.grid[0], [-1, -1, 0, 0, 0, 0, 0, 0, -1, -1]);
+    calls.length = 0;
+    // An unchanged gap notifies without rebuilding; skipRebuild stays silent.
+    assert.equal(grid.setWallGapTarget(simulation, 6), false);
+    assert.deepEqual(calls.map(([name]) => name), ['collider', 'maxDrop', 'notify']);
+    calls.length = 0;
+    assert.equal(grid.setWallGapTarget(simulation, 8, { skipRebuild: true }), true);
+    assert.deepEqual(calls.map(([name]) => name), ['collider', 'maxDrop']);
+  });
+
   // --- assets/towerEquations/index.js ------------------------------------
   await test('tower equation index: registry preserves all 27 keys, order, and imported identities', async () => {
     const { registryModule, sourceById } = await importTowerEquationIndexModule();
