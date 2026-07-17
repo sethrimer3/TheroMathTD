@@ -19,7 +19,7 @@ This file serves four functions:
 
 | Item | Current state |
 |---|---|
-| Repository baseline | Build 748 planning update based on `main` at `0802d21`, after the equipment/gem retirement merge `c96df03` |
+| Repository baseline | Build 749 planning update based on `main` at `0802d21`, after the equipment/gem retirement merge `c96df03` |
 | Completed migration history | Phases 0-20 remain complete; historical phase identities are preserved |
 | Next authorized implementation | **Phase 21 only:** `assets/towerEquations/advanced/rhoEquation.js` -> `.ts` |
 | Active authored modules | 234 total: 60 TypeScript and 174 JavaScript |

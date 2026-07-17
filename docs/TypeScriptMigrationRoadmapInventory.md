@@ -10,7 +10,7 @@ This appendix is the mechanically checked coverage record for the long-range roa
 
 **Inventory base:** `main` at `0802d21`, after the equipment/gem retirement consolidation `c96df03`
 
-**Planning branch:** `codex/develop-typescript-conversion-plan` (Build 748)
+**Planning branch:** `codex/develop-typescript-conversion-plan` (Build 749)
 
 **Runtime root:** `index.html` -> `assets/main.js`
 
