@@ -348,6 +348,10 @@ async function importGroupedEquationModule(fileName) {
      export function formatGameNumber(value) {
        formatCalls.push(['game', value]);
        return \`game:\${String(value)}\`;
+     }
+     export function formatPercentage(value) {
+       formatCalls.push(['percent', value]);
+       return \`percent:\${String(value)}\`;
      }`,
   );
   const equationModule = await import(pathToFileURL(equationDest).href);
@@ -3505,6 +3509,336 @@ async function run() {
     });
     assert.equal(output, `component:6 = component:2 × component:${2 * Math.E}`);
     assert.deepEqual(componentCalls, [6, 2, 2 * Math.E]);
+  });
+
+  // --- assets/towerEquations/greekTowers.js --------------------------------
+  await test('Delta equation: metadata, costs, gamma inheritance, and golden equation remain exact', async () => {
+    const { module, blueprintContext } = await importGroupedEquationModule('greekTowers');
+    const { delta } = module;
+    assert.equal(delta.mathSymbol, String.raw`\delta`);
+    assert.equal(delta.baseEquation, String.raw`\( \delta = \gamma \cdot \ln(\gamma + 1) \)`);
+    assert.deepEqual(delta.variables.map(({ key, upgradable, maxLevel }) => ({ key, upgradable, maxLevel })), [
+      { key: 'gamma', upgradable: false, maxLevel: undefined },
+      { key: 'aleph1', upgradable: true, maxLevel: 4 },
+      { key: 'regen', upgradable: false, maxLevel: undefined },
+      { key: 'aleph2', upgradable: true, maxLevel: undefined },
+    ]);
+    const [gamma, aleph1, , aleph2] = delta.variables;
+    assert.deepEqual([aleph1.cost(0), aleph1.cost(2.9), aleph1.cost(NaN)], [5, 20, 5]);
+    assert.deepEqual([aleph2.cost(0), aleph2.cost(3)], [3, 24]);
+    assert.deepEqual(gamma.getSubEquations({ value: 4 }), [
+      { expression: String.raw`\( atk = \gamma \cdot \ln(\gamma + 1) \)` },
+      {
+        values: String.raw`\( game:${4 * Math.log(5)} = game:4 \cdot decimal:${Math.log(5)}:3 \)`,
+        variant: 'values',
+      },
+    ]);
+    const definitionCalls = [];
+    blueprintContext.getTowerDefinition = (towerId) => {
+      definitionCalls.push(towerId);
+      return { damage: 6 };
+    };
+    blueprintContext.calculateTowerEquationResult = () => NaN;
+    const lines = aleph1.getSubEquations({ value: 2.4 });
+    assert.equal(lines.length, 7);
+    assert.equal(lines[1].values, String.raw`\( game:36 = game:6^{whole:2} \)`);
+    assert.equal(lines[3].values, String.raw`\( game:25\,\text{s} = 5^{whole:2} \)`);
+    assert.equal(lines[5].values, String.raw`\( whole:5 = 3 + whole:2 \)`);
+    assert.deepEqual(definitionCalls, ['gamma']);
+    assert.equal(delta.computeResult({ gamma: 4 }), 4 * Math.log(5));
+    assert.equal(delta.computeResult({ gamma: -4 }), 0);
+    const output = delta.formatGoldenEquation({
+      formatVariable: (key) => `var:${key}`,
+      formatResult: () => 'result:d',
+    });
+    assert.equal(output, '\\( result:d = var:gamma \\times \\ln(var:gamma + 1) \\)');
+  });
+
+  await test('Delta equation: regeneration chain preserves helper wiring and health division', async () => {
+    const { module, blueprintContext } = await importGroupedEquationModule('greekTowers');
+    const regen = module.delta.variables[2];
+    const calls = [];
+    const deltaBlueprint = { id: 'delta-blueprint' };
+    blueprintContext.getTowerEquationBlueprint = (towerId) => {
+      calls.push(['blueprint', towerId]);
+      return deltaBlueprint;
+    };
+    blueprintContext.computeTowerVariableValue = (towerId, variableKey, blueprint) => {
+      calls.push(['variable', towerId, variableKey, blueprint]);
+      return 2;
+    };
+    blueprintContext.getTowerDefinition = () => null;
+    blueprintContext.calculateTowerEquationResult = () => 5;
+    assert.equal(regen.computeValue({ blueprint: null, towerId: 'delta' }), 25 / 20);
+    assert.deepEqual(calls, [
+      ['blueprint', 'delta'],
+      ['variable', 'delta', 'aleph1', deltaBlueprint],
+    ]);
+    // Missing definition and non-positive equation results fall back to gamma=1.
+    blueprintContext.calculateTowerEquationResult = () => 0;
+    assert.equal(regen.computeValue({ blueprint: deltaBlueprint, towerId: 'delta' }), 1 / 20);
+    assert.deepEqual(regen.getSubEquations({ blueprint: deltaBlueprint, towerId: 'delta' })[1], {
+      values: String.raw`\( game:${1 / 20} = game:1 / 20 \)`,
+      variant: 'values',
+    });
+  });
+
+  await test('Epsilon equation: metadata, log-based sub-equations, and zero result remain exact', async () => {
+    const { module, blueprintContext } = await importGroupedEquationModule('greekTowers');
+    const { epsilon } = module;
+    assert.equal(epsilon.mathSymbol, String.raw`\varepsilon`);
+    assert.equal(epsilon.baseEquation, String.raw`\( \text{Atk} = (\text{NumHits})^{2} \)`);
+    assert.deepEqual(epsilon.variables.map((variable) => variable.key), ['aleph1', 'aleph2', 'aleph3']);
+    assert.deepEqual(epsilon.variables.map((variable) => variable.cost(2.5)), [3.5, 3.5, 3.5]);
+    blueprintContext.getTowerEquationBlueprint = () => ({});
+    const [aleph1, aleph2, aleph3] = epsilon.variables;
+    assert.deepEqual(aleph1.getSubEquations({ blueprint: null, towerId: 'epsilon', value: 3 }), [
+      { expression: String.raw`\( \text{Spd} = 10 \cdot \log(\aleph_{1} + 1) \)` },
+      {
+        values: String.raw`\( decimal:${10 * Math.log(4)}:2 = 10 \cdot \log( whole:3 + 1 ) \)`,
+        variant: 'values',
+        glyphEquation: true,
+      },
+    ]);
+    assert.equal(
+      aleph2.getSubEquations({ value: 3 })[1].values,
+      String.raw`\( decimal:${5 * Math.log(5)}:2 = 5 \cdot \log( whole:3 + 2 ) \)`,
+    );
+    assert.equal(
+      aleph3.getSubEquations({ value: 3 })[1].values,
+      String.raw`\( decimal:${2 * (10 - 3 * Math.log(3))}:2 = 2 ( 10 - whole:3 \cdot decimal:${Math.log(3)}:2 ) \)`,
+    );
+    assert.equal(
+      aleph3.getSubEquations({ value: 0 })[1].values,
+      String.raw`\( decimal:20:2 = 2 ( 10 - whole:0 \cdot decimal:0:2 ) \)`,
+    );
+    assert.equal(epsilon.computeResult({ aleph1: 5 }), 0);
+    assert.equal(epsilon.formatGoldenEquation(), String.raw`\( \text{Atk} = (\text{NumHits})^{2} \)`);
+  });
+
+  await test('Zeta equation: metadata, cascade cost gate, and derived stat clamps remain exact', async () => {
+    const { module, blueprintContext } = await importGroupedEquationModule('greekTowers');
+    const { zeta } = module;
+    assert.equal(zeta.mathSymbol, String.raw`\zeta`);
+    assert.deepEqual(zeta.variables.map((variable) => variable.key), [
+      'aleph1', 'aleph2', 'aleph3', 'aleph4', 'aleph5', 'aleph6',
+      'crt', 'atk', 'spd', 'rng', 'tot',
+    ]);
+    const aleph4 = zeta.variables[3];
+    assert.deepEqual([aleph4.cost(0), aleph4.cost(1), aleph4.cost(2), aleph4.cost(9)], [10, 10, Infinity, Infinity]);
+    assert.deepEqual([aleph4.maxLevel, zeta.variables[2].maxLevel], [2, 3]);
+    const values = { aleph1: 2, aleph2: 3, aleph3: 4, aleph4: 5, aleph5: '2', aleph6: '3' };
+    blueprintContext.getTowerEquationBlueprint = () => ({});
+    blueprintContext.computeTowerVariableValue = (towerId, variableKey) => values[variableKey];
+    blueprintContext.calculateTowerEquationResult = () => 10;
+    const [, , , , , , crt, atk, spd, rng, tot] = zeta.variables;
+    // Raw helper values multiply with native coercion before the 1-floor.
+    assert.equal(crt.computeValue({ blueprint: null, towerId: 'zeta' }), 6);
+    values.crt = 6;
+    assert.equal(atk.computeValue({ blueprint: null, towerId: 'zeta' }), 10 * 6 * 2);
+    assert.equal(spd.computeValue({ blueprint: null, towerId: 'zeta' }), 1);
+    values.aleph2 = 100;
+    assert.equal(spd.computeValue({ blueprint: null, towerId: 'zeta' }), 7);
+    assert.equal(rng.computeValue({ blueprint: null, towerId: 'zeta' }), 1.5 + 0.5 * 4);
+    assert.equal(tot.computeValue({ blueprint: null, towerId: 'zeta' }), 4);
+    assert.deepEqual(tot.getSubEquations({ blueprint: null, towerId: 'zeta' })[1], {
+      values: String.raw`\( whole:4 = 2 + whole:2 \)`,
+      variant: 'values',
+    });
+    assert.equal(
+      zeta.computeResult({ atk: 2, crt: 3, spd: 4, rng: 5, tot: 6 }),
+      2 * 3 * 4 * 5 * 6,
+    );
+    assert.equal(zeta.computeResult({ atk: 2, spd: 4, rng: 5, tot: 6 }), 2 * 1 * 4 * 5 * 6);
+    const componentCalls = [];
+    const output = zeta.formatBaseEquationValues({
+      values: { atk: 2, crt: 3, spd: 4, rng: 5, tot: 6 },
+      result: 720,
+      formatComponent(value) {
+        componentCalls.push(value);
+        return `component:${value}`;
+      },
+    });
+    assert.equal(
+      output,
+      'component:720 = component:2 × component:3 × component:4 × component:5 × component:6',
+    );
+    assert.deepEqual(componentCalls, [720, 2, 3, 4, 5, 6]);
+  });
+
+  await test('Zeta equation: aleph sub-equations preserve level fallbacks and formatter order', async () => {
+    const { module, formatCalls } = await importGroupedEquationModule('greekTowers');
+    const [aleph1, aleph2, , , aleph5] = module.zeta.variables;
+    assert.deepEqual(aleph1.getSubEquations({ level: 2, value: NaN }), [
+      { expression: String.raw`\( \aleph_{1} = 1 + \text{Level} \)` },
+      { values: String.raw`\( whole:3 = 1 + whole:2 \)`, variant: 'values' },
+    ]);
+    assert.deepEqual(aleph2.getSubEquations({ level: 2, value: 9 })[1], {
+      values: String.raw`\( whole:9 = whole:2 \)`,
+      variant: 'values',
+    });
+    assert.deepEqual(aleph5.getSubEquations({ level: 3, value: NaN })[1], {
+      values: String.raw`\( decimal:2.5:2 = 1 + 0.5 \times decimal:3:2 \)`,
+      variant: 'values',
+    });
+    assert.deepEqual(formatCalls, [
+      ['whole', 3], ['whole', 2],
+      ['whole', 9], ['whole', 2],
+      ['decimal', 2.5, 2], ['decimal', 3, 2],
+    ]);
+  });
+
+  await test('Eta equation: attack exponent, ring clamps, and Bet₁ cost ladder remain exact', async () => {
+    const { module, blueprintContext } = await importGroupedEquationModule('greekTowers');
+    const { eta } = module;
+    assert.equal(eta.baseEquation, String.raw`\( \text{Eta} = \dots \)`);
+    assert.deepEqual(eta.variables.map((variable) => variable.key), [
+      'atk', 'aleph1', 'crt', 'bet1', 'totRing', 'totOrb', 'spdRing',
+      'aleph2', 'aleph3', 'aleph4', 'aleph5', 'rng', 'aleph6',
+    ]);
+    const bet1 = eta.variables[3];
+    assert.deepEqual([bet1.cost(0), bet1.cost(1), bet1.cost(2), bet1.cost(9.5)], [1, 5, 10, 10]);
+    assert.deepEqual([bet1.glyphCurrency, bet1.maxLevel], ['aleph', 3]);
+    const values = { aleph1: 3, crt: 2, bet1: 2, aleph6: 9 };
+    blueprintContext.getTowerEquationBlueprint = () => ({});
+    blueprintContext.computeTowerVariableValue = (towerId, variableKey) => values[variableKey];
+    blueprintContext.calculateTowerEquationResult = () => 4;
+    const [atk, , , , totRing, , spdRing, , , , , rng] = eta.variables;
+    assert.equal(atk.computeValue({ blueprint: null, towerId: 'eta' }), 144);
+    values.crt = 0;
+    assert.equal(atk.computeValue({ blueprint: null, towerId: 'eta' }), 1);
+    assert.equal(totRing.computeValue({ blueprint: null, towerId: 'eta' }), 4);
+    values.bet1 = 9;
+    assert.equal(totRing.computeValue({ blueprint: null, towerId: 'eta' }), 5);
+    assert.equal(rng.computeValue({ blueprint: null, towerId: 'eta' }), 10);
+    values.aleph6 = 2;
+    assert.equal(rng.computeValue({ blueprint: null, towerId: 'eta' }), 7);
+    const ringValues = { aleph2: 1, aleph3: 2, aleph4: 3, aleph5: 4 };
+    blueprintContext.computeTowerVariableValue = (towerId, variableKey) => ringValues[variableKey];
+    const lines = spdRing.getSubEquations({ blueprint: null, towerId: 'eta' });
+    assert.equal(lines.length, 10);
+    const denominator = 1 + 2 + 3 + 4;
+    assert.equal(
+      lines[1].values,
+      String.raw`\( decimal:${1 / denominator}:3 = \frac{1}{whole:1 + whole:2 + whole:3 + whole:4} \)`,
+    );
+    assert.equal(
+      lines[9].values,
+      String.raw`\( decimal:${(1 + 2 ** 4) / denominator}:3 = \frac{1 + 2^{whole:4}}{whole:1 + whole:2 + whole:3 + whole:4} \)`,
+    );
+    assert.equal(eta.computeResult({ atk: 9, crt: 5 }), 9);
+    assert.equal(eta.formatGoldenEquation(), String.raw`\( \text{Eta} = \dots \)`);
+  });
+
+  await test('Theta equation: slow and efficacy formulas preserve clamps and direct formatting', async () => {
+    const { module, blueprintContext } = await importGroupedEquationModule('greekTowers');
+    const { theta } = module;
+    assert.equal(theta.baseEquation, String.raw`\( \Theta = \text{Rng} \times \text{Slw} \)`);
+    assert.deepEqual(theta.variables.map((variable) => variable.key), [
+      'rng', 'slw', 'aleph1', 'eff', 'aleph2', 'aleph3',
+    ]);
+    assert.deepEqual(theta.variables[0].getSubEquations(), [
+      { expression: String.raw`\( \text{Rng} = 0.5 \)` },
+      { values: String.raw`\( 0.5 = 0.5 \)`, variant: 'values' },
+    ]);
+    const values = { aleph1: 3, aleph2: 2, aleph3: 1 };
+    blueprintContext.getTowerEquationBlueprint = () => ({});
+    blueprintContext.computeTowerVariableValue = (towerId, variableKey) => values[variableKey];
+    const [, slw, , eff] = theta.variables;
+    const expectedSlow = 95 * (1 - Math.exp(-0.1 * 3) * (1 + 0.1 * Math.sin(3))) + 5;
+    assert.equal(slw.computeValue({ blueprint: null, towerId: 'theta' }), expectedSlow);
+    const expectedEff = (100 * Math.exp(1 / 2) * (1 + (1 / (1.1 + 1)) * Math.sin(0))) / 100;
+    assert.equal(eff.computeValue({ blueprint: null, towerId: 'theta' }), expectedEff);
+    assert.deepEqual(eff.getSubEquations({ blueprint: null, towerId: 'theta' })[1], {
+      values: String.raw`\( \text{Eff}(0) = decimal:${100 * Math.exp(1 / 2)}:1\% \)`,
+      variant: 'values',
+    });
+    assert.equal(theta.computeResult({ rng: 0.5, slw: 40 }), 20);
+    assert.equal(
+      theta.formatBaseEquationValues({ values: { rng: 0.5, slw: 40 } }),
+      'decimal:20:2 = decimal:0.5:2 × decimal:40:2%',
+    );
+  });
+
+  await test('Iota equation: keyless attack variable, coupling curve, and metadata remain exact', async () => {
+    const { module } = await importGroupedEquationModule('greekTowers');
+    const { iota } = module;
+    assert.equal(iota.baseEquation, String.raw`\( \iota = \text{Atk} \times \text{Spd} \times m \)`);
+    assert.deepEqual(iota.variables.map((variable) => variable.key), [
+      'aleph0', 'aleph1', 'aleph2', 'aleph3', 'phaseCoupling',
+      undefined, 'spd', 'rangeMeters', 'debuff', 'debuffDuration',
+    ]);
+    assert.equal(iota.variables[5].symbol, 'Atk');
+    const [aleph0, aleph1, aleph2, aleph3, phaseCoupling] = iota.variables;
+    assert.deepEqual(
+      [aleph0.cost(2.9), aleph1.cost(2.9), aleph2.cost(2.9), aleph3.cost(2.9), phaseCoupling.cost(2.9)],
+      [4, 5, 6, 7, 5],
+    );
+    assert.equal(phaseCoupling.glyphCurrency, 'aleph');
+    assert.equal(phaseCoupling.format(2.9), 'decimal:0.4:2× coupling');
+    assert.equal(phaseCoupling.format(5), `decimal:${0.20 * 5 + 0.05 * 2}:2× coupling`);
+    assert.equal(phaseCoupling.format(-1), 'decimal:0:2× coupling');
+    const lines = phaseCoupling.getSubEquations({ level: 5, value: NaN });
+    assert.equal(
+      lines[1].values,
+      String.raw`\( decimal:${0.20 * 5 + 0.05 * 2}:2 = 0.20 \times whole:5 + 0.05 \times \max(0,\, whole:5 - 3) \)`,
+    );
+    assert.equal(lines[1].glyphEquation, true);
+  });
+
+  await test('Iota equation: pulse formulas preserve link/aleph math and combined result', async () => {
+    const { module, blueprintContext } = await importGroupedEquationModule('greekTowers');
+    const { iota } = module;
+    const connections = { alpha: 1, beta: 2, gamma: 4 };
+    const alephs = { aleph0: 1, aleph1: 2, aleph2: 3, aleph3: 4 };
+    const variableCalls = [];
+    blueprintContext.getTowerEquationBlueprint = () => ({});
+    blueprintContext.getDynamicConnectionCount = (towerType) => connections[towerType];
+    blueprintContext.computeTowerVariableValue = (towerId, variableKey) => {
+      variableCalls.push([towerId, variableKey]);
+      return alephs[variableKey];
+    };
+    const [, , , , , attack, spd, rangeMeters, debuff, debuffDuration] = iota.variables;
+    const connectionMultiplier = 1 + 0.18 * 1 + 0.24 * 2;
+    const gammaMultiplier = 1 + 0.45 * Math.sqrt(4);
+    const alephMultiplier = 1 + 0.35 * 1 + 0.25 * 2 + 0.2 * 3 + 0.15 * 4;
+    assert.equal(
+      attack.computeValue({ blueprint: null, towerId: 'iota' }),
+      240 * connectionMultiplier * gammaMultiplier * alephMultiplier,
+    );
+    assert.deepEqual(variableCalls, [
+      ['iota', 'aleph0'], ['iota', 'aleph1'], ['iota', 'aleph2'], ['iota', 'aleph3'],
+    ]);
+    const expectedSpeed = 0.22
+      + 0.05 * (1 - Math.exp(-0.6 * 2))
+      + 0.03 * (1 - Math.exp(-0.4 * 3))
+      + 0.01 * (2 + 0.5 * 4);
+    assert.equal(spd.computeValue({ blueprint: null, towerId: 'iota' }), expectedSpeed);
+    const expectedRange = 4.2
+      + 1.1 * Math.log(1 + 1 + 0.5 * 2 + 0.25 * 3)
+      + 0.35 * Math.log(1 + 1 + 2 + 0.5 * 4);
+    assert.equal(rangeMeters.computeValue({ blueprint: null, towerId: 'iota' }), expectedRange);
+    const expectedResidue = 0.30 + 0.05 * 1 + 0.06 * 2 + 0.08 * 4 + 0.12 * 2 + 0.08 * 3 + 0.06 * 4;
+    assert.equal(debuff.computeValue({ blueprint: null, towerId: 'iota' }), expectedResidue);
+    const expectedDuration = 3.5 + 0.5 * 1 + 0.25 * 2 + 0.35 * Math.sqrt(4)
+      + 0.8 * Math.sqrt(1) + 0.6 * 2 + 0.4 * 3;
+    assert.equal(debuffDuration.computeValue({ blueprint: null, towerId: 'iota' }), expectedDuration);
+    const attackLines = attack.getSubEquations({ blueprint: null, towerId: 'iota', value: 500 });
+    assert.equal(
+      attackLines[3].values,
+      String.raw`\( game:${500 / 7} = \frac{game:500}{whole:7} \)`,
+    );
+    assert.equal(iota.computeResult({ attack: 2, spd: 3, rangeMeters: 4 }), 24);
+    const componentCalls = [];
+    const output = iota.formatBaseEquationValues({
+      values: { attack: 2, spd: 3, rangeMeters: Infinity },
+      formatComponent(value) {
+        componentCalls.push(value);
+        return `component:${value}`;
+      },
+    });
+    assert.equal(output, 'component:0 = component:2 × component:3 × component:0');
+    assert.deepEqual(componentCalls, [0, 2, 3, 0]);
   });
 
   // --- assets/towerEquations/index.js ------------------------------------
