@@ -13,6 +13,23 @@ This file serves four functions:
 3. Give AI agents a durable handoff between work sessions.
 4. Preserve known risks, validation results, and architectural decisions.
 
+## Current Migration Dashboard
+
+<!-- migration-roadmap-counts: ts=60 generated=60 active_js=174 candidates=45 -->
+
+| Item | Current state |
+|---|---|
+| Repository baseline | Build 747 planning update based on `main` at `0802d21`, after the equipment/gem retirement merge `c96df03` |
+| Completed migration history | Phases 0-20 remain complete; historical phase identities are preserved |
+| Next authorized implementation | **Phase 21 only:** `assets/towerEquations/advanced/rhoEquation.js` -> `.ts` |
+| Active authored modules | 234 total: 60 TypeScript and 174 JavaScript |
+| Compatibility output | 60 generated `.js` siblings; they are runtime output, not backlog |
+| Decision candidates | 45 unreachable authored `.js` files requiring retirement, integration, or archival decisions |
+| Long-range sequence | Phases 21-55; Phase 54 is an extraction gate and assigns no backlog module |
+| Mechanical check | `npm run check:migration-roadmap` validates reachability, classifications, duplicate assignments, totals, and per-phase counts |
+
+The dashboard is the fast orientation surface. The historical ledger remains append-only evidence, while [`docs/TypeScriptMigrationRoadmapInventory.md`](docs/TypeScriptMigrationRoadmapInventory.md) is authoritative for exact future file assignments. Re-run the mechanical check and re-inventory the affected phases before changing any dashboard count.
+
 ---
 
 ## Core Migration Principles
@@ -86,21 +103,21 @@ Before reporting completion, update this document in the same branch or commit s
 
 ## Current Repository Baseline
 
-### 2026-07-16 verified long-range-roadmap baseline
+### 2026-07-16 verified long-range-roadmap baseline, reconciled after equipment/gem retirement
 
 The obsolete-Spire retirement is an intentional product change, not a general migration phase. It removed active Bet, Lamed, Tsadi, Shin, and Kuf modules and added one typed compatibility boundary, `assets/saveCompatibility.ts`. The Aleph experience remains active under the user-facing name **Well of Inspiration**; compatibility-sensitive `powder`/`aleph` identifiers remain unchanged.
 
-Inventory was recalculated from the live tree on **2026-07-16**, starting on `codex/phases-17-20-advanced-equations` at exact commit `2bad7891ca88baa20c1a084c31ecd939e11b4eca`, then continuing on the documentation-only branch `codex/typescript-migration-roadmap`. The browser entry root is `index.html` → `assets/main.js`.
+Inventory was originally recalculated from the live tree on **2026-07-16**, starting on `codex/phases-17-20-advanced-equations` at exact commit `2bad7891ca88baa20c1a084c31ecd939e11b4eca`, then continuing on the documentation-only branch `codex/typescript-migration-roadmap`. It was reconciled again after equipment/gem retirement merge `c96df03` and audited at `main` commit `0802d21`. The browser entry root is `index.html` -> `assets/main.js`.
 
 - **60 authored `.ts` modules** (excluding `.d.ts`; none exist).
 - **60 build-generated `.js` siblings** of those TypeScript modules. These are runtime output, not backlog.
-- **179 active authored `.js` modules**, verified reachable through static local imports from `assets/main.js`.
+- **174 active authored `.js` modules**, verified reachable through static local imports from `assets/main.js`.
 - **0 intentionally preserved legacy `.js` modules** with current repository evidence. The previously documented 19-file disabled Terrarium tree was deleted by `64ebc5e`.
-- **46 ambiguous or retirement/deletion-candidate `.js` modules**, all currently unreachable from the browser entry graph. They are excluded from the active backlog pending a separate decision.
-- **239 active authored modules** in total, so active module-count conversion is **25.1%** (`60 / 239`). The raw authored-language tree is 285 modules when the 46 decision candidates are included.
-- Supplemental authored-line snapshot: **7,390 TypeScript lines** and **84,802 active JavaScript lines**. Line counts do not represent migration difficulty.
+- **45 ambiguous or retirement/deletion-candidate `.js` modules**, all currently unreachable from the browser entry graph. They are excluded from the active backlog pending a separate decision.
+- **234 active authored modules** in total, so active module-count conversion is **25.6%** (`60 / 234`). The raw authored-language tree is 279 modules when the 45 decision candidates are included.
+- Supplemental authored-line snapshot: **7,390 TypeScript lines** and **82,547 active JavaScript lines**. Line counts do not represent migration difficulty.
 
-Method: recursively enumerate `assets/` and `scripts/`; exclude `node_modules/`, `dist/`, `build/`, generated output, dependencies, fixtures, and non-source material; remove each `.js` file with a same-path `.ts` sibling; parse static relative `import`/`export ... from` edges; traverse from `assets/main.js`; and audit unreachable files against tests, retirement documentation, HTML harnesses, and recent commits. The full classification, dependency evidence, 179-module coverage map, and 46-file retirement list are in [`docs/TypeScriptMigrationRoadmapInventory.md`](docs/TypeScriptMigrationRoadmapInventory.md).
+Method: recursively enumerate `assets/` and `scripts/`; exclude `node_modules/`, `dist/`, `build/`, generated output, dependencies, fixtures, and non-source material; remove each `.js` file with a same-path `.ts` sibling; parse static relative `import`/`export ... from` edges; traverse from `assets/main.js`; and audit unreachable files against tests, retirement documentation, HTML harnesses, and recent commits. The full classification, dependency evidence, 174-module coverage map, and 45-file retirement list are in [`docs/TypeScriptMigrationRoadmapInventory.md`](docs/TypeScriptMigrationRoadmapInventory.md). Run `npm run check:migration-roadmap` to verify that classification against the current checkout.
 
 Phases 17–20 converted Sigma, Phi, Upsilon, and Tau in committed implementation `2bad789`; they are not prompt-only assignments. The retired `spireFloatingMenu` and `spireTabVisibility` TypeScript modules and the former Cognitive Realm typed state remain part of phase history but not the live source count.
 
@@ -158,6 +175,7 @@ The original statement that no conversion phase was complete is superseded by th
 | 18 | Phi advanced equation definition (`assets/towerEquations/advanced/phiEquation.js`) | COMPLETE | See Phase 18 section and Implementation Log entry below |
 | 19 | Upsilon advanced equation definition (`assets/towerEquations/advanced/upsilonEquation.js`) | COMPLETE | See Phase 19 section and Implementation Log entry below |
 | 20 | Tau advanced equation definition (`assets/towerEquations/advanced/tauEquation.js`) | COMPLETE | See Phase 20 section and Implementation Log entry below |
+| 21 | Rho advanced equation definition (`assets/towerEquations/advanced/rhoEquation.js`) | AUTHORIZED, NOT STARTED | See the Phase 21 execution card; no implementation is included in this planning update |
 
 ---
 
@@ -206,7 +224,7 @@ Every future phase is behavior-preserving unless separately authorized. Every ph
 2. Add owner-defined interfaces/literal unions and runtime validation at JSON, storage, global, DOM dataset, and legacy-input boundaries. `any`, blanket assertions, suppressions, and global strictness weakening are not acceptable strategies.
 3. Preserve `.js` import specifiers and generate same-path `.js` siblings with the established `tsc` + `sync-ts-output.cjs` pipeline.
 4. Add deterministic characterization before or with conversion. Randomness must be controlled in tests; timers/animation frames must use a deterministic harness; save formats need malformed/legacy fixtures; DOM/Canvas phases need minimal fakes plus manual verification.
-5. Run `npm run typecheck`, `npm run build`, `npm run lint`, `npm run test:unit`, `npm test`, and `git diff --check`. Inspect generated sibling and `dist/` drift; commit only intentional phase output.
+5. Run `npm run check:migration-roadmap`, `npm run typecheck`, `npm run build`, `npm run lint`, `npm run test:unit`, `npm test`, and `git diff --check`. Inspect generated sibling and `dist/` drift; commit only intentional phase output.
 6. Manually verify the phase-specific surface listed below. DOM/input/render phases require a browser console check and portrait-mobile viewport; audio requires playback/mute/volume checks; save phases require reload/legacy-save checks; application roots require browser plus Electron startup.
 7. Exclude balance, formula, visual redesign, save-key renaming, retired-system resurrection, bundler adoption, and unrelated cleanup. Completion requires exact export/object identity compatibility, deterministic tests, clean validation, honest manual-test reporting, updated counts, and a new single-phase authorization decision.
 
@@ -222,13 +240,13 @@ Exact file lists and per-module risk notes are in the linked coverage appendix. 
 | 24 | **TENTATIVE NEAR-TERM** | Basic and Infinity grouped equations; 2 modules | 23 | Foundational tower equation and Infinity term contracts | Registry and all dependent equations/Towers tab | Registry identity/order plus per-tower golden cases; risk is broad foundational fan-out; exclude Greek monolith. |
 | 25 | **TENTATIVE NEAR-TERM** | Greek grouped equation monolith; 1 module | 24 | Per-tower variable/result types reusing the shared owner contract | Completes authored equation definitions consumed by registry/Towers tab | Characterize each tower independently before conversion; manual all-equation overlay pass; do not redesign/split formulas during migration. |
 | 26 | **TENTATIVE NEAR-TERM** | Pure tokens, units, geometry, wave codec, playfield facades, build data, Aleph registry; 11 modules | 25 | `Wave`, `EnemyGroup`, points, units, token spans, numeric helpers, Aleph ids | 31 importers for units, 13 for playfield formatting, level/editor and tower consumers | Edge/malformed/round-trip/property tests; no browser except wave-editor smoke; risk is preserving coercive legacy codec behavior. |
-| 27 | **TENTATIVE NEAR-TERM** | Gameplay config loaders, levels, configuration, enemies; 4 modules | 26 and Phase 4 tower data | Runtime-validated config/level/wave/enemy/gem schemas | Main, playfield, managers, achievements, crafting; compatibility adapters for untyped callers | Fetch/global/dynamic-import fallback tests, malformed JSON/config fixtures, seeded enemy helpers; browser config load; exclude balance changes. |
-| 28 | **TENTATIVE NEAR-TERM** | Equipment, tutorial, Powder state/queue/log/persistence; 6 modules | 26-27 and existing save owners | Equipment/tutorial/Powder snapshots and legacy validators | Autosave, main, Towers tab, Powder UI | Round-trip plus malformed/old saves, queue ordering, event log retention; manual reload; never trust or rename saved keys. |
+| 27 | **TENTATIVE NEAR-TERM** | Gameplay config loaders, levels, configuration, enemies; 4 modules | 26 and Phase 4 tower data | Runtime-validated config/level/wave/enemy schemas | Main, playfield, managers, and achievements; compatibility adapters for untyped callers | Fetch/global/dynamic-import fallback tests, malformed JSON/config fixtures, seeded enemy helpers; browser config load; exclude balance changes. |
+| 28 | **TENTATIVE NEAR-TERM** | Tutorial and Powder state/queue/log/persistence; 5 modules | 26-27 and existing save owners | Tutorial/Powder snapshots and legacy validators | Autosave, main, Towers tab, and Powder UI | Round-trip plus malformed/old saves, queue ordering, event log retention; manual reload; never trust or rename saved keys. |
 | 29 | **TENTATIVE NEAR-TERM** | Powder grid/palette/data utilities; 3 modules | 26, 28 | Cell/material/wall/mote/palette and narrow simulation adapter types | PowderSimulation and later palette/render consumers | Small-grid golden states, bounds, palette normalization, controlled randomness; exclude PowderSimulation class. |
 | 30 | **TENTATIVE NEAR-TERM** | `PowderSimulation`; 1 module | 29 | Owner-defined simulation state, cell buffers, lifecycle, persistence snapshot, viewport API | 13 direct importers including color, main, UI, render layers | Seeded step/render/save characterization, timer/RAF fakes, manual touch/resize/save; critical monolith risk; no feature extraction unless needed for type ownership and separately documented. |
 | 31 | **TENTATIVE NEAR-TERM** | Palette, performance, audio, lifecycle, rendering helper; 6 modules | 26, 30 | Palette/RGB, performance segment, audio manifest/settings, lifecycle interfaces | 36 palette importers plus playfield/tower/audio/main consumers | Palette/storage/audio/timer tests; manual theme switching and sound controls; preserve lazy browser behavior. |
-| 32 | **TENTATIVE NEAR-TERM** | Tower equipment/loadout/upgrade overlay leaves; 3 modules | 21-28, 31 | Controller options, DOM element resolvers, callbacks, upgrade overlay payload | Sole owner consumer `towersTab.js` | DOM/timer/equipment/loadout characterization and portrait overlays; exclude Towers tab itself. |
-| 33 | **TENTATIVE NEAR-TERM** | Towers tab owner; 1 module | 25-28, 31-32 | Canonical runtime tower, upgrade, lookup, equation context and public controller types | 35 importers across towers, playfield, UI, crafting, main | State/save/equation/DOM golden tests plus browser upgrade/loadout pass; critical 2,271-line owner; no balance or UI redesign. |
+| 32 | **TENTATIVE NEAR-TERM** | Tower loadout and upgrade-overlay leaves; 2 modules | 21-28, 31 | Controller options, DOM element resolvers, callbacks, loadout and upgrade-overlay payloads | Sole owner consumer `towersTab.js` | DOM/timer/loadout characterization and portrait overlays; exclude Towers tab itself. |
+| 33 | **TENTATIVE NEAR-TERM** | Towers tab owner; 1 module | 25-28, 31-32 | Canonical runtime tower, upgrade, lookup, equation context and public controller types | 35 importers across towers, playfield, UI, and main | State/save/equation/DOM golden tests plus browser upgrade/loadout pass; critical 2,271-line owner; no balance or UI redesign. |
 | 34 | **TENTATIVE LATER** | Shared helpers and Alpha/Beta/Gamma; 5 modules | 26-27, 31, 33 | Tower/projectile/burst/render-state contracts | TowerManager, playfield, projectile renderer and later towers | Seeded update/draw/damage lifecycle tests and desktop/mobile placement; exclude later towers. |
 | 35 | **TENTATIVE LATER** | Delta through Iota mid-tier towers; 6 modules | 34 | Mid-tier orbit/beam/chain/integration states | TowerManager, playfield, sprite/projectile systems | Per-tower deterministic math/state/audio tests and manual placement; high Canvas/audio risk. |
 | 36 | **TENTATIVE LATER** | Kappa through Xi simulation chain; 5 modules | 34-35 | Mine/beam/chain/target/teardown states | Playfield update, damage and renderer systems | Seeded lifecycle/teardown/cross-tower tests; manual upgrade and wave pass; preserve formulas. |
@@ -237,22 +255,22 @@ Exact file lists and per-module risk notes are in the linked coverage appendix. 
 | 39 | **TENTATIVE LATER** | Powder/Well controllers and DOM/viewport owners; 7 modules | 28-31 | Controllers consume the Powder owner API, preference/persistence and viewport types | Main and Well tab | DOM/resize/tier/drop/touch tests; portrait and landscape manual pass; exclude simulation formula changes. |
 | 40 | **TENTATIVE LATER** | Playfield geometry/preferences/background systems; 6 modules | 26-31, 33 | Normalized points, paths, viewport, playfield preferences, background entities | `playfield.js`, input, rendering | Geometry invariants, storage and controlled-random tests; manual orientation/track checks. |
 | 41 | **TENTATIVE LATER** | Enemy metadata and specialist systems; 10 modules | 27, 34-40 | Shared enemy/effect/boss state types owned by enemy/playfield boundaries | Enemy update/damage/render consumers | Seeded state-machine tests per specialist; manual representative waves; do not migrate unreachable Integral scaffold. |
-| 42 | **TENTATIVE LATER** | Combat, projectile, wave, drop and transition systems; 10 modules | 27, 34-41 | Damage events, projectiles, queue entries, drops, transition states | Playfield root, managers, renderers | Update-order, mutation, collision, queue and seeded drop tests; manual full wave; high shared-mutation risk. |
+| 42 | **TENTATIVE LATER** | Combat, projectile, wave, drop and transition systems; 9 modules | 27, 34-41 | Damage events, projectiles, queue entries, drops, transition states | Playfield root, managers, renderers | Update-order, mutation, collision, queue and seeded drop tests; manual full wave; high shared-mutation risk. |
 | 43 | **TENTATIVE LATER** | Connections, tower dispatch/interaction, effects, reset; 6 modules | 31, 33-42 | Narrow playfield context capabilities and reset lifecycle | Playfield root/managers/audio/UI | Interaction/reset/effect/audio trace tests; manual drag/touch/reset; no new global capability bag. |
 | 44 | **TENTATIVE LATER** | Tower/combat/stats/lifecycle managers, orchestration, developer service; 6 modules | 27, 33-43 | Consolidated owner interfaces for entities, state managers, level lifecycle and DI | Playfield root plus level/UI consumers | Dependency-injection contract tests, lifecycle order and developer-tool cases; manual level start/end; critical convergence point. |
-| 45 | **TENTATIVE LATER** | Gesture/input and playfield UI; 8 modules | 31, 33, 40-44 | Pointer/touch gesture, HUD, menu, wheel and tally contracts | Playfield root | Mouse/touch event harness, DOM timers, accessibility; mandatory portrait touch and desktop pointer verification. |
+| 45 | **TENTATIVE LATER** | Gesture/input and playfield UI; 7 modules | 31, 33, 40-44 | Pointer/touch gesture, HUD, menu, wheel and tally contracts | Playfield root | Mouse/touch event harness, DOM timers, accessibility; mandatory portrait touch and desktop pointer verification. |
 | 46 | **TENTATIVE LATER** | Background effects and background layer; 8 modules | 26, 31, 40-45 | Canvas effect lifecycle and render-state contracts | CanvasRenderer/background layer | Seeded snapshot/render-call tests and visual browser comparisons; high Canvas cache/randomness risk. |
 | 47 | **TENTATIVE LATER** | Entity/render layers, CanvasRenderer, RenderCoordinator; 8 modules | 31, 34-46 | Frame/render context, Canvas entities, layer contracts, RAF scheduler | Playfield root and main developer controls | Layer-order and canvas-call traces, RAF limit tests, manual graphics modes; no visual redesign. |
 | 48 | **TENTATIVE LATER** | `assets/playfield.js`; 1 module | 27, 31, 33-47 | Typed `SimplePlayfield`, configuration injection, public lifecycle API | Main and level preview | Characterize configure/update/draw/reset/input order and public method surface; browser full-level + touch; no broad architectural rewrite. |
 | 49 | **TENTATIVE LATER** | Wave editor and level/progression controllers; 9 modules | 26-28, 45, 48 | Level/editor forms, preview, story, combat/outcome contracts | Main and developer workflows | Wave round trips, DOM/Canvas/timer flows; manual editor import/export and level lifecycle. |
-| 50 | **TENTATIVE LATER** | Tower tree/matrix/library/stats/crafting UI; 5 modules | 28, 31, 33-39, 48 | Presenter/controller types consuming canonical tower/equipment state | Main, playfield stats and crafting | DOM/Canvas/save overlay tests and manual crafting/upgrade/tree pass. |
+| 50 | **TENTATIVE LATER** | Tower tree/matrix/library/stats UI; 4 modules | 28, 31, 33-39, 48 | Presenter/controller types consuming canonical tower state | Main and playfield stats | DOM/Canvas/save overlay tests and manual upgrade/tree pass. |
 | 51 | **TENTATIVE LATER** | Codex, achievements, boosts; 3 modules | 27-28, 31, 44, 48 | Codex entries, proof/achievement state, monetization presenters | Main, configuration, orchestration | Seeded proof/effect and DOM tests; manual Codex/achievements; ensure retired Terrarium stays absent. |
 | 52 | **TENTATIVE LATER** | Small application-shell presenters/helpers; 9 modules | 31, 39, 45, 48 | DOM/layout/startup/resource/spire controller option types | Main | DOM/accessibility/resize tests and portrait startup/options pass; compatibility-only edits. |
 | 53 | **TENTATIVE LATER** | Developer controls/mode, field notes, scrollbar, playfield menu; 5 modules | 31, 44-52 | Central browser-global declarations and developer/menu controller types | Main and playfield developer hooks | Global/timer/Canvas/audio tests plus browser developer-mode pass; do not revive retired managers. |
 | 54 | **TENTATIVE LATER** | Main responsibility-extraction gate; 0 backlog conversions | All active modules except `main.js` typed | Extract only still-owned cohesive responsibilities into new typed owners; define composition contract | Compatibility edits inside `assets/main.js` are expected, but it remains `.js` | Characterize startup order and globals before extraction; browser/Electron; completion means residual main is composition-only. No extension conversion yet. |
 | 55 | **TENTATIVE LATER** | Final `assets/main.js` → `assets/main.ts`; 1 module | 54 and every prior active-module phase | Typed application composition/startup/window API | `index.html` keeps loading generated `assets/main.js` | Startup order/global/API tests, browser portrait/desktop, save reload, full level, audio, and Electron. Complete only with no broad assertions and no owned feature logic left. |
 
-Phases 21-55 cover all 179 active authored JavaScript modules. There are **35 roadmap phases**: one authorized conversion phase, 33 tentative conversion phases, and one tentative zero-module extraction gate (Phase 54). Thus 34 phases assign backlog modules and one prepares the final root without double-counting it. No module is assigned twice.
+Phases 21-55 cover all 174 active authored JavaScript modules. There are **35 roadmap phases**: one authorized conversion phase, 33 tentative conversion phases, and one tentative zero-module extraction gate (Phase 54). Thus 34 phases assign backlog modules and one prepares the final root without double-counting it. No module is assigned twice.
 
 ### Critical path
 
@@ -270,17 +288,59 @@ The early leverage modules are `assets/gameUnits.js` (31 importers), `assets/col
 - Root UI groups 49-53 can proceed in parallel after Phase 48 if each agent stays within its files and imports owner types. The central ambient browser-global declaration, if needed, belongs to Phase 53 alone.
 - Playfield phases 40-44 should not be parallelized initially: they converge on shared enemy/projectile/playfield-context contracts. Parallel file work becomes safe only after the earlier phase in that chain establishes and owns those types. Rendering 46 must precede the layer/compositor contracts in 47.
 
+### Replan triggers and authorization discipline
+
+Re-run the live inventory and revise affected tentative phases before authorizing more work when any of these events occurs:
+
+- a product retirement, feature restoration, or new runtime module changes the `assets/main.js` reachability graph;
+- a migrated file introduces, removes, or relocates an owner contract used by later phases;
+- the mechanical checker reports a missing, duplicate, unexpected, or count-mismatched path;
+- a phase's characterization work reveals hidden dynamic imports, global registration, save compatibility, or callback-order dependencies;
+- a monolith is materially extracted or reduced before its scheduled conversion phase;
+- validation tooling, browser startup, Electron startup, or the generated-sibling build architecture changes.
+
+Tentative phases may be regrouped after a trigger, but completed phase numbers and scopes remain historical facts. Update the dashboard, inventory appendix, proposed sequence, decision log, and sole next authorization together. Never authorize several future phases merely to make the table look settled.
+
 ### Deletion before migration
 
-The 46 unreachable JavaScript files are not migration backlog. The strongest retirement candidates are the 17-file Shin/Cardinal Warden cluster (explicitly required to be unreachable by `scripts/test-retired-spires.cjs`), its 12-file orphaned fractal support cluster, the 10-file unintegrated graph-tower runtime, and seven individual orphan managers/effects/scaffolds. The exact files and evidence are in the inventory appendix. Do not delete or migrate them under a TypeScript phase; authorize a separate product retirement/integration audit first.
+The 45 unreachable JavaScript files are not migration backlog. The strongest retirement candidates are the 17-file Shin/Cardinal Warden cluster (explicitly required to be unreachable by `scripts/test-retired-spires.cjs`), its 12-file orphaned fractal support cluster, the 10-file unintegrated graph-tower runtime, and six individual orphan managers/effects/scaffolds. The exact files and evidence are in the inventory appendix. Do not delete or migrate them under a TypeScript phase; authorize a separate product retirement/integration audit first.
 
 ### Single next authorized phase
 
 Only Phase 21 is authorized. Later phases are sequencing hypotheses, not implementation authority.
 
-**Phase 21 exact scope:** convert only `assets/towerEquations/advanced/rhoEquation.js` to strict `assets/towerEquations/advanced/rhoEquation.ts`; regenerate its compatibility sibling; make only evidence-required type-contract and test/documentation edits.
+#### Phase 21 execution card
 
-**Acceptance criteria:** preserve the `rho` export identity, all metadata/strings, two-variable order, costs, upgrade-state lookup, optional helper timing, strict `prestige === true` branch, unspent-Thero normalization, logarithmic/non-prestige branches, rank handling, finite/negative fallbacks, result math, formatter call order/output, advanced-barrel identity, registry lookup, and `.js` specifiers. Tests must cover missing/malformed states, getter/coercion edges, both prestige modes, `unspentThero` boundaries, both variables' sub-equations, costs, results, and base-equation formatting. Add no `any`, blanket assertion, suppression, redesign, or another converted definition. Run the standard validation gate; optional browser equation-display verification must be reported honestly. Do not begin Phase 21 during this planning task.
+**Intent:** behavior-preserving conversion of the Rho enemy-yield equation. This phase proves that the shared presenter contract can type an upgrade-state-backed definition with an untrusted dynamic context before the five-file recursive equation chain begins.
+
+**Source conversion:** replace authored `assets/towerEquations/advanced/rhoEquation.js` with strict `assets/towerEquations/advanced/rhoEquation.ts`. `npm run build` must regenerate the same-path `.js` compatibility sibling. Do not hand-edit the generated sibling.
+
+**Dependency and consumer surface:**
+
+- Runtime imports remain `../../../scripts/core/formatting.js` and `../blueprintContext.js`.
+- Add the type-only `TowerEquationBlueprint` import from `../../towerBlueprintPresenter.js` and finish the exported object with `satisfies TowerEquationBlueprint`, following the completed advanced-equation pattern.
+- `assets/towerEquations/advancedTowers.ts` is the sole direct source importer and must retain `export { rho } from './advanced/rhoEquation.js'`.
+- `assets/towerEquations/index.ts` must continue exposing the exact same object through `TOWER_EQUATION_BLUEPRINTS.rho`; no registry, Towers-tab, simulation, playfield, or main behavior belongs in this phase.
+- `TowerEquationDynamicContext` remains `unknown`. Narrow only the `prestige` and `unspentThero` properties that Rho actually reads. Reuse `TowerUpgradeState` through `blueprintContext.ensureTowerUpgradeState`; do not create a parallel upgrade-state shape.
+
+**Characterization matrix:**
+
+| Surface | Required cases |
+|---|---|
+| Metadata and identity | Exact math/base equation strings, variable order, glyph labels, barrel identity, and registry identity |
+| Upgrade state | Missing helper, missing state/variables/key, zero, positive, negative, fractional, numeric-string, nonnumeric, `NaN`, and Infinity levels |
+| Prestige context | `prestige === true` only; false, `1`, missing, null, primitive, object, and function contexts retain existing behavior |
+| Unspent Thero | Missing, non-number, `NaN`, negative, zero, one, ten, and Infinity inputs; preserve `Number.isFinite` number-only acceptance and minimum-one normalization |
+| Variable formulas | Both prestige modes for enemy yield and range, both cost curves, finite supplied values, and fallback-computed values |
+| Result and formatting | Negative/non-finite value clamping, multiplication result, base-equation output, and exact formatter callback order |
+
+**Allowed compatibility edits:** the new `.ts` source, generated `.js` sibling, deterministic cases in `scripts/unit-test-core.cjs`, this ledger, inventory/count metadata, and the required single build-number increment. Shared presenter/context edits are allowed only if the compiler proves an existing owner contract is insufficient; document the evidence and keep the edit type-only or validation-only.
+
+**Explicit exclusions:** no other equation conversion, formula cleanup, metadata correction, balance change, UI redesign, Towers-tab work, simulation/playfield work, `assets/main.js` extraction, broad assertion, `any`, suppression, or strictness weakening.
+
+**Completion gate:** `npm run check:migration-roadmap`, `npm run typecheck`, `npm run build`, `npm run lint`, `npm run test:unit`, `npm test`, and `git diff --check` all succeed; generated and `dist/` drift is intentional; the Phase 21 implementation log records exact files and results; counts are refreshed; exactly one next phase is authorized. An optional browser equation-display smoke must be reported as performed or not performed, never implied.
+
+Do not begin Phase 21 during this planning task.
 
 ---
 
@@ -1078,6 +1138,14 @@ Do not treat this list as a fixed roadmap. Each completed phase must recommend t
 
 ## Decision Log
 
+### 2026-07-16 — Make the migration inventory mechanically enforceable
+
+The equipment/gem retirement removed five active JavaScript modules from future phases and one unreachable candidate, but the primary ledger retained its earlier totals. The roadmap now carries matching machine-readable count markers, and `scripts/check-migration-roadmap.cjs` independently rebuilds the `assets/main.js` static graph, validates active and candidate assignments path-for-path, rejects duplicates, and compares every Phase 21-55 module count. A failing checker is a mandatory replan trigger.
+
+### 2026-07-16 — Keep one authoritative ledger and one exact inventory appendix
+
+`JavaToTypeScriptConversionPlan.md` remains the status, history, execution, and authorization ledger. `docs/TypeScriptMigrationRoadmapInventory.md` remains the exact file-assignment and decision-candidate appendix. `TheroMathTD_TS_Migration_Plan.md` is archived historical orientation and must not authorize work. This division keeps implementation evidence without requiring contributors to reconcile two competing current plans.
+
 ### 2026-07-13 — Use an incremental subsystem migration
 
 **Decision:** Migrate Thero to TypeScript subsystem by subsystem while retaining the working JavaScript game as the behavioral reference.
@@ -1128,17 +1196,27 @@ Do not treat this list as a fixed roadmap. Each completed phase must recommend t
 
 ## Next Suggested Step
 
-**Recommended Phase 21: `assets/towerEquations/advanced/rhoEquation.js` (enemy-yield income definition).**
+**Recommended Phase 21: `assets/towerEquations/advanced/rhoEquation.js` (enemy-yield income definition).** The normative implementation checklist is the [Phase 21 execution card](#phase-21-execution-card).
 
 After Phases 17–20, Rho is the smallest remaining advanced definition by authored lines. Its two-variable income formula is bounded but exercises a richer JavaScript-originated dynamic context than Phi/Upsilon/Tau, making it the next useful step for validating the shared presenter contracts without expanding into simulations or playfield ownership.
 
-**Bounded scope:** Convert only `assets/towerEquations/advanced/rhoEquation.js` to strict TypeScript. Reuse the presenter/context contracts and add only narrow guards for the enemy-yield and range dynamic inputs already read by the module. Add deterministic generated-output tests for metadata, costs, level/rank handling, dynamic-context key precedence, invalid/negative fallbacks, both sub-equation branches, income result behavior, formatter order, and base-equation formatting. Do not convert another advanced definition, Infinity/basic/Greek definitions, Towers tab, simulations, playfield systems, or main integration.
+**Bounded scope:** Convert only `assets/towerEquations/advanced/rhoEquation.js` to strict TypeScript. Reuse the presenter/context contracts and add only narrow guards for the enemy-yield and range dynamic inputs already read by the module. Add the deterministic generated-output coverage specified in the execution card. Do not convert another advanced definition, Infinity/basic/Greek definitions, Towers tab, simulations, playfield systems, or main integration.
 
 **Acceptance criteria:** Preserve exact metadata, strings, formulas, dynamic-context lookup/coercion semantics, clamping, upgrade cost and rank behavior, sub-equation order, result math, formatter callback order/output, `.js` imports, barrel identity, and registry compatibility; add no `any`, assertions, or suppressions; typecheck/build/lint/unit/smoke pass; update counts/build number once and record browser availability honestly.
 
 ---
 
 ## Implementation Log
+
+### 2026-07-16 — Roadmap reconciled and execution controls developed
+
+- Reconciled the primary ledger after equipment/gem retirement: 60 authored TypeScript modules, 60 generated siblings, 174 active authored JavaScript modules, and 45 decision candidates.
+- Corrected Phase 28, 32, 42, 45, and 50 counts and removed retired equipment/gem/crafting responsibilities from their future scope descriptions.
+- Added the current migration dashboard, explicit replan triggers, a decision-status ledger, and an implementation-ready Phase 21 execution card.
+- Added `scripts/check-migration-roadmap.cjs` and `npm run check:migration-roadmap` to validate the static runtime graph, exact path assignments, duplicate coverage, shared count markers, and per-phase module totals.
+- Kept Phase 21 authorized but not started; no production module was migrated.
+- Incremented the build number once to Build 747 for this committed planning/tooling change.
+- Validation results are recorded when this branch completes its full verification gate.
 
 ### 2026-07-13 — Migration plan established
 
