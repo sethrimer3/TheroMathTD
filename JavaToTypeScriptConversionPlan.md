@@ -15,17 +15,17 @@ This file serves four functions:
 
 ## Current Migration Dashboard
 
-<!-- migration-roadmap-counts: ts=61 generated=61 active_js=173 candidates=45 -->
-<!-- migration-roadmap-authorization: phase=22 -->
+<!-- migration-roadmap-counts: ts=66 generated=66 active_js=168 candidates=45 -->
+<!-- migration-roadmap-authorization: phase=23 -->
 
 | Item | Current state |
 |---|---|
-| Repository baseline | Build 753 on `main`, including the completed Phase 21 implementation and reinforced direct-to-`main` workflow |
-| Completed migration history | Phases 0-21 remain complete; historical phase identities are preserved |
-| Next authorized implementation | **Phase 22 only:** Kappa -> Lambda -> Mu -> Nu -> Xi equation chain |
+| Repository baseline | Build 754 on `main`, including the completed Phase 22 Kappa -> Xi equation-chain migration |
+| Completed migration history | Phases 0-22 remain complete; historical phase identities are preserved |
+| Next authorized implementation | **Phase 23 only:** Omicron, Pi, Chi, Psi, and Omega terminal equations |
 | Delivery branch | Work directly on `main`; create or switch to another branch only when the user explicitly requests it |
-| Active authored modules | 234 total: 61 TypeScript and 173 JavaScript |
-| Compatibility output | 61 generated `.js` siblings; they are runtime output, not backlog |
+| Active authored modules | 234 total: 66 TypeScript and 168 JavaScript |
+| Compatibility output | 66 generated `.js` siblings; they are runtime output, not backlog |
 | Decision candidates | 45 unreachable authored `.js` files requiring retirement, integration, or archival decisions |
 | Long-range sequence | Phases 22-55; Phase 54 is an extraction gate and assigns no backlog module |
 | Mechanical check | `npm run check:migration-roadmap` validates reachability, classifications, duplicate assignments, totals, and per-phase counts |
@@ -112,15 +112,15 @@ The obsolete-Spire retirement is an intentional product change, not a general mi
 
 Inventory was originally recalculated from the live tree on **2026-07-16**, starting on `codex/phases-17-20-advanced-equations` at exact commit `2bad7891ca88baa20c1a084c31ecd939e11b4eca`, then continuing on the documentation-only branch `codex/typescript-migration-roadmap`. It was reconciled again after equipment/gem retirement merge `c96df03` and audited at `main` commit `0802d21`. The browser entry root is `index.html` -> `assets/main.js`.
 
-- **61 authored `.ts` modules** (excluding `.d.ts`; none exist).
-- **61 build-generated `.js` siblings** of those TypeScript modules. These are runtime output, not backlog.
-- **173 active authored `.js` modules**, verified reachable through static local imports from `assets/main.js`.
+- **66 authored `.ts` modules** (excluding `.d.ts`; none exist).
+- **66 build-generated `.js` siblings** of those TypeScript modules. These are runtime output, not backlog.
+- **168 active authored `.js` modules**, verified reachable through static local imports from `assets/main.js`.
 - **0 intentionally preserved legacy `.js` modules** with current repository evidence. The previously documented 19-file disabled Terrarium tree was deleted by `64ebc5e`.
 - **45 ambiguous or retirement/deletion-candidate `.js` modules**, all currently unreachable from the browser entry graph. They are excluded from the active backlog pending a separate decision.
-- **234 active authored modules** in total, so active module-count conversion is **26.1%** (`61 / 234`). The raw authored-language tree is 279 modules when the 45 decision candidates are included.
-- Supplemental authored-line snapshot: **7,568 TypeScript lines** and **82,422 active JavaScript lines**. Line counts do not represent migration difficulty.
+- **234 active authored modules** in total, so active module-count conversion is **28.2%** (`66 / 234`). The raw authored-language tree is 279 modules when the 45 decision candidates are included.
+- Supplemental authored-line snapshot: **8,309 TypeScript lines** and **81,526 active JavaScript lines**. Line counts do not represent migration difficulty.
 
-Method: recursively enumerate `assets/` and `scripts/`; exclude `node_modules/`, `dist/`, `build/`, generated output, dependencies, fixtures, and non-source material; remove each `.js` file with a same-path `.ts` sibling; parse static relative `import`/`export ... from` edges; traverse from `assets/main.js`; and audit unreachable files against tests, retirement documentation, HTML harnesses, and recent commits. The full classification, dependency evidence, 173-module coverage map, and 45-file retirement list are in [`docs/TypeScriptMigrationRoadmapInventory.md`](docs/TypeScriptMigrationRoadmapInventory.md). Run `npm run check:migration-roadmap` to verify that classification against the current checkout.
+Method: recursively enumerate `assets/` and `scripts/`; exclude `node_modules/`, `dist/`, `build/`, generated output, dependencies, fixtures, and non-source material; remove each `.js` file with a same-path `.ts` sibling; parse static relative `import`/`export ... from` edges; traverse from `assets/main.js`; and audit unreachable files against tests, retirement documentation, HTML harnesses, and recent commits. The full classification, dependency evidence, 168-module coverage map, and 45-file retirement list are in [`docs/TypeScriptMigrationRoadmapInventory.md`](docs/TypeScriptMigrationRoadmapInventory.md). Run `npm run check:migration-roadmap` to verify that classification against the current checkout.
 
 Phases 17–20 converted Sigma, Phi, Upsilon, and Tau in committed implementation `2bad789`; they are not prompt-only assignments. The retired `spireFloatingMenu` and `spireTabVisibility` TypeScript modules and the former Cognitive Realm typed state remain part of phase history but not the live source count.
 
@@ -179,6 +179,7 @@ The original statement that no conversion phase was complete is superseded by th
 | 19 | Upsilon advanced equation definition (`assets/towerEquations/advanced/upsilonEquation.js`) | COMPLETE | See Phase 19 section and Implementation Log entry below |
 | 20 | Tau advanced equation definition (`assets/towerEquations/advanced/tauEquation.js`) | COMPLETE | See Phase 20 section and Implementation Log entry below |
 | 21 | Rho advanced equation definition (`assets/towerEquations/advanced/rhoEquation.js`) | COMPLETE | Builds 751-752 on `codex/phase-21-rho-equation`; see the Phase 21 execution card and implementation log |
+| 22 | Kappa -> Lambda -> Mu -> Nu -> Xi advanced equation chain | COMPLETE | Build 754 on `main`; see the Phase 22 authorization card and implementation log |
 
 ---
 
@@ -263,8 +264,8 @@ Exact file lists and per-module risk notes are in the linked coverage appendix. 
 | Phase | Status | Scope / purpose / approximate count | Prerequisites and expected owner contracts | Consumer impact and compatibility edits | Characterization, manual verification, risks, exclusions, completion focus |
 |---:|---|---|---|---|---|
 | 21 | **COMPLETE** | Rho income equation; 1 module | 8, 12, 16-20; Rho dynamic context, upgrade-state reads, sub-equation contexts | Advanced barrel and typed registry retained exact identity; no shared contract edit was required | Six deterministic Rho tests cover metadata, costs, helper/getter timing, coercion/fallbacks, both formula branches, result math, and formatter order. |
-| 22 | **AUTHORIZED NEXT** | Kappa -> Lambda -> Mu -> Nu -> Xi equation chain; 5 modules | 21; shared blueprint variable/result/context contracts | Advanced barrel/registry and Towers tab equation consumers; one contract steward, no duplicate local interfaces | Frozen-input formula/cost/lookup/cycle tests; optional in-game equation inspection; risk is cross-equation recursion/coercion. |
-| 23 | **TENTATIVE NEAR-TERM** | Omicron/Pi/Chi/Psi/Omega equations; 5 modules | 22 | Terminal equation entity/count/HP context shapes owned by presenter/context | Same barrel/registry; compatibility limited to type-only imports and proven presenter additions | Formula, fallback, callback-order, `NaN`/Infinity, and lookup tests; exclude simulations. |
+| 22 | **COMPLETE** | Kappa -> Lambda -> Mu -> Nu -> Xi equation chain; 5 modules | 21; shared blueprint variable/result/context contracts | Advanced barrel/registry and Towers tab equation consumers; one canonical `lockedNote` field added to the presenter-owned variable contract | Nineteen deterministic tests cover metadata, every cost curve, helper/state/dynamic fallbacks and order, sub-equations, results, formatting, and inherited coercion edges. |
+| 23 | **AUTHORIZED NEXT** | Omicron/Pi/Chi/Psi/Omega equations; 5 modules | 22 | Terminal equation entity/count/HP context shapes owned by presenter/context | Same barrel/registry; compatibility limited to type-only imports and proven presenter additions | Formula, fallback, callback-order, `NaN`/Infinity, and lookup tests; exclude simulations. |
 | 24 | **TENTATIVE NEAR-TERM** | Basic and Infinity grouped equations; 2 modules | 23 | Foundational tower equation and Infinity term contracts | Registry and all dependent equations/Towers tab | Registry identity/order plus per-tower golden cases; risk is broad foundational fan-out; exclude Greek monolith. |
 | 25 | **TENTATIVE NEAR-TERM** | Greek grouped equation monolith; 1 module | 24 | Per-tower variable/result types reusing the shared owner contract | Completes authored equation definitions consumed by registry/Towers tab | Characterize each tower independently before conversion; manual all-equation overlay pass; do not redesign/split formulas during migration. |
 | 26 | **TENTATIVE NEAR-TERM** | Pure tokens, units, geometry, wave codec, playfield facades, build data, Aleph registry; 11 modules | 25 | `Wave`, `EnemyGroup`, points, units, token spans, numeric helpers, Aleph ids | 31 importers for units, 13 for playfield formatting, level/editor and tower consumers | Edge/malformed/round-trip/property tests; no browser except wave-editor smoke; risk is preserving coercive legacy codec behavior. |
@@ -298,7 +299,7 @@ Exact file lists and per-module risk notes are in the linked coverage appendix. 
 | 54 | **TENTATIVE LATER** | Main responsibility-extraction gate; 0 backlog conversions | All active modules except `main.js` typed | Extract only still-owned cohesive responsibilities into new typed owners; define composition contract | Compatibility edits inside `assets/main.js` are expected, but it remains `.js` | Characterize startup order and globals before extraction; browser/Electron; completion means residual main is composition-only. No extension conversion yet. |
 | 55 | **TENTATIVE LATER** | Final `assets/main.js` → `assets/main.ts`; 1 module | 54 and every prior active-module phase | Typed application composition/startup/window API | `index.html` keeps loading generated `assets/main.js` | Startup order/global/API tests, browser portrait/desktop, save reload, full level, audio, and Electron. Complete only with no broad assertions and no owned feature logic left. |
 
-Phases 22-55 cover all 173 active authored JavaScript modules. Across Phases 21-55 there are **35 roadmap phases**: one completed conversion phase, one authorized conversion phase, 32 tentative conversion phases, and one tentative zero-module extraction gate (Phase 54). The remaining 33 conversion phases assign the active backlog and the gate prepares the final root without double-counting it. No active module is assigned twice.
+Phases 23-55 cover all 168 active authored JavaScript modules. Across Phases 21-55 there are **35 roadmap phases**: two completed conversion phases, one authorized conversion phase, 31 tentative conversion phases, and one tentative zero-module extraction gate (Phase 54). The remaining 32 conversion phases assign the active backlog and the gate prepares the final root without double-counting it. No active module is assigned twice.
 
 ### Critical path
 
@@ -376,7 +377,7 @@ The 45 unreachable JavaScript files are not migration backlog. The strongest ret
 
 ### Single next authorized phase
 
-Only Phase 22 is authorized. Later phases are sequencing hypotheses, not implementation authority.
+Only Phase 23 is authorized. Later phases are sequencing hypotheses, not implementation authority.
 
 #### Phase 21 execution card
 

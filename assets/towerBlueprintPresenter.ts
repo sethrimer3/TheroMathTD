@@ -107,6 +107,7 @@ export interface TowerEquationVariable {
   tooltipName?: string;
   description?: string | null;
   tooltipDescription?: string;
+  lockedNote?: string;
   units?: string;
   glyphLabel?: string;
   attachedToVariable?: unknown;
