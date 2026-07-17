@@ -3841,6 +3841,310 @@ async function run() {
     assert.deepEqual(componentCalls, [0, 2, 3, 0]);
   });
 
+  // --- assets/gameUnits.js -------------------------------------------------
+  await test('game units: conversion factors, guards, and round trips remain exact', async () => {
+    const units = await importAsEsm('assets/gameUnits.js');
+    assert.equal(units.ALPHA_BASE_RADIUS_FACTOR, 0.025);
+    assert.equal(units.ALPHA_BASE_DIAMETER_FACTOR, 0.05);
+    assert.equal(units.DEFAULT_TOWER_DIAMETER_METERS, 1);
+    assert.equal(units.metersToCanvasFraction(2), 0.1);
+    assert.equal(units.metersToCanvasFraction(0), 0);
+    assert.equal(units.metersToCanvasFraction(-1), 0);
+    assert.equal(units.metersToCanvasFraction(NaN), 0);
+    assert.equal(units.canvasFractionToMeters(0.1), 2);
+    assert.equal(units.canvasFractionToMeters(Infinity), 0);
+    assert.equal(units.metersToPixels(2, 800), 80);
+    assert.equal(units.metersToPixels(2, 0), 0);
+    assert.equal(units.metersToPixels(NaN, 800), 0);
+  });
+
+  // --- assets/geometryHelpers.js -------------------------------------------
+  await test('geometry helpers: clamps, orientation transforms, and segment distance remain exact', async () => {
+    const geometry = await importAsEsm('assets/geometryHelpers.js');
+    assert.equal(geometry.clampNormalizedCoordinate(NaN), 0.5);
+    assert.equal(geometry.clampNormalizedCoordinate(0), 0.02);
+    assert.equal(geometry.clampNormalizedCoordinate(1), 0.98);
+    assert.equal(geometry.clampNormalizedCoordinate(0.4), 0.4);
+    assert.deepEqual(geometry.sanitizeNormalizedPoint(null), { x: 0.5, y: 0.5 });
+    assert.deepEqual(geometry.sanitizeNormalizedPoint('bad'), { x: 0.5, y: 0.5 });
+    assert.deepEqual(
+      geometry.sanitizeNormalizedPoint({ x: 0.3, y: 2, speedMultiplier: 1.5 }),
+      { x: 0.3, y: 0.98, speedMultiplier: 1.5 },
+    );
+    assert.deepEqual(
+      geometry.sanitizeNormalizedPoint({ x: NaN, y: 0.7, speedMultiplier: Infinity }),
+      { x: 0.5, y: 0.7 },
+    );
+    assert.deepEqual(
+      geometry.transformPointForOrientation({ x: 0.3, y: 0.7 }, 'landscape'),
+      { x: 0.7, y: 0.7 },
+    );
+    assert.deepEqual(
+      geometry.transformPointForOrientation({ x: 0.3, y: 0.7 }, 'portrait'),
+      { x: 0.3, y: 0.7 },
+    );
+    assert.deepEqual(
+      geometry.transformPointFromOrientation({ x: 0.7, y: 0.3 }, 'landscape'),
+      { x: 0.7, y: 0.7 },
+    );
+    assert.equal(
+      geometry.distanceSquaredToSegment({ x: 1, y: 1 }, { x: 0, y: 0 }, { x: 0, y: 0 }),
+      2,
+    );
+    assert.equal(
+      geometry.distanceSquaredToSegment({ x: 5, y: 1 }, { x: 0, y: 0 }, { x: 2, y: 0 }),
+      10,
+    );
+    assert.equal(
+      geometry.distanceSquaredToSegment({ x: 1, y: 1 }, { x: 0, y: 0 }, { x: 2, y: 0 }),
+      1,
+    );
+  });
+
+  // --- assets/playfield/constants.js and utils -----------------------------
+  await test('playfield constants, easing, and combat-number trimming remain exact', async () => {
+    const constants = await importAsEsm('assets/playfield/constants.js');
+    assert.equal(constants.PLAYFIELD_VIEW_DRAG_THRESHOLD, 6);
+    assert.equal(constants.PLAYFIELD_VIEW_PAN_MARGIN_METERS, 4);
+    assert.deepEqual(
+      [constants.PI, constants.HALF_PI, constants.TWO_PI, constants.PI_OVER_6],
+      [Math.PI, Math.PI / 2, Math.PI * 2, Math.PI / 6],
+    );
+    const mathUtils = await importAsEsm('assets/playfield/utils/math.js');
+    assert.equal(mathUtils.easeInCubic(0.5), 0.125);
+    assert.equal(mathUtils.easeInCubic(-1), 0);
+    assert.equal(mathUtils.easeInCubic(2), 1);
+    assert.equal(mathUtils.easeOutCubic(0.5), 0.875);
+    assert.equal(mathUtils.easeOutCubic(2), 1);
+    // Facade harness: identity formatting stub exposes the exact trimming regexes.
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thero-unit-test-combat-format-'));
+    fs.writeFileSync(path.join(tmpDir, 'package.json'), JSON.stringify({ type: 'module' }));
+    const facadeDest = path.join(tmpDir, 'assets', 'playfield', 'utils', 'formatting.js');
+    const coreDest = path.join(tmpDir, 'scripts', 'core', 'formatting.js');
+    fs.mkdirSync(path.dirname(facadeDest), { recursive: true });
+    fs.mkdirSync(path.dirname(coreDest), { recursive: true });
+    fs.copyFileSync(
+      path.join(rootDir, 'assets', 'playfield', 'utils', 'formatting.js'),
+      facadeDest,
+    );
+    fs.writeFileSync(
+      coreDest,
+      'export function formatGameNumber(value) { return value; }',
+    );
+    const facade = await import(pathToFileURL(facadeDest).href);
+    assert.equal(facade.formatCombatNumber('1.50'), '1.5');
+    assert.equal(facade.formatCombatNumber('2.00'), '2');
+    assert.equal(facade.formatCombatNumber('1.50 × 10^5'), '1.5 × 10^5');
+    assert.equal(facade.formatCombatNumber('2.00 × 10^5'), '2 × 10^5');
+    assert.equal(facade.formatCombatNumber('12.34'), '12.34');
+    assert.equal(facade.formatCombatNumber(7), 7);
+  });
+
+  // --- scripts/core/mathUtils.js -------------------------------------------
+  await test('math utils: clamp variants, lerp, and seeded random range remain exact', async () => {
+    const mathUtils = await importAsEsm('scripts/core/mathUtils.js');
+    assert.equal(mathUtils.clamp(5, 0, 3), 3);
+    assert.equal(mathUtils.clamp(-5, 0, 3), 0);
+    // Pre-existing behavior: plain clamp propagates NaN through min/max.
+    assert.ok(Number.isNaN(mathUtils.clamp(NaN, 0, 3)));
+    assert.equal(mathUtils.clampSafe(NaN, 0, 3), 0);
+    assert.equal(mathUtils.clampSafe(5, 0, 3), 3);
+    assert.equal(mathUtils.lerp(2, 6, 0.25), 3);
+    assert.equal(mathUtils.lerp(2, 6, 2), 10);
+    const originalRandom = Math.random;
+    try {
+      Math.random = () => 0.5;
+      assert.equal(mathUtils.randomBetween(2, 6), 4);
+    } finally {
+      Math.random = originalRandom;
+    }
+  });
+
+  // --- scripts/core/mathTokens.js ------------------------------------------
+  await test('math tokens: regex escaping and equation tokenization remain exact', async () => {
+    const tokens = await importAsEsm('scripts/core/mathTokens.js');
+    assert.equal(tokens.escapeRegExp(42), '');
+    // Pre-existing behavior: the malformed escape class only matches a special
+    // character when it is immediately followed by a backslash and ']', so
+    // typical symbols pass through unescaped.
+    assert.equal(tokens.escapeRegExp('a+b*c'), 'a+b*c');
+    assert.equal(tokens.escapeRegExp('x^2'), 'x^2');
+    assert.equal(tokens.escapeRegExp(String.raw`a+\]b`), String.raw`a\+\]b`);
+    assert.deepEqual(tokens.tokenizeEquationParts('', [{ key: 'a', symbol: 'A' }]), [
+      { text: '', variableKey: null },
+    ]);
+    assert.deepEqual(tokens.tokenizeEquationParts('α = Atk × Spd'), [
+      { text: 'α = Atk × Spd', variableKey: null },
+    ]);
+    assert.deepEqual(tokens.tokenizeEquationParts('α = Atk × Spd', [
+      { key: 'atk', symbol: 'Atk' },
+      { key: 'speed', symbol: 'Spd' },
+      null,
+      { key: 'ghost', symbol: '' },
+    ]), [
+      { text: 'α = ', variableKey: null },
+      { text: 'Atk', variableKey: 'atk' },
+      { text: ' × ', variableKey: null },
+      { text: 'Spd', variableKey: 'speed' },
+    ]);
+    assert.deepEqual(tokens.tokenizeEquationParts('Spd!', [{ key: 'speed', symbol: 'Spd' }]), [
+      { text: 'Spd', variableKey: 'speed' },
+      { text: '!', variableKey: null },
+    ]);
+  });
+
+  // --- assets/formatHelpers.js ---------------------------------------------
+  await test('format helpers: subscripts, durations, rewards, and relative time remain exact', async () => {
+    const helpers = await importAsEsm('assets/formatHelpers.js');
+    assert.equal(helpers.toSubscriptNumber(12), '₁₂');
+    assert.equal(helpers.toSubscriptNumber(NaN), '₀');
+    assert.equal(helpers.toSubscriptNumber(-3), '₀');
+    assert.equal(helpers.formatGlyphLabel('ℵ', 4.9), 'ℵ₄');
+    assert.equal(helpers.formatAlephLabel(0), 'ℵ₀');
+    assert.equal(helpers.formatDuration(NaN), '—');
+    assert.equal(helpers.formatDuration(-1), '—');
+    assert.equal(helpers.formatDuration(150), '2m 30s');
+    assert.equal(helpers.formatDuration(120), '2m');
+    assert.equal(helpers.formatDuration(45), '45s');
+    assert.equal(
+      helpers.formatRewards(100, 2.6, NaN, (value) => `fmt:${value}`),
+      'fmt:100 Σ · +3 Motes/min',
+    );
+    assert.equal(helpers.formatRewards(NaN, NaN, NaN, () => ''), '—');
+    const originalNow = Date.now;
+    try {
+      Date.now = () => 1_000_000;
+      assert.equal(helpers.formatRelativeTime(NaN), null);
+      assert.equal(helpers.formatRelativeTime(1_000_500), 'soon');
+      assert.equal(helpers.formatRelativeTime(999_000), 'just now');
+      assert.equal(helpers.formatRelativeTime(990_000), '10s ago');
+      assert.equal(helpers.formatRelativeTime(1_000_000 - 120_000), '2m ago');
+      assert.equal(helpers.formatRelativeTime(1_000_000 - 2 * 3_600_000), '2h ago');
+      assert.equal(helpers.formatRelativeTime(1_000_000 - 48 * 3_600_000), '2d ago');
+    } finally {
+      Date.now = originalNow;
+    }
+  });
+
+  // --- assets/waveEncoder.js -----------------------------------------------
+  await test('wave encoder: compact parsing preserves groups, boss adjustment, and letter gate', async () => {
+    const encoder = await importAsEsm('assets/waveEncoder.js');
+    const waves = encoder.parseCompactWaveString('1:10A1e2+6B5e2/1.5|2:15B5e3/1.2/0.5|3:20C1e4/1.0/0.3/1e5');
+    assert.equal(waves.length, 3);
+    const [first, second, third] = waves;
+    assert.equal(first.count, 16);
+    assert.equal(first.minionCount, 16);
+    assert.equal(first.interval, 1.5);
+    assert.deepEqual(first.enemyGroups.map(({ count, hp, speed, reward, enemyType }) => ({
+      count, hp, speed, reward, enemyType,
+    })), [
+      { count: 10, hp: 100, speed: 0.05, reward: 10, enemyType: 'A' },
+      { count: 6, hp: 500, speed: 0.045, reward: 50, enemyType: 'B' },
+    ]);
+    assert.equal(first.hp, 100);
+    assert.equal(first.codexId, 'etype');
+    assert.equal('delay' in first, false);
+    assert.equal(second.delay, 0.5);
+    assert.equal(third.delay, 0.3);
+    assert.equal(third.boss.hp, 100000);
+    assert.equal(third.boss.reward, 15000);
+    assert.equal(third.boss.speed, (55 / 1000) * 0.5);
+    assert.equal(third.boss.symbol, 'C');
+    // Boss waves reserve one slot from the last group.
+    assert.equal(third.enemyGroups[0].count, 19);
+    assert.equal(third.minionCount, 19);
+    assert.equal(third.count, 20);
+    // Letters beyond O exist in ENEMY_TYPES but are rejected by the group regex.
+    assert.equal(encoder.ENEMY_TYPES.R.id, 'nullifier');
+    assert.deepEqual(encoder.parseCompactWaveString('1:10R1e2/1.5'), []);
+    assert.deepEqual(encoder.parseCompactWaveString(null), []);
+    assert.deepEqual(encoder.parseCompactWaveString('no-colon'), []);
+  });
+
+  await test('wave encoder: encoding, defaults, and validation preserve legacy behavior', async () => {
+    const encoder = await importAsEsm('assets/waveEncoder.js');
+    const encoded = encoder.encodeWavesToCompact([
+      {
+        enemyGroups: [
+          { count: 10, hp: 100, enemyType: 'A' },
+          { count: 6, hp: 500, codexId: 'divisor' },
+        ],
+        interval: 1.5,
+      },
+      { count: 15, hp: 5000, codexId: 'divisor', interval: 1.2, delay: 0.5 },
+      {
+        count: 20,
+        hp: 12345,
+        codexId: 'prime',
+        interval: 1,
+        boss: { hp: 100000 },
+      },
+    ]);
+    // Pre-existing behavior: a boss wave without an authored delay writes the
+    // zero delay slot twice, which shifts the boss HP out of the parser's
+    // four-part destructuring and silently drops the boss on round trip.
+    assert.equal(encoded, '1:10A1e2+6B5e2/1.5|2:15B5e3/1.2/0.5|3:21C1.23e4/1/0/0/1e5');
+    assert.equal(encoder.encodeWavesToCompact([]), '');
+    assert.equal(encoder.encodeWavesToCompact([{ count: 0, hp: 5, codexId: 'prime', interval: 1 }]), '');
+    const roundTrip = encoder.parseCompactWaveString(encoded);
+    assert.equal(roundTrip.length, 3);
+    assert.equal(roundTrip[2].boss, undefined);
+    assert.equal(roundTrip[2].count, 21);
+    const defaults = encoder.createDefaultWaveString(1);
+    assert.equal(defaults.split('|').length, 5);
+    assert.equal(defaults.split('|')[0], '1:8A1e2/1.5');
+    assert.equal(encoder.createDefaultWaveString(0), '');
+    const valid = encoder.validateWaveString('1:10A1e2/1.5');
+    assert.deepEqual(valid, { valid: true, errors: [] });
+    const invalid = encoder.validateWaveString('1:10R1e2/0');
+    assert.equal(invalid.valid, false);
+    assert.deepEqual(invalid.errors, [
+      "Wave 1: Invalid group format '10R1e2' (expected: [Count][EnemyType][Mantissa]e[Exponent])",
+      "Wave 1: Invalid interval '0' (must be positive number)",
+    ]);
+    assert.equal(encoder.validateWaveString('').valid, false);
+    assert.equal(encoder.validateWaveString('nocolon').valid, false);
+  });
+
+  // --- scripts/features/towers/alephChain.js -------------------------------
+  await test('aleph chain registry: normalization, squared chaining, and upgrades remain exact', async () => {
+    const chain = await importAsEsm('scripts/features/towers/alephChain.js');
+    assert.deepEqual(chain.ALEPH_CHAIN_DEFAULT_UPGRADES, { x: 1, y: 1, z: 3 });
+    assert.equal(Object.isFrozen(chain.ALEPH_CHAIN_DEFAULT_UPGRADES), true);
+    const registry = chain.createAlephChainRegistry({ upgrades: { x: -2, y: 2.5, z: 5.9 } });
+    assert.equal(registry.getRangeMultiplier(), 1);
+    assert.equal(registry.getSpeedMultiplier(), 2.5);
+    assert.equal(registry.getLinkCount(), 5);
+    assert.equal(registry.registerTower('', 5), null);
+    const firstState = registry.registerTower('t1', 3);
+    assert.deepEqual(firstState, {
+      towerId: 't1', index: 0, baseDamage: 3, totalDamage: 3,
+      rangeMultiplier: 1, speedMultiplier: 2.5, linkCount: 5,
+    });
+    registry.registerTower('t2', 10);
+    registry.registerTower('t3', NaN);
+    assert.equal(registry.getState('t2').totalDamage, 9);
+    assert.equal(registry.getState('t3').totalDamage, 81);
+    assert.equal(registry.getState('t3').baseDamage, 0);
+    registry.registerTower('t1', 2);
+    assert.equal(registry.getState('t3').totalDamage, 16);
+    registry.unregisterTower('t2');
+    assert.equal(registry.getState('t3').totalDamage, 4);
+    registry.setUpgrades({ z: 0.5 });
+    assert.equal(registry.getLinkCount(), 1);
+    assert.equal(registry.getSpeedMultiplier(), 2.5);
+    const overflow = chain.createAlephChainRegistry();
+    overflow.registerTower('big', 1e200);
+    overflow.registerTower('next', 1);
+    assert.equal(overflow.getState('next').totalDamage, Number.MAX_VALUE);
+    const copies = registry.getAllStates();
+    copies.clear();
+    assert.equal(registry.getAllStates().size, 2);
+    registry.reset();
+    assert.equal(registry.getAllStates().size, 0);
+    assert.equal(registry.getState('t1'), null);
+  });
+
   // --- assets/towerEquations/index.js ------------------------------------
   await test('tower equation index: registry preserves all 27 keys, order, and imported identities', async () => {
     const { registryModule, sourceById } = await importTowerEquationIndexModule();

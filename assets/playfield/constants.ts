@@ -2,6 +2,7 @@
 export const PLAYFIELD_VIEW_DRAG_THRESHOLD = 6;
 // Additional margin (in meters) used when clamping camera panning at playfield edges.
 export const PLAYFIELD_VIEW_PAN_MARGIN_METERS = 4;
+
 // Base circle constants shared by playfield UI and visual systems.
 export const PI = Math.PI;
 export const HALF_PI = Math.PI / 2;
