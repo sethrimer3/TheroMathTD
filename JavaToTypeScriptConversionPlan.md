@@ -19,7 +19,7 @@ This file serves four functions:
 
 | Item | Current state |
 |---|---|
-| Repository baseline | Build 747 planning update based on `main` at `0802d21`, after the equipment/gem retirement merge `c96df03` |
+| Repository baseline | Build 748 planning update based on `main` at `0802d21`, after the equipment/gem retirement merge `c96df03` |
 | Completed migration history | Phases 0-20 remain complete; historical phase identities are preserved |
 | Next authorized implementation | **Phase 21 only:** `assets/towerEquations/advanced/rhoEquation.js` -> `.ts` |
 | Active authored modules | 234 total: 60 TypeScript and 174 JavaScript |
@@ -1215,8 +1215,8 @@ After Phases 17–20, Rho is the smallest remaining advanced definition by autho
 - Added the current migration dashboard, explicit replan triggers, a decision-status ledger, and an implementation-ready Phase 21 execution card.
 - Added `scripts/check-migration-roadmap.cjs` and `npm run check:migration-roadmap` to validate the static runtime graph, exact path assignments, duplicate coverage, shared count markers, and per-phase module totals.
 - Kept Phase 21 authorized but not started; no production module was migrated.
-- Incremented the build number once to Build 747 for this committed planning/tooling change.
-- Validation results are recorded when this branch completes its full verification gate.
+- Build 747 records the auto-synced planning/tooling change; Build 748 records the final checker correction and build-gate integration, preserving the required increment for both commits.
+- Validation completed on Build 748: `npm run check:migration-roadmap` passed with 60 TypeScript sources, 60 generated siblings, 174 active JavaScript modules, and 45 decision candidates; `npm run typecheck`, `npm run build`, `npm run lint`, `npm run test:unit` (159/159 plus retired-Spire checks), `npm test`, and `git diff --check` passed. The unit suite emitted its expected malformed-JSON diagnostic while returning exit code 0.
 
 ### 2026-07-13 — Migration plan established
 
