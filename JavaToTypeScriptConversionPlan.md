@@ -20,13 +20,14 @@ This file serves four functions:
 
 | Item | Current state |
 |---|---|
-| Repository baseline | Build 752 Phase 21 completion on `codex/phase-21-rho-equation`, based on roadmap commit `ec3a9e3` |
+| Repository baseline | Build 753 on `main`, including the completed Phase 21 implementation and reinforced direct-to-`main` workflow |
 | Completed migration history | Phases 0-21 remain complete; historical phase identities are preserved |
 | Next authorized implementation | **Phase 22 only:** Kappa -> Lambda -> Mu -> Nu -> Xi equation chain |
+| Delivery branch | Work directly on `main`; create or switch to another branch only when the user explicitly requests it |
 | Active authored modules | 234 total: 61 TypeScript and 173 JavaScript |
 | Compatibility output | 61 generated `.js` siblings; they are runtime output, not backlog |
 | Decision candidates | 45 unreachable authored `.js` files requiring retirement, integration, or archival decisions |
-| Long-range sequence | Phases 21-55; Phase 54 is an extraction gate and assigns no backlog module |
+| Long-range sequence | Phases 22-55; Phase 54 is an extraction gate and assigns no backlog module |
 | Mechanical check | `npm run check:migration-roadmap` validates reachability, classifications, duplicate assignments, totals, and per-phase counts |
 
 The dashboard is the fast orientation surface. The historical ledger remains append-only evidence, while [`docs/TypeScriptMigrationRoadmapInventory.md`](docs/TypeScriptMigrationRoadmapInventory.md) is authoritative for exact future file assignments. Re-run the mechanical check and re-inventory the affected phases before changing any dashboard count.
@@ -62,10 +63,11 @@ Every AI agent performing TypeScript migration work must read this file before e
    - relevant subsystem `agent.md` files
    - `docs/JAVASCRIPT_MODULE_SYSTEM.md`
    - this conversion plan
-2. Inspect the current repository rather than relying solely on this document. This plan may lag behind a recent commit.
-3. Run the available baseline commands and record their results before making changes.
-4. Mark the active phase as **IN PROGRESS** in the Migration Ledger.
-5. Add the start date, intended scope, and any necessary deviations to the active phase entry.
+2. Work directly on `main` unless the user explicitly requests another branch. Fetch `origin`, verify that local `main` is clean and not behind or diverged, and stop for reconciliation rather than creating a phase branch.
+3. Inspect the current repository rather than relying solely on this document. This plan may lag behind a recent commit.
+4. Run the available baseline commands and record their results before making changes.
+5. Mark the active phase as **IN PROGRESS** in the Migration Ledger.
+6. Add the start date, intended scope, and any necessary deviations to the active phase entry.
 
 ### During implementation
 
@@ -79,7 +81,7 @@ Every AI agent performing TypeScript migration work must read this file before e
 
 ### After implementation
 
-Before reporting completion, update this document in the same branch or commit series:
+Before reporting completion, update this document in the same commit series on `main`, or on another branch only when the user explicitly requested that branch:
 
 1. Change the phase status to **COMPLETE**, **PARTIAL**, or **BLOCKED**.
 2. Record the exact files converted, created, deleted, or compatibility-edited.

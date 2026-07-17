@@ -9,9 +9,9 @@ This appendix is the mechanically checked coverage record for the long-range roa
 
 **Inventory date:** 2026-07-16
 
-**Inventory base:** Phase 21 branch from `ec3a9e3`, after the equipment/gem retirement consolidation `c96df03`
+**Inventory base:** `main` after the completed Phase 21 implementation, based on roadmap commit `ec3a9e3` and equipment/gem retirement consolidation `c96df03`
 
-**Planning branch:** `codex/phase-21-rho-equation` (Build 752)
+**Delivery branch:** `main` (Build 753); do not create a phase branch unless the user explicitly requests one
 
 **Runtime root:** `index.html` -> `assets/main.js`
 

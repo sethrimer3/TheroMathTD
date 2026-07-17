@@ -80,7 +80,7 @@ conventions for all AI collaborators working anywhere inside this repository.
 7. **Build numbering:** Increment the build number in `assets/buildInfo.js` by `+1` for every committed change and lead your change reports with the updated build number.
 
 ## Workflow Expectations
-- **Branching:** Work on feature branches; keep commits atomic with clear messages.
+- **Branching:** Work directly on `main` and keep commits atomic with clear messages. Before editing, fetch `origin` and verify that local `main` is clean and not behind or diverged. Do not create or switch to a feature branch unless the user explicitly requests one.
 - **Testing:** Run project checks or custom scripts before submitting major
   changes. Mention any manual playtesting performed on desktop/mobile targets.
 - **PR descriptions:** Summarize gameplay effects, math changes, and UI adjustments.
