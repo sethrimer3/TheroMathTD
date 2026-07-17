@@ -175,7 +175,7 @@ The original statement that no conversion phase was complete is superseded by th
 | 18 | Phi advanced equation definition (`assets/towerEquations/advanced/phiEquation.js`) | COMPLETE | See Phase 18 section and Implementation Log entry below |
 | 19 | Upsilon advanced equation definition (`assets/towerEquations/advanced/upsilonEquation.js`) | COMPLETE | See Phase 19 section and Implementation Log entry below |
 | 20 | Tau advanced equation definition (`assets/towerEquations/advanced/tauEquation.js`) | COMPLETE | See Phase 20 section and Implementation Log entry below |
-| 21 | Rho advanced equation definition (`assets/towerEquations/advanced/rhoEquation.js`) | AUTHORIZED, NOT STARTED | See the Phase 21 execution card; no implementation is included in this planning update |
+| 21 | Rho advanced equation definition (`assets/towerEquations/advanced/rhoEquation.js`) | IN PROGRESS | Started 2026-07-16 on `codex/phase-21-rho-equation` from `ec3a9e3`; see the Phase 21 execution card |
 
 ---
 
@@ -378,6 +378,8 @@ Only Phase 21 is authorized. Later phases are sequencing hypotheses, not impleme
 #### Phase 21 execution card
 
 **Intent:** behavior-preserving conversion of the Rho enemy-yield equation. This phase proves that the shared presenter contract can type an upgrade-state-backed definition with an untrusted dynamic context before the five-file recursive equation chain begins.
+
+**Start record (2026-07-16):** branch `codex/phase-21-rho-equation` at baseline `ec3a9e3`; clean worktree; fetched branch synchronized with its upstream and four commits ahead of unchanged `origin/main`; Build 750 baseline. The roadmap checker reported 60 TypeScript sources, 60 generated siblings, 174 active JavaScript modules, and 45 decision candidates. Typecheck, build, lint, 159/159 unit tests plus retired-Spire checks, smoke test, and diff checks passed; the unit suite emitted its expected malformed-JSON diagnostic with exit code 0. Exact authorized scope and exclusions remain unchanged.
 
 **Source conversion:** replace authored `assets/towerEquations/advanced/rhoEquation.js` with strict `assets/towerEquations/advanced/rhoEquation.ts`. `npm run build` must regenerate the same-path `.js` compatibility sibling. Do not hand-edit the generated sibling.
 
