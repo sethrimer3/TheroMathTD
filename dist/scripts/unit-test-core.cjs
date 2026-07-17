@@ -1597,6 +1597,213 @@ async function run() {
     }
   });
 
+  // --- assets/towerEquations/advanced/rhoEquation.js --------------------
+  await test('Rho equation: metadata, costs, variable order, and imported formatting remain exact', async () => {
+    const { equation: rho, formatCalls } = await importAdvancedEquationModule('rho');
+    assert.equal(rho.mathSymbol, String.raw`\rho`);
+    assert.equal(
+      rho.baseEquation,
+      String.raw`\( \rho = \text{enemy}_{\text{þ}} \times \text{rng} \)`,
+    );
+    assert.deepEqual(rho.variables.map(({ key, glyphLabel, upgradable }) => ({
+      key, glyphLabel, upgradable,
+    })), [
+      { key: 'enemyThero', glyphLabel: 'ℵ₁', upgradable: true },
+      { key: 'rangeMeters', glyphLabel: 'ℵ₂', upgradable: true },
+    ]);
+    const [enemyThero, rangeMeters] = rho.variables;
+    assert.deepEqual([
+      enemyThero.cost(-3), enemyThero.cost(0), enemyThero.cost(2.5),
+      rangeMeters.cost(-3), rangeMeters.cost(0), rangeMeters.cost(2.5),
+    ], [2, 4, 9, 2, 3, 8]);
+    assert.equal(enemyThero.format(-2), 'decimal:0:3×');
+    assert.equal(rangeMeters.format(4.5), 'decimal:4.5:2 m');
+    assert.deepEqual(formatCalls, [
+      ['decimal', 0, 3],
+      ['decimal', 4.5, 2],
+    ]);
+  });
+
+  await test('Rho equation: upgrade-state reads and prestige formulas preserve coercion and helper timing', async () => {
+    const { equation: rho, blueprintContext } = await importAdvancedEquationModule('rho');
+    const [enemyThero, rangeMeters] = rho.variables;
+    const blueprint = { id: 'rho-blueprint' };
+    const helperCalls = [];
+    blueprintContext.ensureTowerUpgradeState = (towerId, receivedBlueprint) => {
+      helperCalls.push([towerId, receivedBlueprint]);
+      return {
+        variables: {
+          enemyThero: { level: '2.5' },
+          rangeMeters: { level: 4 },
+        },
+      };
+    };
+    assert.equal(enemyThero.computeValue({
+      towerId: 'rho', blueprint, dynamicContext: { prestige: false, unspentThero: 100 },
+    }), 3.5);
+    assert.equal(enemyThero.computeValue({
+      towerId: 'rho', blueprint, dynamicContext: { prestige: true, unspentThero: 100 },
+    }), 7);
+    assert.equal(enemyThero.computeValue({
+      towerId: 'rho', blueprint, dynamicContext: { prestige: 1, unspentThero: 100 },
+    }), 3.5);
+    assert.equal(rangeMeters.computeValue({
+      towerId: 'rho', blueprint, dynamicContext: { prestige: false },
+    }), 3.8);
+    assert.equal(rangeMeters.computeValue({
+      towerId: 'rho', blueprint, dynamicContext: { prestige: true },
+    }), 5);
+    assert.equal(helperCalls.length, 5);
+    assert.deepEqual(helperCalls[0], ['rho', blueprint]);
+
+    let prestigeReads = 0;
+    let unspentReads = 0;
+    const changingContext = {
+      get prestige() {
+        prestigeReads += 1;
+        return true;
+      },
+      get unspentThero() {
+        unspentReads += 1;
+        return unspentReads === 1 ? 100 : '1000';
+      },
+    };
+    assert.equal(enemyThero.computeValue({
+      towerId: 'rho', blueprint, dynamicContext: changingContext,
+    }), 10.5);
+    assert.equal(prestigeReads, 1);
+    assert.equal(unspentReads, 2);
+
+    blueprintContext.ensureTowerUpgradeState = null;
+    assert.equal(enemyThero.computeValue({
+      towerId: 'rho', blueprint, dynamicContext: { prestige: true, unspentThero: 10 },
+    }), 1);
+    assert.equal(rangeMeters.computeValue({
+      towerId: 'rho', blueprint, dynamicContext: null,
+    }), 3);
+  });
+
+  await test('Rho equation: malformed levels and unspent-Thero boundaries retain exact fallbacks', async () => {
+    const { equation: rho, blueprintContext } = await importAdvancedEquationModule('rho');
+    const [enemyThero] = rho.variables;
+    const compute = (dynamicContext) => enemyThero.computeValue({
+      towerId: 'rho', blueprint: {}, dynamicContext,
+    });
+    for (const state of [
+      null,
+      {},
+      { variables: null },
+      { variables: {} },
+      { variables: { enemyThero: null } },
+      { variables: { enemyThero: { level: -2 } } },
+      { variables: { enemyThero: { level: Infinity } } },
+      { variables: { enemyThero: { level: 'invalid' } } },
+    ]) {
+      blueprintContext.ensureTowerUpgradeState = () => state;
+      assert.equal(compute({ prestige: false }), 1);
+    }
+    blueprintContext.ensureTowerUpgradeState = () => ({
+      variables: { enemyThero: { level: 2 } },
+    });
+    for (const unspentThero of [undefined, null, '100', NaN, -10, 0, 1, Infinity]) {
+      assert.equal(compute({ prestige: true, unspentThero }), 0);
+    }
+    assert.equal(compute({ prestige: true, unspentThero: 10 }), 3);
+    assert.equal(compute({ prestige: true, unspentThero: 1000 }), 9);
+    assert.equal(compute(null), 3);
+    assert.equal(compute(7), 3);
+  });
+
+  await test('Rho equation: enemy-yield sub-equations preserve branches and formatter order', async () => {
+    const { equation: rho, formatCalls } = await importAdvancedEquationModule('rho');
+    const [enemyThero] = rho.variables;
+    assert.deepEqual(enemyThero.getSubEquations({
+      level: 2,
+      value: NaN,
+      dynamicContext: { prestige: false, unspentThero: 100 },
+    }), [
+      { expression: String.raw`\( \text{enemy}_{\text{þ}} = 1 + \aleph_{1} \)` },
+      {
+        values: String.raw`\( decimal:3:3 = 1 + whole:2 \)`,
+        variant: 'values',
+      },
+    ]);
+    assert.deepEqual(formatCalls, [
+      ['decimal', 3, 3],
+      ['whole', 2],
+    ]);
+    formatCalls.length = 0;
+    assert.deepEqual(enemyThero.getSubEquations({
+      level: 2,
+      value: NaN,
+      dynamicContext: { prestige: true, unspentThero: 100 },
+    }), [
+      { expression: String.raw`\( \text{enemy}_{\text{þ}} = (1 + \aleph_{1}) \times \log_{10}(\text{unspent}_{\text{þ}}) \)` },
+      {
+        values: String.raw`\( decimal:6:3 = decimal:3:3 \times \log_{10}(game:100) \)`,
+        variant: 'values',
+      },
+    ]);
+    assert.deepEqual(formatCalls, [
+      ['decimal', 6, 3],
+      ['decimal', 3, 3],
+      ['game', 100],
+    ]);
+  });
+
+  await test('Rho equation: range sub-equations retain prestige coefficients and finite fallbacks', async () => {
+    const { equation: rho, formatCalls } = await importAdvancedEquationModule('rho');
+    const [, rangeMeters] = rho.variables;
+    assert.deepEqual(rangeMeters.getSubEquations({
+      level: 4,
+      value: Infinity,
+      dynamicContext: { prestige: true },
+    }), [
+      { expression: String.raw`\( \text{rng} = 3 + decimal:0.5:1 \times \aleph_{2} \)` },
+      {
+        values: String.raw`\( decimal:5:2 = 3 + decimal:0.5:1 \times whole:4 \)`,
+        variant: 'values',
+      },
+    ]);
+    assert.deepEqual(formatCalls, [
+      ['decimal', 0.5, 1],
+      ['decimal', 5, 2],
+      ['whole', 4],
+    ]);
+    formatCalls.length = 0;
+    const standard = rangeMeters.getSubEquations({
+      level: Infinity,
+      value: -7,
+      dynamicContext: { prestige: 1 },
+    });
+    assert.equal(standard[0].expression, String.raw`\( \text{rng} = 3 + decimal:0.2:1 \times \aleph_{2} \)`);
+    assert.equal(standard[1].values, String.raw`\( decimal:-7:2 = 3 + decimal:0.2:1 \times whole:0 \)`);
+    assert.deepEqual(formatCalls, [
+      ['decimal', 0.2, 1],
+      ['decimal', -7, 2],
+      ['whole', 0],
+    ]);
+  });
+
+  await test('Rho equation: result and base-value formatting preserve number-only finite acceptance', async () => {
+    const { equation: rho } = await importAdvancedEquationModule('rho');
+    assert.equal(rho.computeResult({ enemyThero: 4, rangeMeters: 5 }), 20);
+    assert.equal(rho.computeResult({ enemyThero: -4, rangeMeters: 5 }), 0);
+    assert.equal(rho.computeResult({ enemyThero: '4', rangeMeters: 5 }), 0);
+    assert.equal(rho.computeResult({ enemyThero: 4, rangeMeters: Infinity }), 0);
+    const calls = [];
+    const output = rho.formatBaseEquationValues({
+      values: { enemyThero: 4, rangeMeters: -5 },
+      result: -20,
+      formatComponent(value) {
+        calls.push(value);
+        return `component:${value}`;
+      },
+    });
+    assert.equal(output, 'component:-20 = component:4 × component:0');
+    assert.deepEqual(calls, [-20, 4, 0]);
+  });
+
   // --- assets/towerEquations/advanced/sigmaEquation.js ------------------
   await test('Sigma equation: metadata, variable order, and dynamic stat precedence remain exact', async () => {
     const { equation: sigma } = await importAdvancedEquationModule('sigma');

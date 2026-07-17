@@ -2,38 +2,39 @@
 
 This appendix is the mechanically checked coverage record for the long-range roadmap in [`../JavaToTypeScriptConversionPlan.md`](../JavaToTypeScriptConversionPlan.md). It records the live source classification and assigns every active authored JavaScript module to one implementation phase. The phase order after Phase 21 is tentative.
 
-<!-- migration-roadmap-counts: ts=60 generated=60 active_js=174 candidates=45 -->
+<!-- migration-roadmap-counts: ts=61 generated=61 active_js=173 candidates=45 -->
+<!-- migration-roadmap-authorization: phase=22 -->
 
 ## Verified inventory
 
 **Inventory date:** 2026-07-16
 
-**Inventory base:** `main` at `0802d21`, after the equipment/gem retirement consolidation `c96df03`
+**Inventory base:** Phase 21 branch from `ec3a9e3`, after the equipment/gem retirement consolidation `c96df03`
 
-**Planning branch:** `codex/develop-typescript-conversion-plan` (Build 750)
+**Planning branch:** `codex/phase-21-rho-equation` (Build 752)
 
 **Runtime root:** `index.html` -> `assets/main.js`
 
 | Classification | Count | Treatment |
 |---|---:|---|
-| Authored TypeScript source | 60 | Converted; `.d.ts` files would be excluded, but none are present. |
-| Build-generated `.js` siblings of authored `.ts` | 60 | Runtime compatibility output; never count as backlog. |
-| Active authored JavaScript | 174 | Reachable from `assets/main.js` through static local imports; all assigned below. |
+| Authored TypeScript source | 61 | Converted; `.d.ts` files would be excluded, but none are present. |
+| Build-generated `.js` siblings of authored `.ts` | 61 | Runtime compatibility output; never count as backlog. |
+| Active authored JavaScript | 173 | Reachable from `assets/main.js` through static local imports; all assigned below. |
 | Intentionally preserved legacy JavaScript | 0 | The previously documented 19-file Terrarium legacy tree was deleted by `64ebc5e`; no surviving file has evidence strong enough for this category. |
 | Retirement/deletion candidates or ambiguous authored JavaScript | 45 | Not reachable from the browser entry graph; excluded pending a separate retirement audit. |
 | Generated/vendor/dependency/distribution material | Not counted | `node_modules/`, `dist/`, `build/`, source maps, dependencies, assets, fixtures, and non-source artifacts. |
 
-The repository therefore has 234 active authored JS/TS modules: 60 TypeScript plus 174 active JavaScript. The raw authored-language tree has 279 modules when the 45 decision candidates are included. Active conversion is 25.6% by module count (`60 / 234`). The supplemental line snapshot is 7,390 TypeScript lines and 82,547 active JavaScript lines; line counts are informative, not scheduling weights.
+The repository therefore has 234 active authored JS/TS modules: 61 TypeScript plus 173 active JavaScript. The raw authored-language tree has 279 modules when the 45 decision candidates are included. Active conversion is 26.1% by module count (`61 / 234`). The supplemental line snapshot is 7,568 TypeScript lines and 82,422 active JavaScript lines; line counts are informative, not scheduling weights.
 
 ## Method and limits
 
 1. Enumerated `assets/**/*.ts`, `scripts/**/*.ts`, `assets/**/*.js`, and `scripts/**/*.js`, excluding `node_modules/`, `dist/`, and `build/`.
 2. Removed every `.js` file with a same-path `.ts` sibling from the backlog.
 3. Parsed static relative `import`, side-effect `import`, and `export ... from` specifiers and traversed from `assets/main.js`.
-4. Verified all resolved edges exist. The traversal found 233 reachable runtime `.js` modules: 59 generated siblings plus 174 authored JavaScript modules. The sixtieth generated sibling, `assets/data/towers/types.js`, is type-only output and is correctly not imported at runtime.
+4. Verified all resolved edges exist. The traversal found 233 reachable runtime `.js` modules: 60 generated siblings plus 173 authored JavaScript modules. The sixty-first generated sibling, `assets/data/towers/types.js`, is type-only output and is correctly not imported at runtime.
 5. Searched the 45 unreachable files in tests, retirement documentation, configuration, HTML harnesses, and recent retirement commits. Static reachability cannot prove runtime intent, so those files remain decision candidates rather than being deleted or migrated.
 6. Read representative owners at every risk tier, including equation definitions, core utilities, config loading, save boundaries, tower modules, powder simulation, playfield systems/managers/renderers, `assets/playfield.js`, and `assets/main.js`.
-7. Added `npm run check:migration-roadmap`, which repeats the source enumeration and static traversal; compares active and candidate paths to these tables; rejects duplicate assignments; verifies machine markers and visible count statements; checks decision-group subtotals, the total assigned backlog, and every Phase 21-55 module count; and enforces Phase 21 as the sole authorization.
+7. Added `npm run check:migration-roadmap`, which repeats the source enumeration and static traversal; compares active and candidate paths to these tables; rejects duplicate assignments; verifies machine markers and visible count statements; checks decision-group subtotals, the total assigned backlog, and every remaining module count; and enforces the shared marker-named phase as the sole authorization.
 
 Limitations: the graph does not treat JSDoc `import()` references as runtime edges; the dynamic JSON-module constructor in `assets/gameplayConfigLoaders.js` loads data rather than authored JavaScript; ad-hoc HTML harnesses are not production entry roots; and future runtime registration could make a currently unreachable file relevant. These are reasons for a retirement audit, not reasons to inflate the active backlog.
 
@@ -60,7 +61,6 @@ Risk labels are relative migration risk: Low (pure/static), Medium (state or nar
 
 | Phase | Active authored JavaScript modules | Subsystem | Risk | Prerequisites | Notes |
 |---:|---|---|---|---|---|
-| 21 | `assets/towerEquations/advanced/rhoEquation.js` | Tower equation | Low-Medium | 8, 12, 16-20 | Authorized next; dynamic prestige/unspent-Thero boundary and deterministic formula tests. |
 | 22 | `assets/towerEquations/advanced/kappaEquation.js`<br>`assets/towerEquations/advanced/lambdaEquation.js`<br>`assets/towerEquations/advanced/muEquation.js`<br>`assets/towerEquations/advanced/nuEquation.js`<br>`assets/towerEquations/advanced/xiEquation.js` | Advanced equation dependency chain | Medium | 21 | One shared blueprint contract; migrate together to avoid duplicate context types. |
 | 23 | `assets/towerEquations/advanced/omicronEquation.js`<br>`assets/towerEquations/advanced/piEquation.js`<br>`assets/towerEquations/advanced/chiEquation.js`<br>`assets/towerEquations/advanced/psiEquation.js`<br>`assets/towerEquations/advanced/omegaEquation.js` | Advanced terminal equations | Medium | 22 | Characterize coercion, cross-tower lookup, cost curves, and formatter order. |
 | 24 | `assets/towerEquations/basicTowers.js`<br>`assets/towerEquations/infinityTower.js` | Foundational equation registries | Medium | 23 | Shared presenter/context contracts; broad registry consumer impact. |
@@ -112,10 +112,10 @@ Totals reconcile as 17 + 12 + 10 + 6 = 45.
 
 ## Mechanical reconciliation rules
 
-- Each of the 174 active authored `.js` paths appears in exactly one coverage row.
+- Each of the 173 active authored `.js` paths appears in exactly one coverage row.
 - No path with a same-path authored `.ts` sibling appears in the active coverage table.
 - The 45 decision candidates appear only in the retirement section and are excluded from phase totals.
-- Assigned phase counts sum to 174; Phase 54 adds no module and Phase 55 assigns only `assets/main.js`.
+- Assigned phase counts sum to 173; Phase 54 adds no module and Phase 55 assigns only `assets/main.js`.
 - No phase prerequisite cycle is intended: numeric prerequisites point backward; historical phases are already complete.
 - All implementation phases preserve `.js` import specifiers and the generated-sibling build architecture.
 - `npm run check:migration-roadmap` enforces these path and count invariants against the current checkout; a failing check is a replan trigger, not a reason to weaken the checker.

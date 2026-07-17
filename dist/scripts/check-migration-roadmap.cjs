@@ -153,6 +153,15 @@ function readCountMarker(markdown, label) {
   };
 }
 
+// Parse the sole phase authorized to follow the completed migration history.
+function readAuthorizationMarker(markdown, label) {
+  const match = markdown.match(/<!-- migration-roadmap-authorization: phase=(\d+) -->/);
+  if (!match) {
+    throw new Error(`Missing migration-roadmap-authorization marker in ${label}`);
+  }
+  return Number(match[1]);
+}
+
 // Parse phase assignments from the inventory table for cross-document count checks.
 function readInventoryPhaseCounts(activeSection) {
   const counts = new Map();
@@ -189,14 +198,18 @@ function readDecisionGroupCount(candidateSection) {
   return total;
 }
 
-// Parse the explicit module count embedded in each future-phase scope cell.
+// Parse the explicit module count embedded in each Phase 21-55 scope cell.
 function readPlanPhaseCounts(planMarkdown) {
   const counts = new Map();
   for (const line of planMarkdown.split(/\r?\n/)) {
     const phaseMatch = line.match(/^\|\s*(\d+)\s*\|/);
     if (
       !phaseMatch
-      || (!line.includes('**AUTHORIZED NEXT**') && !line.includes('**TENTATIVE'))
+      || (
+        !line.includes('**COMPLETE**')
+        && !line.includes('**AUTHORIZED NEXT**')
+        && !line.includes('**TENTATIVE')
+      )
       || Number(phaseMatch[1]) < 21
       || Number(phaseMatch[1]) > 55
     ) {
@@ -211,11 +224,15 @@ function readPlanPhaseCounts(planMarkdown) {
   return counts;
 }
 
-// Preserve exactly one implementation authorization while keeping later phases tentative.
-function verifyAuthorizationBoundary(planMarkdown) {
+// Preserve completed history, exactly one authorization, and tentative later phases.
+function verifyAuthorizationBoundary(planMarkdown, authorizedPhase) {
   const roadmapRows = planMarkdown.split(/\r?\n/).filter((line) => (
     /^\|\s*(?:2[1-9]|3\d|4\d|5[0-5])\s*\|/.test(line)
-    && (line.includes('**AUTHORIZED NEXT**') || line.includes('**TENTATIVE'))
+    && (
+      line.includes('**COMPLETE**')
+      || line.includes('**AUTHORIZED NEXT**')
+      || line.includes('**TENTATIVE')
+    )
   ));
   if (roadmapRows.length !== 35) {
     throw new Error(`Expected 35 Phase 21-55 roadmap rows, found ${roadmapRows.length}`);
@@ -223,8 +240,17 @@ function verifyAuthorizationBoundary(planMarkdown) {
   const authorized = roadmapRows
     .filter((line) => line.includes('**AUTHORIZED NEXT**'))
     .map((line) => Number(line.match(/^\|\s*(\d+)/)[1]));
-  if (authorized.length !== 1 || authorized[0] !== 21) {
-    throw new Error(`Exactly Phase 21 must be authorized; found ${authorized.join(', ') || 'none'}`);
+  if (authorized.length !== 1 || authorized[0] !== authorizedPhase) {
+    throw new Error(`Exactly Phase ${authorizedPhase} must be authorized; found ${authorized.join(', ') || 'none'}`);
+  }
+  for (const line of roadmapRows) {
+    const phase = Number(line.match(/^\|\s*(\d+)/)[1]);
+    if (phase < authorizedPhase && !line.includes('**COMPLETE**')) {
+      throw new Error(`Phase ${phase} precedes the authorization boundary but is not complete`);
+    }
+    if (phase > authorizedPhase && !line.includes('**TENTATIVE')) {
+      throw new Error(`Phase ${phase} follows the authorization boundary but is not tentative`);
+    }
   }
 }
 
@@ -283,6 +309,13 @@ for (const [label, marker] of [
   }
 }
 
+// Require both authoritative documents to name the same sole next authorization.
+const planAuthorizedPhase = readAuthorizationMarker(planMarkdown, 'main plan');
+const inventoryAuthorizedPhase = readAuthorizationMarker(inventoryMarkdown, 'inventory');
+if (planAuthorizedPhase !== inventoryAuthorizedPhase) {
+  throw new Error(`Authorization marker mismatch: plan=${planAuthorizedPhase}, inventory=${inventoryAuthorizedPhase}`);
+}
+
 // Protect the visible dashboard, summaries, and reconciliation rules from count drift.
 const activeTotal = actualCounts.ts + actualCounts.activeJs;
 const rawTotal = activeTotal + actualCounts.candidates;
@@ -293,7 +326,7 @@ const visibleCountStatements = [
   [planMarkdown, `| Decision candidates | ${actualCounts.candidates} unreachable authored \`.js\` files requiring retirement, integration, or archival decisions |`, 'Main dashboard candidate count'],
   [planMarkdown, `- **${actualCounts.activeJs} active authored \`.js\` modules**`, 'Main baseline active count'],
   [planMarkdown, `- **${activeTotal} active authored modules** in total, so active module-count conversion is **${conversionPercent}%** (\`${actualCounts.ts} / ${activeTotal}\`). The raw authored-language tree is ${rawTotal} modules when the ${actualCounts.candidates} decision candidates are included.`, 'Main baseline total'],
-  [planMarkdown, `Phases 21-55 cover all ${actualCounts.activeJs} active authored JavaScript modules.`, 'Main phase total'],
+  [planMarkdown, `Phases ${planAuthorizedPhase}-55 cover all ${actualCounts.activeJs} active authored JavaScript modules.`, 'Main phase total'],
   [inventoryMarkdown, `| Authored TypeScript source | ${actualCounts.ts} |`, 'Inventory TypeScript row'],
   [inventoryMarkdown, `| Build-generated \`.js\` siblings of authored \`.ts\` | ${actualCounts.generated} |`, 'Inventory generated row'],
   [inventoryMarkdown, `| Active authored JavaScript | ${actualCounts.activeJs} |`, 'Inventory active row'],
@@ -311,13 +344,18 @@ const declaredDecisionTotal = readDecisionGroupCount(candidateSection);
 if (declaredDecisionTotal !== actualCounts.candidates) {
   throw new Error(`Decision-group total mismatch: groups=${declaredDecisionTotal}, live=${actualCounts.candidates}`);
 }
-verifyAuthorizationBoundary(planMarkdown);
+verifyAuthorizationBoundary(planMarkdown, planAuthorizedPhase);
 
 // Require every conversion phase's advertised count to match its exact inventory row.
 const inventoryPhaseCounts = readInventoryPhaseCounts(activeSection);
 inventoryPhaseCounts.set(54, 0);
 const planPhaseCounts = readPlanPhaseCounts(planMarkdown);
-for (let phase = 21; phase <= 55; phase += 1) {
+for (const phase of inventoryPhaseCounts.keys()) {
+  if (phase < planAuthorizedPhase) {
+    throw new Error(`Completed Phase ${phase} must not remain in the active inventory`);
+  }
+}
+for (let phase = planAuthorizedPhase; phase <= 55; phase += 1) {
   if (!inventoryPhaseCounts.has(phase)) {
     throw new Error(`Inventory appendix has no assignment row or gate for Phase ${phase}`);
   }

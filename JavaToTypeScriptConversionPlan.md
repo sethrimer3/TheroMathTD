@@ -15,15 +15,16 @@ This file serves four functions:
 
 ## Current Migration Dashboard
 
-<!-- migration-roadmap-counts: ts=60 generated=60 active_js=174 candidates=45 -->
+<!-- migration-roadmap-counts: ts=61 generated=61 active_js=173 candidates=45 -->
+<!-- migration-roadmap-authorization: phase=22 -->
 
 | Item | Current state |
 |---|---|
-| Repository baseline | Build 750 planning update based on `main` at `0802d21`, after the equipment/gem retirement merge `c96df03` |
-| Completed migration history | Phases 0-20 remain complete; historical phase identities are preserved |
-| Next authorized implementation | **Phase 21 only:** `assets/towerEquations/advanced/rhoEquation.js` -> `.ts` |
-| Active authored modules | 234 total: 60 TypeScript and 174 JavaScript |
-| Compatibility output | 60 generated `.js` siblings; they are runtime output, not backlog |
+| Repository baseline | Build 752 Phase 21 completion on `codex/phase-21-rho-equation`, based on roadmap commit `ec3a9e3` |
+| Completed migration history | Phases 0-21 remain complete; historical phase identities are preserved |
+| Next authorized implementation | **Phase 22 only:** Kappa -> Lambda -> Mu -> Nu -> Xi equation chain |
+| Active authored modules | 234 total: 61 TypeScript and 173 JavaScript |
+| Compatibility output | 61 generated `.js` siblings; they are runtime output, not backlog |
 | Decision candidates | 45 unreachable authored `.js` files requiring retirement, integration, or archival decisions |
 | Long-range sequence | Phases 21-55; Phase 54 is an extraction gate and assigns no backlog module |
 | Mechanical check | `npm run check:migration-roadmap` validates reachability, classifications, duplicate assignments, totals, and per-phase counts |
@@ -109,15 +110,15 @@ The obsolete-Spire retirement is an intentional product change, not a general mi
 
 Inventory was originally recalculated from the live tree on **2026-07-16**, starting on `codex/phases-17-20-advanced-equations` at exact commit `2bad7891ca88baa20c1a084c31ecd939e11b4eca`, then continuing on the documentation-only branch `codex/typescript-migration-roadmap`. It was reconciled again after equipment/gem retirement merge `c96df03` and audited at `main` commit `0802d21`. The browser entry root is `index.html` -> `assets/main.js`.
 
-- **60 authored `.ts` modules** (excluding `.d.ts`; none exist).
-- **60 build-generated `.js` siblings** of those TypeScript modules. These are runtime output, not backlog.
-- **174 active authored `.js` modules**, verified reachable through static local imports from `assets/main.js`.
+- **61 authored `.ts` modules** (excluding `.d.ts`; none exist).
+- **61 build-generated `.js` siblings** of those TypeScript modules. These are runtime output, not backlog.
+- **173 active authored `.js` modules**, verified reachable through static local imports from `assets/main.js`.
 - **0 intentionally preserved legacy `.js` modules** with current repository evidence. The previously documented 19-file disabled Terrarium tree was deleted by `64ebc5e`.
 - **45 ambiguous or retirement/deletion-candidate `.js` modules**, all currently unreachable from the browser entry graph. They are excluded from the active backlog pending a separate decision.
-- **234 active authored modules** in total, so active module-count conversion is **25.6%** (`60 / 234`). The raw authored-language tree is 279 modules when the 45 decision candidates are included.
-- Supplemental authored-line snapshot: **7,390 TypeScript lines** and **82,547 active JavaScript lines**. Line counts do not represent migration difficulty.
+- **234 active authored modules** in total, so active module-count conversion is **26.1%** (`61 / 234`). The raw authored-language tree is 279 modules when the 45 decision candidates are included.
+- Supplemental authored-line snapshot: **7,568 TypeScript lines** and **82,422 active JavaScript lines**. Line counts do not represent migration difficulty.
 
-Method: recursively enumerate `assets/` and `scripts/`; exclude `node_modules/`, `dist/`, `build/`, generated output, dependencies, fixtures, and non-source material; remove each `.js` file with a same-path `.ts` sibling; parse static relative `import`/`export ... from` edges; traverse from `assets/main.js`; and audit unreachable files against tests, retirement documentation, HTML harnesses, and recent commits. The full classification, dependency evidence, 174-module coverage map, and 45-file retirement list are in [`docs/TypeScriptMigrationRoadmapInventory.md`](docs/TypeScriptMigrationRoadmapInventory.md). Run `npm run check:migration-roadmap` to verify that classification against the current checkout.
+Method: recursively enumerate `assets/` and `scripts/`; exclude `node_modules/`, `dist/`, `build/`, generated output, dependencies, fixtures, and non-source material; remove each `.js` file with a same-path `.ts` sibling; parse static relative `import`/`export ... from` edges; traverse from `assets/main.js`; and audit unreachable files against tests, retirement documentation, HTML harnesses, and recent commits. The full classification, dependency evidence, 173-module coverage map, and 45-file retirement list are in [`docs/TypeScriptMigrationRoadmapInventory.md`](docs/TypeScriptMigrationRoadmapInventory.md). Run `npm run check:migration-roadmap` to verify that classification against the current checkout.
 
 Phases 17–20 converted Sigma, Phi, Upsilon, and Tau in committed implementation `2bad789`; they are not prompt-only assignments. The retired `spireFloatingMenu` and `spireTabVisibility` TypeScript modules and the former Cognitive Realm typed state remain part of phase history but not the live source count.
 
@@ -175,13 +176,13 @@ The original statement that no conversion phase was complete is superseded by th
 | 18 | Phi advanced equation definition (`assets/towerEquations/advanced/phiEquation.js`) | COMPLETE | See Phase 18 section and Implementation Log entry below |
 | 19 | Upsilon advanced equation definition (`assets/towerEquations/advanced/upsilonEquation.js`) | COMPLETE | See Phase 19 section and Implementation Log entry below |
 | 20 | Tau advanced equation definition (`assets/towerEquations/advanced/tauEquation.js`) | COMPLETE | See Phase 20 section and Implementation Log entry below |
-| 21 | Rho advanced equation definition (`assets/towerEquations/advanced/rhoEquation.js`) | IN PROGRESS | Started 2026-07-16 on `codex/phase-21-rho-equation` from `ec3a9e3`; see the Phase 21 execution card |
+| 21 | Rho advanced equation definition (`assets/towerEquations/advanced/rhoEquation.js`) | COMPLETE | Builds 751-752 on `codex/phase-21-rho-equation`; see the Phase 21 execution card and implementation log |
 
 ---
 
 ## 2026-07-16 Reconciled History and Long-Range Roadmap
 
-This section supersedes the old seven-item “Tentative Later Migration Areas” list and the stale next-step material in `TheroMathTD_TS_Migration_Plan.md`. Historical implementation sections and logs below remain authoritative evidence and are not renumbered. Exact future file coverage is normative in [`docs/TypeScriptMigrationRoadmapInventory.md`](docs/TypeScriptMigrationRoadmapInventory.md); future phases beyond Phase 21 are recommendations that must be re-inventoried before authorization.
+This section supersedes the old seven-item “Tentative Later Migration Areas” list and the stale next-step material in `TheroMathTD_TS_Migration_Plan.md`. Historical implementation sections and logs below remain authoritative evidence and are not renumbered. Exact future file coverage is normative in [`docs/TypeScriptMigrationRoadmapInventory.md`](docs/TypeScriptMigrationRoadmapInventory.md); phases beyond the single marker-named authorization are recommendations that must be re-inventoried before authorization.
 
 ### Reconciled phase history
 
@@ -259,8 +260,8 @@ Exact file lists and per-module risk notes are in the linked coverage appendix. 
 
 | Phase | Status | Scope / purpose / approximate count | Prerequisites and expected owner contracts | Consumer impact and compatibility edits | Characterization, manual verification, risks, exclusions, completion focus |
 |---:|---|---|---|---|---|
-| 21 | **AUTHORIZED NEXT** | Rho income equation; 1 module | 8, 12, 16-20; Rho dynamic context, upgrade-state reads, sub-equation contexts | Advanced barrel and typed registry; presenter contract edits only if the live payload proves they belong there | Deterministic metadata/cost/prestige/rank/coercion/formatter tests; no manual UI required beyond optional equation display smoke; exclude all other definitions and consumers. |
-| 22 | **TENTATIVE NEAR-TERM** | Kappa→Lambda→Mu→Nu→Xi equation chain; 5 modules | 21; shared blueprint variable/result/context contracts | Advanced barrel/registry and Towers tab equation consumers; one contract steward, no duplicate local interfaces | Frozen-input formula/cost/lookup/cycle tests; optional in-game equation inspection; risk is cross-equation recursion/coercion. |
+| 21 | **COMPLETE** | Rho income equation; 1 module | 8, 12, 16-20; Rho dynamic context, upgrade-state reads, sub-equation contexts | Advanced barrel and typed registry retained exact identity; no shared contract edit was required | Six deterministic Rho tests cover metadata, costs, helper/getter timing, coercion/fallbacks, both formula branches, result math, and formatter order. |
+| 22 | **AUTHORIZED NEXT** | Kappa -> Lambda -> Mu -> Nu -> Xi equation chain; 5 modules | 21; shared blueprint variable/result/context contracts | Advanced barrel/registry and Towers tab equation consumers; one contract steward, no duplicate local interfaces | Frozen-input formula/cost/lookup/cycle tests; optional in-game equation inspection; risk is cross-equation recursion/coercion. |
 | 23 | **TENTATIVE NEAR-TERM** | Omicron/Pi/Chi/Psi/Omega equations; 5 modules | 22 | Terminal equation entity/count/HP context shapes owned by presenter/context | Same barrel/registry; compatibility limited to type-only imports and proven presenter additions | Formula, fallback, callback-order, `NaN`/Infinity, and lookup tests; exclude simulations. |
 | 24 | **TENTATIVE NEAR-TERM** | Basic and Infinity grouped equations; 2 modules | 23 | Foundational tower equation and Infinity term contracts | Registry and all dependent equations/Towers tab | Registry identity/order plus per-tower golden cases; risk is broad foundational fan-out; exclude Greek monolith. |
 | 25 | **TENTATIVE NEAR-TERM** | Greek grouped equation monolith; 1 module | 24 | Per-tower variable/result types reusing the shared owner contract | Completes authored equation definitions consumed by registry/Towers tab | Characterize each tower independently before conversion; manual all-equation overlay pass; do not redesign/split formulas during migration. |
@@ -295,13 +296,13 @@ Exact file lists and per-module risk notes are in the linked coverage appendix. 
 | 54 | **TENTATIVE LATER** | Main responsibility-extraction gate; 0 backlog conversions | All active modules except `main.js` typed | Extract only still-owned cohesive responsibilities into new typed owners; define composition contract | Compatibility edits inside `assets/main.js` are expected, but it remains `.js` | Characterize startup order and globals before extraction; browser/Electron; completion means residual main is composition-only. No extension conversion yet. |
 | 55 | **TENTATIVE LATER** | Final `assets/main.js` → `assets/main.ts`; 1 module | 54 and every prior active-module phase | Typed application composition/startup/window API | `index.html` keeps loading generated `assets/main.js` | Startup order/global/API tests, browser portrait/desktop, save reload, full level, audio, and Electron. Complete only with no broad assertions and no owned feature logic left. |
 
-Phases 21-55 cover all 174 active authored JavaScript modules. There are **35 roadmap phases**: one authorized conversion phase, 33 tentative conversion phases, and one tentative zero-module extraction gate (Phase 54). Thus 34 phases assign backlog modules and one prepares the final root without double-counting it. No module is assigned twice.
+Phases 22-55 cover all 173 active authored JavaScript modules. Across Phases 21-55 there are **35 roadmap phases**: one completed conversion phase, one authorized conversion phase, 32 tentative conversion phases, and one tentative zero-module extraction gate (Phase 54). The remaining 33 conversion phases assign the active backlog and the gate prepares the final root without double-counting it. No active module is assigned twice.
 
 ### Critical path
 
 The most likely controlling chain is:
 
-`equation contracts (21-25)` → `pure/config/enemy contracts (26-28)` → `Powder owner needed by palette (29-31)` → `tower leaf UI and Towers tab owner (32-33)` → `active tower simulations (34-38)` → `playfield systems/managers/input/rendering (40-47)` → `assets/playfield.js (48)` → `remaining UI/application controllers (49-53)` → `main extraction (54)` → `assets/main.ts (55)`.
+`remaining equation contracts (22-25)` -> `pure/config/enemy contracts (26-28)` -> `Powder owner needed by palette (29-31)` -> `tower leaf UI and Towers tab owner (32-33)` -> `active tower simulations (34-38)` -> `playfield systems/managers/input/rendering (40-47)` -> `assets/playfield.js (48)` -> `remaining UI/application controllers (49-53)` -> `main extraction (54)` -> `assets/main.ts (55)`.
 
 The early leverage modules are `assets/gameUnits.js` (31 importers), `assets/colorSchemeUtils.js` (36), `assets/towersTab.js` (35), `assets/enemies.js` (15), and `assets/playfield/utils/formatting.js` (13). Their contracts must be owner-defined once and consumed downstream. The apparent detour through Powder is real: `colorSchemeUtils.js` imports PowderSimulation behavior, while most tower/render modules import `colorSchemeUtils.js`.
 
@@ -373,7 +374,7 @@ The 45 unreachable JavaScript files are not migration backlog. The strongest ret
 
 ### Single next authorized phase
 
-Only Phase 21 is authorized. Later phases are sequencing hypotheses, not implementation authority.
+Only Phase 22 is authorized. Later phases are sequencing hypotheses, not implementation authority.
 
 #### Phase 21 execution card
 
@@ -408,7 +409,27 @@ Only Phase 21 is authorized. Later phases are sequencing hypotheses, not impleme
 
 **Completion gate:** `npm run check:migration-roadmap`, `npm run typecheck`, `npm run build`, `npm run lint`, `npm run test:unit`, `npm test`, and `git diff --check` all succeed; generated and `dist/` drift is intentional; the Phase 21 implementation log records exact files and results; counts are refreshed; exactly one next phase is authorized. An optional browser equation-display smoke must be reported as performed or not performed, never implied.
 
-Do not begin Phase 21 during this planning task.
+**Completion record:** Phase 21 converted only Rho, reused `TowerEquationBlueprint` and `TowerUpgradeState`, added no shared contract or compatibility adapter, and retained the generated `.js` import surface. Six focused tests first passed against the original JavaScript and then against generated TypeScript output, including the original two-read finite `unspentThero` getter behavior. Final command results and manual-verification status are recorded in the Phase 21 implementation-log entry.
+
+#### Phase 22 authorization card
+
+**Intent:** migrate the coherent Kappa -> Lambda -> Mu -> Nu -> Xi authored-equation chain after Phase 21 proved the shared presenter/context typing pattern. The five files move together because their formulas consume upstream equation results and share presenter-owned value/context contracts.
+
+**Exact authored sources:**
+
+- `assets/towerEquations/advanced/kappaEquation.js` (185 lines at authorization)
+- `assets/towerEquations/advanced/lambdaEquation.js` (153 lines)
+- `assets/towerEquations/advanced/muEquation.js` (152 lines)
+- `assets/towerEquations/advanced/nuEquation.js` (213 lines)
+- `assets/towerEquations/advanced/xiEquation.js` (193 lines)
+
+Convert those files to strict `.ts` sources and regenerate only their same-path `.js` siblings. Retain all `.js` import/export specifiers and exact barrel/registry identity.
+
+**Dependency boundary:** Kappa reads Alpha/Beta/Gamma results; Lambda owns upgrade-state-backed variables; Mu reads Lambda; Nu combines Mu-facing/runtime dynamic statistics; Xi completes the downstream chain. Reuse `TowerEquationBlueprint`, presenter-owned upgrade/value types, and `blueprintContext`; one evidence-backed shared owner edit is preferable to five local lookalike interfaces. Do not convert Alpha/Beta/Gamma, other advanced definitions, grouped basic/Greek/Infinity definitions, Towers tab, simulations, playfield, or main.
+
+**Required characterization:** exact metadata and variable order; every cost/base/step formula; missing and malformed helper/state/dynamic inputs; Number/Boolean coercion, `NaN`, Infinity, negative and fractional cases; upstream lookup names and callback order; cycle/visited behavior exposed through the existing presenter; every sub-equation branch and formatter order; result and base-equation math; advanced-barrel identity and registry lookup. Tests must be deterministic and must pass against original JavaScript before conversion and generated output afterward.
+
+**Completion gate:** use the standard implementation gate and phase record. No formula cleanup, balance change, broad assertion, `any`, suppression, duplicated shared contract, or sixth converted definition is authorized. Browser equation inspection is optional for this math-only slice but must be reported honestly. Completion must refresh counts, inventory coverage, Build metadata, and exactly one next authorization.
 
 ---
 
@@ -1208,7 +1229,7 @@ Do not treat this list as a fixed roadmap. Each completed phase must recommend t
 
 ### 2026-07-16 — Reinforce visible counts, authorization, recovery, and the end state
 
-The first checker version protected exact file classifications and machine-readable markers but could still allow nearby human-facing totals or decision-group subtotals to drift. It now validates the visible dashboard/baseline/inventory statements, each decision-row subtotal, the complete phase-assignment sum, all 35 Phase 21-55 rows, and the sole Phase 21 authorization. The plan also now requires a uniform phase execution record, establishes an evidence ladder and contract ownership map, defines non-destructive interrupted-phase recovery, and states the measurable end conditions for completing the active migration.
+The first checker version protected exact file classifications and machine-readable markers but could still allow nearby human-facing totals or decision-group subtotals to drift. It now validates the visible dashboard/baseline/inventory statements, each decision-row subtotal, the complete phase-assignment sum, all 35 Phase 21-55 rows, and the sole marker-named authorization. The plan also now requires a uniform phase execution record, establishes an evidence ladder and contract ownership map, defines non-destructive interrupted-phase recovery, and states the measurable end conditions for completing the active migration.
 
 ### 2026-07-16 — Make the migration inventory mechanically enforceable
 
@@ -1268,17 +1289,29 @@ The equipment/gem retirement removed five active JavaScript modules from future 
 
 ## Next Suggested Step
 
-**Recommended Phase 21: `assets/towerEquations/advanced/rhoEquation.js` (enemy-yield income definition).** The normative implementation checklist is the [Phase 21 execution card](#phase-21-execution-card).
+**Recommended Phase 22: Kappa -> Lambda -> Mu -> Nu -> Xi authored-equation chain.** The normative implementation checklist is the [Phase 22 authorization card](#phase-22-authorization-card).
 
-After Phases 17–20, Rho is the smallest remaining advanced definition by authored lines. Its two-variable income formula is bounded but exercises a richer JavaScript-originated dynamic context than Phi/Upsilon/Tau, making it the next useful step for validating the shared presenter contracts without expanding into simulations or playfield ownership.
+Phase 21 proved that an upgrade-backed advanced definition can reuse the presenter/context contracts while preserving JavaScript getter, coercion, formula, formatter, barrel, and registry behavior. The next coherent dependency unit is the five-file Kappa-to-Xi chain; splitting it further would encourage duplicated local context types and repeated cross-equation compatibility work.
 
-**Bounded scope:** Convert only `assets/towerEquations/advanced/rhoEquation.js` to strict TypeScript. Reuse the presenter/context contracts and add only narrow guards for the enemy-yield and range dynamic inputs already read by the module. Add the deterministic generated-output coverage specified in the execution card. Do not convert another advanced definition, Infinity/basic/Greek definitions, Towers tab, simulations, playfield systems, or main integration.
+**Bounded scope:** Convert only `kappaEquation.js`, `lambdaEquation.js`, `muEquation.js`, `nuEquation.js`, and `xiEquation.js` to strict TypeScript. Reuse presenter/context owners and add only narrow guards required by the values those definitions already read. Do not include the terminal advanced equations, grouped definitions, Towers tab, simulations, playfield systems, or main integration.
 
-**Acceptance criteria:** Preserve exact metadata, strings, formulas, dynamic-context lookup/coercion semantics, clamping, upgrade cost and rank behavior, sub-equation order, result math, formatter callback order/output, `.js` imports, barrel identity, and registry compatibility; add no `any`, assertions, or suppressions; typecheck/build/lint/unit/smoke pass; update counts/build number once and record browser availability honestly.
+**Acceptance criteria:** Preserve exact metadata, strings, formulas, upstream lookup names/order, dynamic-context and upgrade-state coercion, clamping, costs, sub-equation order, result math, formatter callback order/output, `.js` imports, barrel identity, and registry compatibility; add no `any`, broad assertions, or suppressions; typecheck/build/lint/unit/smoke and roadmap checks pass; update counts/build number and record browser availability honestly.
 
 ---
 
 ## Implementation Log
+
+### 2026-07-16 — Phase 21 Rho equation conversion executed
+
+- **Baseline:** `codex/phase-21-rho-equation` from `ec3a9e3`, clean and synchronized with the roadmap branch; unchanged `origin/main`; Build 750. Roadmap check, typecheck, build, lint, 159/159 unit tests plus retired-Spire checks, smoke test, and diff checks passed before implementation.
+- **Authorized boundary:** only `assets/towerEquations/advanced/rhoEquation.js` -> `.ts`, its generated sibling, focused unit tests, roadmap/inventory/checker updates, generated `dist/`, and build metadata. No other equation, presenter/context owner, Towers-tab, simulation, playfield, main, formula, balance, or UI work entered scope.
+- **Dependency audit:** runtime formatting and `blueprintContext` imports retain `.js` specifiers; `advancedTowers.ts` remains the sole direct source importer; registry identity remains mediated by the existing typed barrel/index; no new shared owner or adapter was required.
+- **Behavior oracle:** six deterministic tests passed first against the original JavaScript and then against generated TypeScript output. They cover exact metadata/order, costs, formatters, upgrade-state absence/malformed/coercive levels, strict prestige identity, unspent-Thero boundaries and two-read getter timing, both sub-equation branches, range coefficients, number-only finite result handling, and base-formatter order. Existing barrel and registry suites continue covering Rho identity.
+- **Contracts:** `rhoEquation.ts` reuses `TowerEquationBlueprint` and `TowerUpgradeState`, narrows the existing `unknown` dynamic context through small guards, and ends with `satisfies TowerEquationBlueprint`. No `any`, assertion, suppression, global strictness change, or duplicate upgrade-state type was added.
+- **Output and counts:** Build 751 auto-synced the implementation; Build 752 closes documentation/generated output. Counts are 61 TypeScript sources, 61 generated siblings, 173 active authored JavaScript modules, and 45 decision candidates (26.1% of 234 active authored modules converted).
+- **Automated evidence:** `npm run check:migration-roadmap` passed at 61 TypeScript sources, 61 generated siblings, 173 active JavaScript modules, and 45 decision candidates; `npm run typecheck`, `npm run build`, `npm run lint`, `npm run test:unit` (165/165 plus retired-Spire checks), `npm test`, generated-output parity, and `git diff --check` passed. The malformed-storage unit fixture logged its expected parse diagnostic while the suite exited 0.
+- **Manual evidence:** optional browser equation-display verification was not performed; this phase changes no DOM, input, Canvas, audio, save, or Electron path. Automated generated-output formula/identity coverage is the acceptance evidence.
+- **Residual risk and handoff:** no behavior gap or temporary compatibility seam is known. Phase 21 is complete; only Phase 22 is authorized next under its five-file execution card.
 
 ### 2026-07-16 — Roadmap safeguards reinforced
 
