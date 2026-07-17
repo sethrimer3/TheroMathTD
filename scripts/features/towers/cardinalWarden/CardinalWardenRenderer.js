@@ -731,7 +731,7 @@ export function renderFriendlyShips() {
     ctx.lineWidth = 1.5;
     ctx.stroke();
     
-    // Draw a small golden core/gem in the center
+    // Draw a small golden core in the center.
     ctx.fillStyle = this.nightMode ? '#ffe9a3' : '#d4af37';
     ctx.beginPath();
     ctx.arc(0, 0, ship.size * 0.25, 0, Math.PI * 2);

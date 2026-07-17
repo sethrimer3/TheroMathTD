@@ -57,8 +57,6 @@ export function createDeveloperModeManager(options = {}) {
     stopAutoSaveLoop,
     pruneLevelState,
     resetPowderUiState,
-    resetActiveMoteGems,
-    updateMoteGemInventoryDisplay,
     refreshPowderSystems,
     updatePowderModeButton,
     updatePowderLogDisplay,
@@ -73,7 +71,6 @@ export function createDeveloperModeManager(options = {}) {
     resetAlephChainUpgrades,
     reconcileGlyphCurrencyFromState,
     updatePowderWallGapFromGlyphs,
-    moteGemState,
     clearTowerUpgradeState,
     setPowderBasinObserver,
     getPowderBasinObserver,
@@ -339,7 +336,6 @@ export function createDeveloperModeManager(options = {}) {
       gameStats.autoAnchorPlacements = 0;
       gameStats.powderActions = 0;
       gameStats.enemiesDefeated = 0;
-      gameStats.powderSigilsReached = 0;
       gameStats.highestPowderMultiplier = 1;
     }
     if (resourceState && baseResources) {
@@ -424,18 +420,6 @@ export function createDeveloperModeManager(options = {}) {
     clearTowerUpgradeState?.();
     resetAlephChainUpgrades?.({ playfield: getPlayfield?.() });
     reconcileGlyphCurrencyFromState?.();
-
-    resetActiveMoteGems?.();
-    if (moteGemState) {
-      moteGemState.active.length = 0;
-      if (typeof moteGemState.nextId === 'number') {
-        moteGemState.nextId = 1;
-      }
-      moteGemState.inventory?.clear?.();
-      moteGemState.autoCollectUnlocked = false;
-      moteGemState.autoCollectDelayMs = 0;
-    }
-    updateMoteGemInventoryDisplay?.();
 
     updatePowderWallGapFromGlyphs?.(0);
     refreshPowderWallDecorations?.();

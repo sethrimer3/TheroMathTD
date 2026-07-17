@@ -12,12 +12,9 @@ export function createPowderDisplaySystem({
   recordPowderEvent,
   notifyPowderAction,
   notifyPowderMultiplier,
-  notifyPowderSigils,
   updateStatusDisplays,
   THERO_SYMBOL,
   updatePowderLogDisplay,
-  updateMoteGemInventoryDisplay,
-  SIGIL_LADDER_IS_STUB,
   getPowderSimulation,
 }) {
   let powderCurrency = 0;
@@ -41,14 +38,10 @@ export function createPowderDisplaySystem({
     crystalButton: null,
     stockpile: null,
     nextGlyphProgress: null,
-    gemInventoryList: null,
-    gemInventoryEmpty: null,
-    craftingButton: null,
     ledgerBaseScore: null,
     ledgerCurrentScore: null,
     ledgerFlux: null,
     ledgerEnergy: null,
-    sigilEntries: [],
     logList: null,
     logEmpty: null,
     simulationCanvas: null,
@@ -123,7 +116,7 @@ export function createPowderDisplaySystem({
 
   function updatePowderStockpileDisplay() {
     if (powderElements.stockpile) {
-      powderElements.stockpile.textContent = `${formatGameNumber(powderCurrency)} Mote Gems`;
+      powderElements.stockpile.textContent = `${formatGameNumber(powderCurrency)} Motes`;
     }
   }
 
@@ -145,9 +138,6 @@ export function createPowderDisplaySystem({
   function bindPowderControls() {
     powderElements.stockpile = document.getElementById('powder-stockpile');
     powderElements.nextGlyphProgress = document.getElementById('powder-next-glyph-progress');
-    powderElements.gemInventoryList = document.getElementById('powder-gem-inventory');
-    powderElements.gemInventoryEmpty = document.getElementById('powder-gem-empty');
-    powderElements.craftingButton = document.getElementById('powder-crafting-button');
     powderElements.ledgerBaseScore =
       document.getElementById('powder-ledger-base-score') || document.getElementById('powder-ledger-base');
     powderElements.ledgerCurrentScore =
@@ -184,8 +174,6 @@ export function createPowderDisplaySystem({
       powderGlyphColumns.push({ element, glyphs: new Map() });
     });
 
-    const sigilList = document.getElementById('powder-sigil-list');
-    powderElements.sigilEntries = sigilList ? Array.from(sigilList.querySelectorAll('li')) : [];
 
     if (powderElements.sandfallButton) {
       powderElements.sandfallButton.addEventListener('click', (event) => {
@@ -208,7 +196,6 @@ export function createPowderDisplaySystem({
       });
     }
 
-    updateMoteGemInventoryDisplay();
     updatePowderLogDisplay();
     updatePowderLedger();
     updatePowderDisplay();
@@ -299,32 +286,6 @@ export function createPowderDisplaySystem({
     const totalMultiplier = currentPowderBonuses.totalMultiplier;
     notifyPowderMultiplier(totalMultiplier);
 
-    if (SIGIL_LADDER_IS_STUB) {
-      if (powderElements.sigilEntries && powderElements.sigilEntries.length) {
-        powderElements.sigilEntries.forEach((sigil) => {
-          sigil.classList.remove('sigil-reached');
-        });
-      }
-      notifyPowderSigils(0);
-    } else if (powderElements.sigilEntries && powderElements.sigilEntries.length) {
-      let reached = 0;
-      powderElements.sigilEntries.forEach((sigil) => {
-        const threshold = Number.parseFloat(sigil.dataset.sigilThreshold);
-        if (!Number.isFinite(threshold)) {
-          return;
-        }
-        if (totalMultiplier >= threshold) {
-          sigil.classList.add('sigil-reached');
-          reached += 1;
-        } else {
-          sigil.classList.remove('sigil-reached');
-        }
-      });
-      notifyPowderSigils(reached);
-    } else {
-      notifyPowderSigils(0);
-    }
-
     updatePowderLedger();
 
     if (powderElements.sandfallFormula) {
@@ -338,8 +299,8 @@ export function createPowderDisplaySystem({
       const bonusText = formatPercentage(currentPowderBonuses.sandBonus);
       powderElements.sandfallNote.textContent =
         powderState.sandOffset > 0
-          ? `Flow stabilized—captured grains grant +${bonusText} Mote Gems.`
-          : 'Crest is unstable—Mote Gems drift off the board.';
+          ? `Flow stabilized—captured grains grant +${bonusText} Motes.`
+          : 'Crest is unstable—Motes drift off the board.';
     }
 
     if (powderElements.sandfallButton) {

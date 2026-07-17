@@ -446,7 +446,7 @@ export const zeta = {
       key: 'aleph6',
       symbol: 'ℵ₆',
       equationSymbol: 'ℵ₆',
-      name: 'Aleph₆ Lens',
+      name: 'Aleph₆ Focus',
       description: 'Focuses the pendulum heads for sharper critical impacts.',
       baseValue: 1,
       step: 0.5,

@@ -63,8 +63,6 @@ let trackRenderModeButton = null;
 // Cache the preview line and tracer so track mode changes can mirror the canvas style.
 let trackRenderPreviewLine = null;
 let trackRenderPreviewTracer = null;
-let desktopCursorMediaQuery = null;
-let desktopCursorActive = false;
 let activeGraphicsMode = GRAPHICS_MODES.HIGH;
 // Remember the player's explicit graphics preference so temporary auto-performance downgrades do not overwrite it.
 let preferredGraphicsMode = GRAPHICS_MODES.HIGH;
@@ -707,52 +705,6 @@ function updateGraphicsModeButton() {
     // Mirror the centered dot separator for the graphics button label as well.
     graphicsModeButton.textContent = `Graphics · ${label}`;
     graphicsModeButton.setAttribute('aria-label', `Switch graphics quality (current: ${label})`);
-}
-function updateDesktopCursorClass(enabled) {
-    const body = typeof document !== 'undefined' ? document.body : null;
-    if (!body) {
-        return;
-    }
-    const nextState = Boolean(enabled);
-    if (nextState === desktopCursorActive) {
-        return;
-    }
-    desktopCursorActive = nextState;
-    body.classList.toggle('mouse-cursor-gem', desktopCursorActive);
-}
-function evaluateDesktopCursorPreferenceFallback() {
-    if (typeof navigator === 'undefined') {
-        updateDesktopCursorClass(false);
-        return;
-    }
-    const userAgent = navigator.userAgent || '';
-    const mobilePattern = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile|Tablet/i;
-    updateDesktopCursorClass(!mobilePattern.test(userAgent));
-}
-export function initializeDesktopCursorPreference() {
-    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
-        evaluateDesktopCursorPreferenceFallback();
-        return;
-    }
-    try {
-        desktopCursorMediaQuery = window.matchMedia('(hover: hover) and (pointer: fine)');
-        updateDesktopCursorClass(desktopCursorMediaQuery.matches);
-        const listener = (event) => {
-            updateDesktopCursorClass(event.matches);
-        };
-        // Use modern addEventListener API; deprecated addListener removed to fix console error
-        if (typeof desktopCursorMediaQuery.addEventListener === 'function') {
-            desktopCursorMediaQuery.addEventListener('change', listener);
-        }
-        else {
-            // Extremely rare - addEventListener has been supported since 2013. Suggest browser update.
-            console.warn('MediaQueryList.addEventListener not available. Consider updating your browser; cursor detection will not update dynamically.');
-        }
-    }
-    catch (error) {
-        console.warn('Desktop cursor media query failed; falling back to user agent detection.', error);
-        evaluateDesktopCursorPreferenceFallback();
-    }
 }
 export function setGraphicsModeContext({ getPowderSimulation, getPlayfield, } = {}) {
     if (typeof getPowderSimulation === 'function') {

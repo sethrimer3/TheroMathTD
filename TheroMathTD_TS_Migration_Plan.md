@@ -261,8 +261,8 @@ requires exhaustive inspection of serialization/deserialization fallback branche
 ### Revised Phase 6 — Post-Retirement Spire Resource Persistence (COMPLETE, 2026-07-15)
 **Scope executed:** `assets/spireResourcePersistence.js` → `.ts`; compatibility-only type narrowing
 in `assets/autoSave.ts`; 17 deterministic compiled-output tests in `scripts/unit-test-core.cjs`.
-**Actual live ownership:** Well of Inspiration and Achievements story flags, mote-gem inventory and
-auto-collection state, and the base tower-upgrade snapshot augmented with Aleph-chain upgrades. The
+**Actual live ownership:** Well of Inspiration and Achievements story flags, and the base
+tower-upgrade snapshot augmented with Aleph-chain upgrades. The
 historical multi-Spire recommendation was superseded because retired Bet/Lamed/Tsadi/Shin/Kuf save
 branches are intentionally ignored by the current 93-line module.
 **Outcome:** All four hooks supplied by the returned controller are honestly narrowed in autosave;

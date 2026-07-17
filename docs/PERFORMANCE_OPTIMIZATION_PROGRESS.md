@@ -84,7 +84,6 @@ When working on performance tasks in this repository:
     8. **Reduce gate sprite save/restore** — Replaced save/globalAlpha/drawImage/restore with manual globalAlpha set+reset for both enemy gate and mind gate sprite blits.
     9. **Combine focused enemy marker arcs** — Merged two separate beginPath/arc/stroke calls into one combined path with moveTo between arcs.
     10. **Cache gamma star burst opacity strings** — Pre-computed per-opacity rgba strings and glow fillStyle outside the burst loop.
-    11. **Batch mote gem shadows** — All gem shadow arcs in SunlightRenderer now share one beginPath/fill with moveTo between disjoint circles and a single fillStyle set. Eliminates per-gem fillStyle and fill calls.
     12. **Optimize swimmers** — Replaced per-swimmer rgba string allocation with globalAlpha; converted forEach to for-loop.
     13. **Optimize floaters** — Replaced per-floater rgba strokeStyle strings with globalAlpha approach using white base strokeStyle.
     14. **Batch infinity aura lines** — All tower connection lines per infinity tower now rendered in a single beginPath/stroke path.
@@ -157,7 +156,7 @@ When working on performance tasks in this repository:
 
 - **Build 595**
   - **Files:** `assets/playfield/render/layers/SunlightRenderer.js`
-  - **Change:** Cached the decorative sunlight shadow pass into an offscreen viewport layer that refreshes at a modest cadence instead of rebuilding all tower/enemy/gem shadow geometry every frame.
+  - **Change:** Cached the decorative sunlight shadow pass into an offscreen viewport layer that refreshes at a modest cadence instead of rebuilding all tower and enemy shadow geometry every frame.
   - **Validation:** Re-ran syntax checks and browser-based playfield validation after the renderer change.
 
 - **Build 594**

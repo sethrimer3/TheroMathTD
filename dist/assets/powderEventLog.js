@@ -10,7 +10,6 @@ const dependencies = {
   getCurrentPowderBonuses: () => ({ sandBonus: 0, duneBonus: 0, crystalBonus: 0, totalMultiplier: 1 }),
   powderState: null,
   powderElements: null,
-  updateMoteGemInventoryDisplay: () => {},
 };
 
 /** Inject the live Well state and formatting helpers used by ledger entries. */
@@ -83,10 +82,6 @@ export function recordPowderEvent(type, context = {}) {
       entry = `Developer adjusted ${label} · ${dependencies.formatGameNumber(Number(context.value) || 0)}.`;
       break;
     }
-    case 'mote-gem-collected':
-      dependencies.updateMoteGemInventoryDisplay();
-      entry = `${context.type || 'Mote Gem'} cluster secured · +${dependencies.formatGameNumber(Math.max(0, context.value || 0))}.`;
-      break;
     case 'mode-switch':
       entry = 'Well of Inspiration simulation engaged.';
       break;

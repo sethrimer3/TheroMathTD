@@ -465,7 +465,7 @@ function withFakeTooltipDom(callback) {
 }
 
 // Build a fresh dependency-injected persistence controller for each test so
-// mutable story flags, inventory maps, and invocation logs never leak between cases.
+// Mutable story flags and invocation logs never leak between cases.
 function createSpirePersistenceHarness(spirePersistence, options = {}) {
   const callOrder = [];
   const towerApplyCalls = [];
@@ -473,11 +473,6 @@ function createSpirePersistenceHarness(spirePersistence, options = {}) {
   const spireResourceState = options.spireResourceState || {
     wellOfInspiration: { unlocked: true, storySeen: false },
     achievements: { storySeen: false },
-  };
-  const moteGemState = options.moteGemState || {
-    inventory: new Map(),
-    autoCollectUnlocked: false,
-    autoCollectDelayMs: 0,
   };
   const baseTowerSnapshot = options.baseTowerSnapshot || {
     alpha: { variables: { glyph1: { level: 2 } } },
@@ -488,7 +483,6 @@ function createSpirePersistenceHarness(spirePersistence, options = {}) {
 
   const controller = spirePersistence.createSpireResourcePersistence({
     spireResourceState,
-    moteGemState,
     getTowerUpgradeStateSnapshot: () => baseTowerSnapshot,
     applyTowerUpgradeStateSnapshot: (snapshot) => {
       callOrder.push('tower');
@@ -505,7 +499,6 @@ function createSpirePersistenceHarness(spirePersistence, options = {}) {
   return {
     controller,
     spireResourceState,
-    moteGemState,
     baseTowerSnapshot,
     alephSnapshot,
     playfield,
@@ -976,76 +969,6 @@ async function run() {
     return import(pathToFileURL(destPath).href);
   }
 
-  // watchAdMock() uses a real setTimeout(1000ms); stub it globally so the gem
-  // boost resolves immediately instead of making the suite wait a full second.
-  const realSetTimeout = global.setTimeout;
-  global.setTimeout = (fn) => {
-    fn();
-    return 0;
-  };
-
-  {
-    global.window = { localStorage: createLocalStorageStub() };
-    const monetization = await importFreshMonetizationState();
-
-    await test('monetizationState: default snapshot has premium locked and all cooldowns at 0', () => {
-      const snapshot = monetization.getMonetizationState();
-      assert.equal(snapshot.premiumUnlocked, false);
-      assert.deepEqual(snapshot.boostCooldowns, { gems: 0 });
-    });
-
-    await test('monetizationState: getMonetizationState returns a clone, not the live cooldown object', () => {
-      const snapshotA = monetization.getMonetizationState();
-      snapshotA.boostCooldowns.gems = 999999;
-      const snapshotB = monetization.getMonetizationState();
-      assert.equal(snapshotB.boostCooldowns.gems, 0);
-    });
-
-    await test('monetizationState: unlockPremium sets premiumUnlocked and persists to storage', () => {
-      monetization.unlockPremium();
-      assert.equal(monetization.getMonetizationState().premiumUnlocked, true);
-      const stored = JSON.parse(global.window.localStorage.getItem(monetization.MONETIZATION_STORAGE_KEY));
-      assert.equal(stored.premiumUnlocked, true);
-    });
-
-    await test('monetizationState: addMonetizationListener invokes immediately with current state, and unsubscribe stops future notifications', () => {
-      const seen = [];
-      const unsubscribe = monetization.addMonetizationListener((snapshot) => seen.push(snapshot.premiumUnlocked));
-      assert.equal(seen.length, 1);
-      assert.equal(seen[0], true); // premium was unlocked by the previous test
-      unsubscribe();
-      monetization.unlockPremium();
-      assert.equal(seen.length, 1, 'listener should not be called again after unsubscribe');
-    });
-
-  }
-
-  {
-    // Fresh module instance per remaining group so cooldown state starts at 0.
-    global.window = { localStorage: createLocalStorageStub() };
-    const monetization = await importFreshMonetizationState();
-
-    await test('monetizationState: getBoostCooldown reports no cooldown initially, using controlled Date.now', () => {
-      const realNow = Date.now;
-      Date.now = () => 1_000_000;
-      try {
-        const cooldown = monetization.getBoostCooldown('gems');
-        assert.equal(cooldown.onCooldown, false);
-        assert.equal(cooldown.remainingMs, 0);
-      } finally {
-        Date.now = realNow;
-      }
-    });
-
-    await test('monetizationState: successful gem boost invokes grantGems(100) and returns its result', async () => {
-      const result = await monetization.triggerGemBoost((amount) => {
-        assert.equal(amount, 100);
-        return 100;
-      });
-      assert.deepEqual(result, { success: true, gemsGranted: 100 });
-    });
-  }
-
   await test('monetizationState: loadMonetizationState merges a persisted snapshot without a window/localStorage guard crash', async () => {
     const originalWindow = global.window;
     try {
@@ -1056,8 +979,6 @@ async function run() {
       global.window = originalWindow;
     }
   });
-
-  global.setTimeout = realSetTimeout;
 
   // --- assets/alephUpgradeState.js -----------------------------------------
   const alephUpgrades = await importAlephUpgradeStateModule();
@@ -2766,15 +2687,10 @@ async function run() {
     harness.spireResourceState.achievements.storySeen = 'seen';
     const snapshot = harness.controller.getSpireResourceStateSnapshot();
 
-    assert.deepEqual(Object.keys(snapshot), ['wellOfInspiration', 'achievements', 'moteGems']);
+    assert.deepEqual(Object.keys(snapshot), ['wellOfInspiration', 'achievements']);
     assert.deepEqual(Object.keys(snapshot.wellOfInspiration), ['unlocked', 'storySeen']);
     assert.deepEqual(snapshot.wellOfInspiration, { unlocked: true, storySeen: true });
     assert.deepEqual(snapshot.achievements, { storySeen: true });
-    assert.deepEqual(Object.keys(snapshot.moteGems), [
-      'inventory',
-      'autoCollectUnlocked',
-      'autoCollectDelayMs',
-    ]);
   });
 
   await test('spire serialization: falls back from a missing Well branch to compatibility `powder`', () => {
@@ -2786,177 +2702,6 @@ async function run() {
       },
     });
     assert.equal(harness.controller.getSpireResourceStateSnapshot().wellOfInspiration.storySeen, true);
-  });
-
-  await test('spire serialization: preserves inventory order and falls back only non-string labels to gemId', () => {
-    const harness = createSpirePersistenceHarness(spirePersistence);
-    harness.moteGemState.inventory.set('quartz', { label: 'Quartz', total: 7, count: 2 });
-    harness.moteGemState.inventory.set('ruby', { label: null, total: 4, count: 1 });
-    harness.moteGemState.inventory.set('empty-label', { label: '', total: 1, count: 1 });
-    assert.deepEqual(harness.controller.getSpireResourceStateSnapshot().moteGems.inventory, [
-      { gemId: 'quartz', label: 'Quartz', total: 7, count: 2 },
-      { gemId: 'ruby', label: 'ruby', total: 4, count: 1 },
-      { gemId: 'empty-label', label: '', total: 1, count: 1 },
-    ]);
-  });
-
-  await test('spire serialization: total clamps negatives and normalizes non-finite values without flooring', () => {
-    const harness = createSpirePersistenceHarness(spirePersistence);
-    harness.moteGemState.inventory.set('fractional', { total: 3.75, count: 0 });
-    harness.moteGemState.inventory.set('negative', { total: -8.5, count: 0 });
-    harness.moteGemState.inventory.set('nan', { total: NaN, count: 0 });
-    harness.moteGemState.inventory.set('infinity', { total: Infinity, count: 0 });
-    const totals = harness.controller.getSpireResourceStateSnapshot().moteGems.inventory.map((entry) => entry.total);
-    assert.deepEqual(totals, [3.75, 0, 0, 0]);
-  });
-
-  await test('spire serialization: count clamps, floors, and normalizes invalid values', () => {
-    const harness = createSpirePersistenceHarness(spirePersistence);
-    harness.moteGemState.inventory.set('fractional', { total: 0, count: 3.75 });
-    harness.moteGemState.inventory.set('negative', { total: 0, count: -2.1 });
-    harness.moteGemState.inventory.set('nan', { total: 0, count: NaN });
-    harness.moteGemState.inventory.set('infinity', { total: 0, count: Infinity });
-    const counts = harness.controller.getSpireResourceStateSnapshot().moteGems.inventory.map((entry) => entry.count);
-    assert.deepEqual(counts, [3, 0, 0, 0]);
-  });
-
-  await test('spire serialization: coerces auto-collection and clamps/floors its finite delay', () => {
-    const harness = createSpirePersistenceHarness(spirePersistence);
-    harness.moteGemState.autoCollectUnlocked = 'enabled';
-    harness.moteGemState.autoCollectDelayMs = 14.9;
-    assert.deepEqual(harness.controller.getSpireResourceStateSnapshot().moteGems, {
-      inventory: [],
-      autoCollectUnlocked: true,
-      autoCollectDelayMs: 14,
-    });
-    harness.moteGemState.autoCollectDelayMs = -8.2;
-    assert.equal(harness.controller.getSpireResourceStateSnapshot().moteGems.autoCollectDelayMs, 0);
-    harness.moteGemState.autoCollectDelayMs = Infinity;
-    assert.equal(harness.controller.getSpireResourceStateSnapshot().moteGems.autoCollectDelayMs, 0);
-  });
-
-  await test('spire restore: null and non-object top-level snapshots are complete no-ops', () => {
-    const harness = createSpirePersistenceHarness(spirePersistence);
-    harness.spireResourceState.wellOfInspiration.storySeen = true;
-    harness.spireResourceState.achievements.storySeen = true;
-    harness.moteGemState.inventory.set('existing', { label: 'Existing', total: 5, count: 2 });
-    harness.moteGemState.autoCollectUnlocked = true;
-    harness.moteGemState.autoCollectDelayMs = 22;
-    const before = harness.controller.getSpireResourceStateSnapshot();
-    [null, undefined, 'invalid', 42, false].forEach((value) => {
-      harness.controller.applySpireResourceStateSnapshot(value);
-    });
-    assert.deepEqual(harness.controller.getSpireResourceStateSnapshot(), before);
-  });
-
-  await test('spire restore: every supported Well alias restores and precedence remains unchanged', () => {
-    for (const alias of ['wellOfInspiration', 'powder', 'alephSpire', 'aleph']) {
-      const harness = createSpirePersistenceHarness(spirePersistence);
-      harness.controller.applySpireResourceStateSnapshot({ [alias]: { storySeen: true } });
-      assert.equal(harness.spireResourceState.wellOfInspiration.storySeen, true, alias);
-    }
-
-    const precedenceHarness = createSpirePersistenceHarness(spirePersistence);
-    precedenceHarness.controller.applySpireResourceStateSnapshot({
-      wellOfInspiration: { storySeen: false },
-      powder: { storySeen: true },
-      alephSpire: { storySeen: true },
-      aleph: { storySeen: true },
-    });
-    assert.equal(precedenceHarness.spireResourceState.wellOfInspiration.storySeen, false);
-  });
-
-  await test('spire restore: existing true Well and achievement story flags are monotonic', () => {
-    const harness = createSpirePersistenceHarness(spirePersistence);
-    harness.spireResourceState.wellOfInspiration.storySeen = true;
-    harness.spireResourceState.achievements.storySeen = true;
-    harness.controller.applySpireResourceStateSnapshot({
-      wellOfInspiration: { storySeen: false },
-      achievements: { storySeen: false },
-    });
-    assert.equal(harness.spireResourceState.wellOfInspiration.storySeen, true);
-    assert.equal(harness.spireResourceState.achievements.storySeen, true);
-
-    const freshHarness = createSpirePersistenceHarness(spirePersistence);
-    freshHarness.controller.applySpireResourceStateSnapshot({ achievements: { storySeen: 'yes' } });
-    assert.equal(freshHarness.spireResourceState.achievements.storySeen, true);
-  });
-
-  await test('spire restore: missing or non-array inventory leaves the existing Map untouched', () => {
-    const harness = createSpirePersistenceHarness(spirePersistence);
-    const existingRecord = { label: 'Existing', total: 8, count: 3 };
-    harness.moteGemState.inventory.set('existing', existingRecord);
-    harness.controller.applySpireResourceStateSnapshot({ moteGems: {} });
-    harness.controller.applySpireResourceStateSnapshot({ moteGems: { inventory: 'not-an-array' } });
-    assert.equal(harness.moteGemState.inventory.size, 1);
-    assert.equal(harness.moteGemState.inventory.get('existing'), existingRecord);
-  });
-
-  await test('spire restore: array inventory clears, skips blank ids, and trims/falls back labels', () => {
-    const harness = createSpirePersistenceHarness(spirePersistence);
-    harness.moteGemState.inventory.set('old', { label: 'Old', total: 1, count: 1 });
-    harness.controller.applySpireResourceStateSnapshot({
-      moteGems: {
-        inventory: [
-          { gemId: ' quartz ', label: '  Quartz Prime  ', total: 2, count: 1 },
-          { gemId: 'ruby', label: '   ', total: 3, count: 2 },
-          { gemId: '   ', label: 'Skipped', total: 99, count: 99 },
-          { gemId: null, label: 'Skipped Too', total: 99, count: 99 },
-        ],
-      },
-    });
-    assert.deepEqual(Array.from(harness.moteGemState.inventory.entries()), [
-      ['quartz', { label: 'Quartz Prime', total: 2, count: 1 }],
-      ['ruby', { label: 'ruby', total: 3, count: 2 }],
-    ]);
-  });
-
-  await test('spire restore: numeric fields keep exact total/count normalization and duplicate ids are last-write-wins', () => {
-    const harness = createSpirePersistenceHarness(spirePersistence);
-    harness.controller.applySpireResourceStateSnapshot({
-      moteGems: {
-        inventory: [
-          { gemId: 'fractional', label: 'First', total: 3.75, count: 3.75 },
-          { gemId: 'negative', total: -5.5, count: -2.2 },
-          { gemId: 'invalid', total: Infinity, count: NaN },
-          { gemId: 'fractional', label: 'Last', total: 9.25, count: 7.9 },
-        ],
-      },
-    });
-    assert.deepEqual(harness.moteGemState.inventory.get('fractional'), {
-      label: 'Last',
-      total: 9.25,
-      count: 7,
-    });
-    assert.deepEqual(harness.moteGemState.inventory.get('negative'), {
-      label: 'negative',
-      total: 0,
-      count: 0,
-    });
-    assert.deepEqual(harness.moteGemState.inventory.get('invalid'), {
-      label: 'invalid',
-      total: 0,
-      count: 0,
-    });
-  });
-
-  await test('spire restore: auto-collection is monotonic and delay changes only for finite values', () => {
-    const harness = createSpirePersistenceHarness(spirePersistence);
-    harness.moteGemState.autoCollectUnlocked = true;
-    harness.moteGemState.autoCollectDelayMs = 33;
-    harness.controller.applySpireResourceStateSnapshot({
-      moteGems: { autoCollectUnlocked: false, autoCollectDelayMs: Infinity },
-    });
-    assert.equal(harness.moteGemState.autoCollectUnlocked, true);
-    assert.equal(harness.moteGemState.autoCollectDelayMs, 33);
-
-    harness.controller.applySpireResourceStateSnapshot({
-      moteGems: { autoCollectUnlocked: 'yes', autoCollectDelayMs: 12.9 },
-    });
-    assert.equal(harness.moteGemState.autoCollectUnlocked, true);
-    assert.equal(harness.moteGemState.autoCollectDelayMs, 12);
-    harness.controller.applySpireResourceStateSnapshot({ moteGems: { autoCollectDelayMs: -4.2 } });
-    assert.equal(harness.moteGemState.autoCollectDelayMs, 0);
   });
 
   await test('tower/Aleph getter: preserves base properties and adds exactly the current Aleph snapshot', () => {

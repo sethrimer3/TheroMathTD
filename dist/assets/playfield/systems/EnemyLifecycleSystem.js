@@ -1,7 +1,6 @@
 // Enemy lifecycle system extracted from SimplePlayfield.
 // These functions use 'this' (the SimplePlayfield instance) via prototype assignment.
 
-import { resolveEnemyGemDropMultiplier } from '../../enemies.js';
 import { formatCombatNumber } from '../utils/formatting.js';
 import { cleanupHypernode } from './HypernodeBossSystem.js';
 
@@ -23,7 +22,6 @@ export function spawnEnemies(delta) {
       const symbol = this.resolveEnemySymbol({ ...enemy, polygonSides });
       const maxHp = Number.isFinite(enemy.hp) ? Math.max(1, enemy.hp) : 1;
       const hpExponent = this.calculateHealthExponent(maxHp);
-      const gemDropMultiplier = resolveEnemyGemDropMultiplier(enemy);
       
       Object.assign(enemy, {
         progress: 0,
@@ -32,7 +30,6 @@ export function spawnEnemies(delta) {
         symbol,
         polygonSides,
         hpExponent,
-        gemDropMultiplier,
       });
       
       // Handle radial spawn positioning
@@ -237,14 +234,10 @@ export function processEnemyDefeat(enemy) {
     this.messageEl.textContent = `${enemy.label || 'Glyph'} collapsed · +${gainLabel} ${this.theroSymbol}.`;
   }
   
-  // Spawn mote gem drops
-  this.spawnMoteGemFromEnemy(enemy);
-
   // Now delegate to combat state manager to handle enemy removal and wave progression
   if (this.combatStateManager) {
     const deathContext = {
       spawnDeathParticles: () => {}, // Already handled above
-      dropGems: () => {}, // Already handled above
     };
     this.combatStateManager.handleEnemyDeath(enemy, deathContext);
   }

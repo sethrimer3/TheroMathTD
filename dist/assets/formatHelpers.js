@@ -73,7 +73,7 @@ export function formatDuration(seconds) {
 /**
  * Format level rewards into a human-readable string
  * @param {number} rewardScore - Score reward (Σ)
- * @param {number} rewardFlux - Flux reward (Mote Gems/min)
+ * @param {number} rewardFlux - Flux reward (Motes/min)
  * @param {number} rewardEnergy - Energy reward (TD/s)
  * @returns {string} Formatted rewards string
  */
@@ -83,7 +83,7 @@ export function formatRewards(rewardScore, rewardFlux, rewardEnergy, formatGameN
     parts.push(`${formatGameNumber(rewardScore)} Σ`);
   }
   if (Number.isFinite(rewardFlux)) {
-    parts.push(`+${Math.round(rewardFlux)} Mote Gems/min`);
+    parts.push(`+${Math.round(rewardFlux)} Motes/min`);
   }
   if (Number.isFinite(rewardEnergy)) {
     parts.push(`+${Math.round(rewardEnergy)} TD/s`);

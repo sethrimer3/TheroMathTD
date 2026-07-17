@@ -177,13 +177,12 @@ Scaled by distortion intensity (fewer anchors alive = less distortion).
 **Files changed:**
 - `assets/playfield.js` — damage reduction in `applyDamageToEnemy()`
 - `assets/waveEncoder.js` — added letter Q mapping
-- `assets/enemies.js` — added gem multiplier entry
+- `assets/enemies.js` — updated shared enemy shell handling
 
 ### 7. Registry & Documentation Updates
 
 **Wave encoder:** Updated enemy type map (H deprecated, Q added)
 **Codex entries:** Updated for all reworked enemies
-**Gem multipliers:** All enemies have entries in ENEMY_GEM_MULTIPLIERS
 **Agent docs:** Updated enemy type mapping tables
 **Wave editor docs:** Updated enemy reference table
 

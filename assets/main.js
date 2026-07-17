@@ -54,7 +54,6 @@ import {
   applyTrackTracerPreference,
   bindTrackTracerToggle,
   bindLoadoutSlotButton,
-  initializeDesktopCursorPreference,
   applyGraphicsMode,
   initializeGraphicsMode,
   bindGraphicsModeToggle,
@@ -165,10 +164,7 @@ import {
   evaluateAchievements,
   notifyAchievementsTabVisibilityChange,
 } from './achievementsTab.js';
-import {
-  configureBoostsSection,
-  initializeBoostsSection,
-} from './boostsSection.js';
+import { initializeBoostsSection } from './boostsSection.js';
 import {
   loadMonetizationState,
 } from './state/monetizationState.js';
@@ -231,7 +227,6 @@ import {
   initializeTowerSelection,
   initializeTowerVisibilityToggle,
   initializeTowerElementDebugControls,
-  initializeTowerEquipmentInterface,
   synchronizeTowerCardMasterEquations,
   syncLoadoutToPlayfield,
   pruneLockedTowersFromLoadout,
@@ -249,7 +244,6 @@ import {
   closeLoadoutWheel,
 } from './towersTab.js';
 import _towers from './data/towers/index.js'; // Modular tower definitions sourced from dedicated files.
-import { initializeEquipmentState, EQUIPMENT_STORAGE_KEY } from './equipment.js';
 import { initializeTowerTreeMap, refreshTowerTreeMap } from './towerTreeMap.js';
 // Particle-based visual scrollbar for reliable touch scrolling on Android.
 import { initParticleScrollbar, notifyParticleScrollbarTabChanged } from './particleScrollbar.js';
@@ -278,21 +272,6 @@ import {
 import { bindSpireOptionsDropdown, closeAllSpireDropdowns } from './spireOptionsDropdowns.js';
 import { bindPlayfieldOptions, initializePlayfieldPreferences } from './playfield/playfieldPreferences.js';
 import { createDeveloperModeManager } from './developerModeManager.js';
-import {
-  moteGemState,
-  configureEnemyHandlers,
-  resetActiveMoteGems,
-  autoCollectActiveMoteGems,
-  setMoteGemAutoCollectUnlocked,
-  getMoteGemColor,
-  getGemSpriteAssetPath,
-  rollGemDropDefinition,
-} from './enemies.js';
-import {
-  initializeCraftingOverlay,
-  openCraftingOverlay,
-  CRAFTING_TIER_STORAGE_KEY,
-} from './crafting.js';
 import {
   configureDeveloperControls,
   bindDeveloperControls,
@@ -458,8 +437,6 @@ import { createSpireCameraController } from './spireCameraController.js';
     POWDER_BASIN_STORAGE_KEY,
     TOWER_UPGRADE_STORAGE_KEY,
     AUDIO_SETTINGS_STORAGE_KEY,
-    CRAFTING_TIER_STORAGE_KEY,
-    EQUIPMENT_STORAGE_KEY,
     COLOR_SCHEME_STORAGE_KEY,
     // Retired storage keys remain in reset coverage for compatibility with old saves.
     KUF_STATE_STORAGE_KEY,
@@ -491,7 +468,6 @@ import { createSpireCameraController } from './spireCameraController.js';
     scheduleOverlayHide,
     getDiscoveredVariables,
     addDiscoveredVariablesListener,
-    openCraftingOverlay,
   });
 
   // Developer map element references allow quick toggles for spawning and clearing obstacles.
@@ -693,7 +669,6 @@ import { createSpireCameraController } from './spireCameraController.js';
     autoAnchorPlacements: 0,
     powderActions: 0,
     enemiesDefeated: 0,
-    powderSigilsReached: 0,
     highestPowderMultiplier: 1,
   };
 
@@ -761,7 +736,6 @@ import { createSpireCameraController } from './spireCameraController.js';
     applySpireResourceStateSnapshot,
   } = createSpireResourcePersistence({
     spireResourceState,
-    moteGemState,
     getTowerUpgradeStateSnapshot,
     applyTowerUpgradeStateSnapshot,
     getAlephChainUpgrades,
@@ -793,22 +767,10 @@ import { createSpireCameraController } from './spireCameraController.js';
   registerResourceHudRefreshCallback = resourceHud.registerStatusRefreshCallback;
   const {
     applyMindGatePaletteToDom,
-    updateMoteGemInventoryDisplay: renderMoteGemInventoryDisplay,
     updatePowderGlyphColumns,
   } = createPowderUiDomHelpers({
-    getPowderElements,
     powderGlyphColumns,
-    moteGemState,
-    formatWholeNumber,
-    formatGameNumber,
-    getMoteGemColor,
-    getGemSpriteAssetPath,
   });
-
-  const updateMoteGemInventoryDisplay = () => {
-    renderMoteGemInventoryDisplay();
-  };
-
 
   const powderPersistence = createPowderPersistence({
     powderState,
@@ -822,8 +784,6 @@ import { createSpireCameraController } from './spireCameraController.js';
   const applyPowderBasinSnapshot = (snapshot) => {
     powderPersistence.applyPowderBasinSnapshot(snapshot);
   };
-
-  const SIGIL_LADDER_IS_STUB = true;
 
   // Declare simulation instances early to avoid Temporal Dead Zone errors when referenced in initialization functions.
   let sandSimulation = null;
@@ -868,12 +828,9 @@ import { createSpireCameraController } from './spireCameraController.js';
     recordPowderEvent,
     notifyPowderAction,
     notifyPowderMultiplier,
-    notifyPowderSigils,
     updateStatusDisplays,
     THERO_SYMBOL,
     updatePowderLogDisplay,
-    updateMoteGemInventoryDisplay,
-    SIGIL_LADDER_IS_STUB,
     getPowderSimulation: () => powderSimulation,
     spireResourceState,
   });
@@ -910,37 +867,6 @@ import { createSpireCameraController } from './spireCameraController.js';
     updatePlayfieldDevLayerTogglesVisibility,
   });
 
-  configureEnemyHandlers({ queueMoteDrop, recordPowderEvent });
-
-  // Helper function to grant random gems (for ad boosts)
-  function grantRandomGems(count) {
-    let gemsGranted = 0;
-    // Roll for each gem according to drop chances
-    for (let i = 0; i < count; i++) {
-      const gem = rollGemDropDefinition({ hp: 1000 }); // Use moderate HP for balanced distribution
-      if (gem) {
-        const record = moteGemState.inventory.get(gem.id) || { label: gem.name, total: 0, count: 0 };
-        record.total += gem.moteSize;
-        record.count = (record.count || 0) + 1;
-        record.label = gem.name || record.label;
-        moteGemState.inventory.set(gem.id, record);
-        gemsGranted++;
-      }
-    }
-    // Update gem inventory display
-    updateMoteGemInventoryDisplay();
-    // Record the boost event
-    recordPowderEvent('boost-gems-granted', {
-      count: gemsGranted,
-    });
-    return gemsGranted;
-  }
-
-  // Configure the boosts section with dependencies
-  configureBoostsSection({
-    grantRandomGems,
-  });
-
   // Keep the active Well ledger isolated from persistence and reward systems.
   configurePowderEventLog({
     formatGameNumber,
@@ -949,7 +875,6 @@ import { createSpireCameraController } from './spireCameraController.js';
     getCurrentPowderBonuses,
     powderState,
     powderElements,
-    updateMoteGemInventoryDisplay,
   });
 
   const {
@@ -1131,8 +1056,6 @@ import { createSpireCameraController } from './spireCameraController.js';
     stopAutoSaveLoop,
     pruneLevelState,
     resetPowderUiState,
-    resetActiveMoteGems,
-    updateMoteGemInventoryDisplay,
     refreshPowderSystems,
     updatePowderModeButton,
     updatePowderLogDisplay,
@@ -1146,7 +1069,6 @@ import { createSpireCameraController } from './spireCameraController.js';
     defaultMotePalette: DEFAULT_MOTE_PALETTE,
     resetAlephChainUpgrades,
     updatePowderWallGapFromGlyphs,
-    moteGemState,
     clearTowerUpgradeState,
     setPowderBasinObserver,
     getPowderBasinObserver,
@@ -1527,33 +1449,6 @@ import { createSpireCameraController } from './spireCameraController.js';
     return { left, right };
   }
 
-  function queueMoteDrop(dropLike, color) {
-    let drop = null;
-    if (dropLike && typeof dropLike === 'object' && !Array.isArray(dropLike)) {
-      drop = { ...dropLike };
-    } else {
-      drop = { size: dropLike, color };
-    }
-    const { size } = drop;
-    if (!Number.isFinite(size) || size <= 0) {
-      return;
-    }
-    const normalized = Math.max(1, Math.round(size));
-    const payload = { size: normalized };
-    if (drop.color && typeof drop.color === 'object') {
-      payload.color = { ...drop.color };
-    }
-    if (powderSimulation && typeof powderSimulation.queueDrop === 'function') {
-      powderSimulation.queueDrop(payload);
-      // Request a save so newly queued motes persist if the session ends abruptly.
-      schedulePowderBasinSave();
-      return;
-    }
-    powderState.pendingMoteDrops.push(payload);
-    // Persist pending drops so they spawn correctly after a reload.
-    schedulePowderBasinSave();
-  }
-
   function stopResourceTicker() {
     if (resourceTicker) {
       clearInterval(resourceTicker);
@@ -1648,25 +1543,6 @@ import { createSpireCameraController } from './spireCameraController.js';
 
   function notifyPowderAction() {
     gameStats.powderActions += 1;
-    evaluateAchievements();
-  }
-
-  function notifyPowderSigils(count) {
-    if (!Number.isFinite(count)) {
-      return;
-    }
-    const normalized = Math.max(0, Math.floor(count));
-    gameStats.powderSigilsReached = Math.max(gameStats.powderSigilsReached, normalized);
-    if (moteGemState.autoCollectUnlocked) {
-      autoCollectActiveMoteGems('glyph');
-    }
-    if (isTowerUpgradeOverlayActive()) {
-      const activeTower = getActiveTowerUpgradeId();
-      if (activeTower) {
-        renderTowerUpgradeOverlay(activeTower, {});
-      }
-    }
-    updateStatusDisplays();
     evaluateAchievements();
   }
 
@@ -1805,7 +1681,6 @@ import { createSpireCameraController } from './spireCameraController.js';
 
       if (glyphsLit !== powderState.wallGlyphsLit) {
         powderState.wallGlyphsLit = glyphsLit;
-        notifyPowderSigils(glyphsLit);
       }
       if (!transitionActive) {
         powderState.alephTierTransitionCheckpoint = Math.max(
@@ -1833,7 +1708,6 @@ import { createSpireCameraController } from './spireCameraController.js';
     updateStatusDisplays,
     gameStats,
     spireResourceState,
-    moteGemInventory: moteGemState.inventory,
     powderState,
   });
 
@@ -1893,9 +1767,6 @@ import { createSpireCameraController } from './spireCameraController.js';
     if (levelOverlayController) {
       levelOverlayController.setPreviewRenderer(levelPreviewRenderer);
     }
-
-    // Activate the gem cursor when a desktop pointer is detected.
-    initializeDesktopCursorPreference();
 
     // Attach the particle scrollbar canvas to the right edge for reliable touch scrolling on Android.
     initParticleScrollbar();
@@ -2188,13 +2059,6 @@ import { createSpireCameraController } from './spireCameraController.js';
     bindAlephTierTransitionControls();
     ensurePowderBasinResizeObserver();
     await applyPowderSimulationMode();
-    initializeEquipmentState();
-    initializeCraftingOverlay({
-      revealOverlay,
-      scheduleOverlayHide,
-      onRequestInventoryRefresh: updateMoteGemInventoryDisplay,
-      onCommitState: commitAutoSave,
-    });
     bindAchievements();
     // Initialize boosts section in achievements tab
     loadMonetizationState();
@@ -2211,7 +2075,6 @@ import { createSpireCameraController } from './spireCameraController.js';
     simplifyTowerCards();
     annotateTowerCardsWithCost();
     synchronizeTowerCardMasterEquations();
-    initializeTowerEquipmentInterface();
     updateTowerCardVisibility();
     // If the player loaded directly into the towers tab, the entrance animation
     // was scheduled before injectTowerCardPreviews/updateTowerCardVisibility ran,
@@ -2305,11 +2168,6 @@ import { createSpireCameraController } from './spireCameraController.js';
       confirmPendingLevel();
     }
   });
-
-  // Expose a helper for upgrade scripts to toggle mote gem auto collection when unlocked.
-  window.unlockMoteGemAutoCollector = () => {
-    setMoteGemAutoCollectUnlocked(true);
-  };
 
   const upgradeNamespace =
     (window.theroIdleUpgrades = window.theroIdleUpgrades || window.glyphDefenseUpgrades || {});

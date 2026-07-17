@@ -7,9 +7,6 @@ import {
   cancelTowerDrag,
 } from '../../towersTab.js';
 import {
-  resetActiveMoteGems,
-} from '../../enemies.js';
-import {
   clearNuCachedDimensions as clearNuCachedDimensionsHelper,
 } from '../../../scripts/features/towers/nuTower.js';
 import { createCombatStateManager } from './CombatStateManager.js';
@@ -460,8 +457,6 @@ export function createLevelLifecycleManager(config) {
     playfield.backgroundSwimmers = [];
     playfield.swimmerBounds = { width: playfield.renderWidth || 0, height: playfield.renderHeight || 0 };
     playfield.floaterBounds = { width: playfield.renderWidth || 0, height: playfield.renderHeight || 0 };
-    // Clear mote gem drops whenever the battlefield resets.
-    resetActiveMoteGems();
     playfield.towers = [];
     playfield.infinityTowers = [];
     // Clear cached Nu tower dimensions so ranges recalculate correctly on next level entry.

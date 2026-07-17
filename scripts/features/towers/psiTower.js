@@ -283,7 +283,6 @@ function performMerge(playfield, tower, selectedEnemies, state) {
     symbol: clusterSymbol,
     polygonSides: firstEnemy.polygonSides || 4,
     hpExponent: playfield.calculateHealthExponent ? playfield.calculateHealthExponent(totalHp) : 1,
-    gemDropMultiplier: firstEnemy.gemDropMultiplier || 1,
     // Mark as PsiCluster so it won't be merged again
     isPsiCluster: true,
     // Store original HP for AoE damage calculation

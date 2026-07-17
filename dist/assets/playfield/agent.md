@@ -16,7 +16,6 @@ playfield/
 ├── ui/
 │   ├── HudBindings.js               # HUD updates and stat display
 │   ├── TowerSelectionWheel.js       # Tower selection UI
-│   ├── FloatingFeedback.js          # Floating damage/feedback numbers
 │   └── WaveTallyOverlays.js         # Wave completion overlays
 ├── input/
 │   └── InputController.js           # Touch and mouse input handling
@@ -128,7 +127,6 @@ combatManager.updateEnemies(deltaTime, {
 // Handle enemy death
 combatManager.handleEnemyDeath(enemy, {
   spawnDeathParticles: (enemy) => { /* visuals */ },
-  dropGems: (enemy) => { /* loot */ }
 });
 
 // Query state

@@ -419,7 +419,6 @@ export function createCombatStateManager(config) {
    * @param {Object} enemy - The enemy that died
    * @param {Object} deathContext - Context for death handling
    * @param {Function} deathContext.spawnDeathParticles - Callback to spawn visual effects
-   * @param {Function} deathContext.dropGems - Callback to spawn gem drops
    */
   function handleEnemyDeath(enemy, deathContext) {
     // Award energy reward
@@ -459,11 +458,6 @@ export function createCombatStateManager(config) {
     // Spawn visual death effects
     if (deathContext.spawnDeathParticles) {
       deathContext.spawnDeathParticles(enemy);
-    }
-
-    // Drop mote gems
-    if (deathContext.dropGems) {
-      deathContext.dropGems(enemy);
     }
 
     // Remove enemy from array

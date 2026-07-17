@@ -1,7 +1,3 @@
-import {
-  collectMoteGemsWithinRadius,
-} from '../../enemies.js';
-import { metersToPixels } from '../../gameUnits.js';
 import { PLAYFIELD_VIEW_DRAG_THRESHOLD } from '../constants.js';
 
 // Pre-calculated constants for performance optimization
@@ -600,25 +596,6 @@ function handleCanvasPointerLeave() {
   }
 }
 
-function collectMoteGemsNear(position) {
-  if (!position) {
-    return 0;
-  }
-  // Convert the manual pickup radius from 2 in-world meters into the active screen scale.
-  const width = this.renderWidth || (this.canvas ? this.canvas.clientWidth : 0) || 0;
-  const height = this.renderHeight || (this.canvas ? this.canvas.clientHeight : 0) || 0;
-  const minDimension = width > 0 && height > 0 ? Math.min(width, height) : 320;
-  const collectionRadiusPixels = metersToPixels(2, minDimension);
-  
-  const result = collectMoteGemsWithinRadius(position, collectionRadiusPixels, {
-    reason: 'manual',
-  });
-  if (result.count > 0 && this.audio) {
-    this.audio.playSfx('uiConfirm');
-  }
-  return result.count;
-}
-
 function handleCanvasClick(event) {
   if (this.audio) {
     this.audio.unlock();
@@ -658,14 +635,6 @@ function handleCanvasClick(event) {
       event,
     })
   ) {
-    return;
-  }
-
-  // Prioritize nearby gem pickup so clicks around swarms don't get intercepted by enemy focus selection.
-  if (this.collectMoteGemsNear(position)) {
-    if (typeof this.resetTowerTapState === 'function') {
-      this.resetTowerTapState();
-    }
     return;
   }
 
@@ -859,7 +828,6 @@ export {
   handleCanvasPointerDown,
   handleCanvasPointerUp,
   handleCanvasPointerLeave,
-  collectMoteGemsNear,
   handleCanvasClick,
   handleCanvasWheel,
   applyZoomFactor,
