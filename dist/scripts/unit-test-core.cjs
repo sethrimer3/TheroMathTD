@@ -308,6 +308,58 @@ async function importAdvancedEquationModule(exportName) {
   };
 }
 
+// Import one compiled grouped equation module (towerEquations root) against
+// recording formatting/context stubs, mirroring the advanced-equation harness.
+async function importGroupedEquationModule(fileName) {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), `thero-unit-test-${fileName}-`));
+  fs.writeFileSync(path.join(tmpDir, 'package.json'), JSON.stringify({ type: 'module' }));
+  const equationDest = path.join(tmpDir, 'assets', 'towerEquations', `${fileName}.js`);
+  const contextDest = path.join(tmpDir, 'assets', 'towerEquations', 'blueprintContext.js');
+  const formattingDest = path.join(tmpDir, 'scripts', 'core', 'formatting.js');
+  fs.mkdirSync(path.dirname(equationDest), { recursive: true });
+  fs.mkdirSync(path.dirname(formattingDest), { recursive: true });
+  fs.copyFileSync(
+    path.join(rootDir, 'assets', 'towerEquations', `${fileName}.js`),
+    equationDest,
+  );
+  fs.writeFileSync(
+    contextDest,
+    `export const blueprintContext = {
+       deriveGlyphRankFromLevel: null,
+       getTowerEquationBlueprint: null,
+       ensureTowerUpgradeState: null,
+       calculateTowerEquationResult: null,
+       getDynamicConnectionCount: null,
+       getTowerDefinition: null,
+       computeTowerVariableValue: null,
+     };`,
+  );
+  fs.writeFileSync(
+    formattingDest,
+    `export const formatCalls = [];
+     export function formatWholeNumber(value) {
+       formatCalls.push(['whole', value]);
+       return \`whole:\${String(value)}\`;
+     }
+     export function formatDecimal(value, digits) {
+       formatCalls.push(['decimal', value, digits]);
+       return \`decimal:\${String(value)}:\${String(digits)}\`;
+     }
+     export function formatGameNumber(value) {
+       formatCalls.push(['game', value]);
+       return \`game:\${String(value)}\`;
+     }`,
+  );
+  const equationModule = await import(pathToFileURL(equationDest).href);
+  const contextModule = await import(pathToFileURL(contextDest).href);
+  const formattingModule = await import(pathToFileURL(formattingDest).href);
+  return {
+    module: equationModule,
+    blueprintContext: contextModule.blueprintContext,
+    formatCalls: formattingModule.formatCalls,
+  };
+}
+
 // Import a fresh compiled shared-context module for each state-sensitive test.
 function importBlueprintContextModule() {
   return importAsEsm('assets/towerEquations/blueprintContext.js');
@@ -3057,6 +3109,402 @@ async function run() {
     assert.equal(output, 'component:40% = decimal:40:1% of max HP');
     assert.deepEqual(componentCalls, [40]);
     assert.deepEqual(formatCalls, [['decimal', 40, 1]]);
+  });
+
+  // --- assets/towerEquations/basicTowers.js -------------------------------
+  await test('Alpha equation: metadata, costs, glyph-rank sub-equations, and result remain exact', async () => {
+    const { module, blueprintContext, formatCalls } = await importGroupedEquationModule('basicTowers');
+    const { alpha } = module;
+    assert.equal(alpha.mathSymbol, String.raw`\alpha`);
+    assert.equal(alpha.baseEquation, 'α = Atk × Spd');
+    assert.deepEqual(alpha.variables.map(({ key, glyphLabel, baseValue, step }) => ({
+      key, glyphLabel, baseValue, step,
+    })), [
+      { key: 'atk', glyphLabel: 'ℵ₁', baseValue: 5, step: 5 },
+      { key: 'speed', glyphLabel: 'ℵ₂', baseValue: 0.5, step: 0.5 },
+    ]);
+    const [atk, speed] = alpha.variables;
+    assert.deepEqual([atk.cost(-5), atk.cost(0), atk.cost(2.5)], [1, 1, 3.5]);
+    assert.equal(speed.cost, undefined);
+    assert.equal(atk.format(7), 'whole:7 Atk');
+    assert.equal(speed.format(1.5), 'decimal:1.5:2 Spd');
+    const rankCalls = [];
+    blueprintContext.deriveGlyphRankFromLevel = (level, minimum) => {
+      rankCalls.push([level, minimum]);
+      return 3;
+    };
+    formatCalls.length = 0;
+    assert.deepEqual(atk.getSubEquations({ level: 2, value: 15 }), [
+      {
+        expression: String.raw`\( \text{Atk} = 5 \times \aleph_{1} \)`,
+        values: String.raw`\( whole:15 = 5 \times whole:3 \)`,
+      },
+    ]);
+    assert.deepEqual(speed.getSubEquations({ level: 2, value: NaN }), [
+      {
+        expression: String.raw`\( \text{Spd} = 0.5 \times \aleph_{2} \)`,
+        values: String.raw`\( decimal:1.5:2 = 0.5 \times decimal:3:2 \)`,
+      },
+    ]);
+    assert.deepEqual(rankCalls, [[2, 1], [2, 1]]);
+    assert.deepEqual(formatCalls, [
+      ['whole', 15], ['whole', 3],
+      ['decimal', 1.5, 2], ['decimal', 3, 2],
+    ]);
+    assert.equal(alpha.computeResult({ atk: 4, speed: 2 }), 8);
+    assert.equal(alpha.computeResult({ atk: '4', speed: 2 }), 0);
+    const componentCalls = [];
+    const output = alpha.formatBaseEquationValues({
+      values: { atk: 4, speed: Infinity },
+      result: 8,
+      formatComponent(value) {
+        componentCalls.push(value);
+        return `component:${value}`;
+      },
+    });
+    assert.equal(output, 'component:8 = component:4 × component:0');
+    assert.deepEqual(componentCalls, [8, 4, 0]);
+  });
+
+  await test('Beta equation: metadata, glyph sink fields, and every cost curve remain exact', async () => {
+    const { module } = await importGroupedEquationModule('basicTowers');
+    const { beta } = module;
+    assert.equal(beta.mathSymbol, String.raw`\beta`);
+    assert.equal(beta.baseEquation, 'β = Atk × Spd × Rng × Slw');
+    assert.deepEqual(beta.variables.map(({ key, upgradable }) => ({ key, upgradable })), [
+      { key: 'attack', upgradable: true },
+      { key: 'speed', upgradable: false },
+      { key: 'range', upgradable: false },
+      { key: 'betSlow', upgradable: true },
+      { key: 'slw', upgradable: false },
+      { key: 'slwTime', upgradable: true },
+    ]);
+    const [, speed, range, betSlow, slw, slwTime] = beta.variables;
+    assert.equal(betSlow.symbol, '⁦בּ₁⁩');
+    assert.deepEqual(
+      [betSlow.glyphCurrency, betSlow.attachedToVariable, betSlow.renderControlsInline],
+      ['aleph', 'slw', true],
+    );
+    assert.deepEqual([betSlow.cost(-3), betSlow.cost(2.9)], [1, 3]);
+    assert.deepEqual([slwTime.cost(-2), slwTime.cost(3)], [1, 8]);
+    assert.deepEqual([slwTime.baseValue, slwTime.step], [0.5, 0.1]);
+    assert.deepEqual([speed.lockedNote, range.lockedNote], [
+      'Connect α lattices to accelerate β cadence.',
+      'Entangle α lattices to extend β reach.',
+    ]);
+    assert.equal(slw.format(-3), 'decimal:0:2% slow');
+    assert.equal(slwTime.format(2.5), 'decimal:2.5:2 s');
+    assert.equal(betSlow.format(-4), 'whole:0');
+  });
+
+  await test('Beta equation: attack/speed/range computations preserve helper wiring and errors', async () => {
+    const { module, blueprintContext } = await importGroupedEquationModule('basicTowers');
+    const { beta } = module;
+    const [attack, speed, range] = beta.variables;
+    // The original module calls context helpers without optional chaining; an
+    // uninitialized context therefore throws a TypeError.
+    assert.throws(() => attack.computeValue({ blueprint: {}, towerId: 'beta' }), TypeError);
+    const calls = [];
+    const betaBlueprint = { id: 'beta-blueprint' };
+    blueprintContext.getTowerEquationBlueprint = (towerId) => {
+      calls.push(['blueprint', towerId]);
+      return betaBlueprint;
+    };
+    blueprintContext.ensureTowerUpgradeState = (towerId, blueprint) => {
+      calls.push(['state', towerId, blueprint]);
+      return { variables: { attack: { level: 4 } } };
+    };
+    blueprintContext.deriveGlyphRankFromLevel = (level, minimum) => {
+      calls.push(['rank', level, minimum]);
+      return 2;
+    };
+    blueprintContext.calculateTowerEquationResult = (towerId) => {
+      calls.push(['result', towerId]);
+      return 10;
+    };
+    assert.equal(attack.computeValue({ blueprint: null, towerId: 'beta' }), 20);
+    assert.deepEqual(calls, [
+      ['blueprint', 'beta'],
+      ['state', 'beta', betaBlueprint],
+      ['rank', 4, 1],
+      ['result', 'alpha'],
+    ]);
+    calls.length = 0;
+    const provided = { id: 'provided' };
+    assert.equal(attack.computeValue({ blueprint: provided, towerId: 'beta' }), 20);
+    assert.deepEqual(calls[0], ['state', 'beta', provided]);
+    const connectionCalls = [];
+    blueprintContext.getDynamicConnectionCount = (towerType) => {
+      connectionCalls.push(towerType);
+      return 2;
+    };
+    assert.equal(speed.computeValue(), 3.5);
+    assert.equal(range.computeValue(), 3);
+    assert.deepEqual(connectionCalls, ['alpha', 'alpha']);
+    assert.deepEqual(speed.getSubEquations(), [
+      {
+        expression: String.raw`\( \text{Spd} = 0.5 + 1.5 \left( \alpha_{\beta} \right) \)`,
+        values: String.raw`\( decimal:3.5:2 = 0.5 + 1.5 \left( whole:2 \right) \)`,
+      },
+    ]);
+  });
+
+  await test('Beta equation: slow-field coercion, cap, sub-equations, and result remain exact', async () => {
+    const { module, blueprintContext } = await importGroupedEquationModule('basicTowers');
+    const { beta } = module;
+    const slw = beta.variables[4];
+    const variableCalls = [];
+    let betSlowValue = '7';
+    blueprintContext.getTowerEquationBlueprint = () => ({ id: 'beta-blueprint' });
+    blueprintContext.computeTowerVariableValue = (towerId, variableKey, blueprint) => {
+      variableCalls.push([towerId, variableKey, blueprint]);
+      return betSlowValue;
+    };
+    assert.equal(slw.computeValue({ blueprint: {}, towerId: 'beta' }), 34);
+    betSlowValue = 25;
+    assert.equal(slw.computeValue({ blueprint: {}, towerId: 'beta' }), 60);
+    betSlowValue = 'invalid';
+    assert.ok(Number.isNaN(slw.computeValue({ blueprint: {}, towerId: 'beta' })));
+    betSlowValue = 10;
+    assert.deepEqual(slw.getSubEquations({ blueprint: {}, towerId: 'beta' }), [
+      {
+        expression: String.raw`\( \text{Slw\%} = 20 + 2\,\text{Bet}_{1} \)`,
+        values: String.raw`\( decimal:40:2\% = 20 + 2 \times whole:10 \)`,
+      },
+      {
+        expression: String.raw`\( \text{Slw\%} \leq 60 \)`,
+        glyphEquation: true,
+      },
+    ]);
+    assert.deepEqual(variableCalls.map(([, key]) => key), [
+      'betSlow', 'betSlow', 'betSlow', 'betSlow',
+    ]);
+    assert.equal(beta.computeResult({ attack: 2, speed: 3, range: 4, slw: 50 }), 12);
+    assert.equal(beta.computeResult({ attack: 2, speed: 3, range: 4, slw: -50 }), 0);
+    const componentCalls = [];
+    const output = beta.formatBaseEquationValues({
+      values: { attack: 2, speed: 3, range: 4, slw: 50 },
+      result: 12,
+      formatComponent(value) {
+        componentCalls.push(value);
+        return `component:${value}`;
+      },
+    });
+    assert.equal(output, 'component:12 = component:2 × component:3 × component:4 × component:50%');
+    // slowText is built before the returned template, so slw formats first.
+    assert.deepEqual(componentCalls, [50, 12, 2, 3, 4]);
+  });
+
+  await test('Gamma equation: metadata, costs, inherited chains, and result remain exact', async () => {
+    const { module, blueprintContext } = await importGroupedEquationModule('basicTowers');
+    const { gamma } = module;
+    assert.equal(gamma.mathSymbol, String.raw`\gamma`);
+    assert.equal(gamma.baseEquation, 'γ = Atk × Spd × Rng × Prc × Brst');
+    assert.deepEqual(gamma.variables.map((variable) => variable.key), [
+      'attack', 'speed', 'range', 'pierce', 'brst',
+    ]);
+    const [attack, speed, range, pierce, brst] = gamma.variables;
+    assert.deepEqual([brst.cost(-3), brst.cost(2)], [5, 125]);
+    assert.equal(pierce.cost, undefined);
+    assert.deepEqual([pierce.baseValue, pierce.step, brst.baseValue, brst.step], [1, 1, 5, 5]);
+    const calls = [];
+    blueprintContext.getTowerEquationBlueprint = () => ({ id: 'gamma-blueprint' });
+    blueprintContext.ensureTowerUpgradeState = () => ({ variables: {} });
+    blueprintContext.deriveGlyphRankFromLevel = (level, minimum) => {
+      calls.push(['rank', level, minimum]);
+      return 3;
+    };
+    blueprintContext.calculateTowerEquationResult = (towerId) => {
+      calls.push(['result', towerId]);
+      return 7;
+    };
+    blueprintContext.getDynamicConnectionCount = (towerType) => {
+      calls.push(['connections', towerType]);
+      return 2;
+    };
+    assert.equal(attack.computeValue({ blueprint: {}, towerId: 'gamma' }), 21);
+    assert.equal(speed.computeValue(), 1);
+    assert.equal(range.computeValue(), 5);
+    assert.deepEqual(calls, [
+      ['rank', 0, 1], ['result', 'beta'],
+      ['connections', 'alpha'], ['connections', 'beta'],
+    ]);
+    assert.deepEqual(pierce.getSubEquations({ level: 1, value: NaN }), [
+      {
+        expression: String.raw`\( \text{Prc} = \aleph_{2} \)`,
+        values: String.raw`\( whole:3 = whole:3 \)`,
+      },
+    ]);
+    assert.deepEqual(brst.getSubEquations({ level: 1, value: NaN }), [
+      {
+        expression: String.raw`\( \text{Brst} = 5 \times (1 + \aleph) \)`,
+        values: String.raw`\( decimal:20:2 = 5 \times (1 + whole:3) \)`,
+      },
+    ]);
+    assert.equal(gamma.computeResult({ attack: 2, speed: 3, range: 4, pierce: 5, brst: 6 }), 720);
+    const componentCalls = [];
+    const output = gamma.formatBaseEquationValues({
+      values: { attack: 2, speed: 3, range: 4, pierce: 5, brst: 6 },
+      result: 720,
+      formatComponent(value) {
+        componentCalls.push(value);
+        return `component:${value}`;
+      },
+    });
+    assert.equal(
+      output,
+      'component:720 = component:2 × component:3 × component:4 × component:5 × component:6s',
+    );
+    // burstText is built before the returned template, so brst formats first.
+    assert.deepEqual(componentCalls, [6, 720, 2, 3, 4, 5]);
+  });
+
+  // --- assets/towerEquations/infinityTower.js ------------------------------
+  await test('Infinity equation: metadata, factory variables, and cost curves remain exact', async () => {
+    const { module } = await importGroupedEquationModule('infinityTower');
+    const { infinity } = module;
+    assert.equal(infinity.mathSymbol, String.raw`\infty`);
+    assert.equal(infinity.baseEquation, String.raw`\( \infty = \text{Exp} \times \text{Rng} \)`);
+    assert.deepEqual(infinity.variables.map((variable) => variable.key), [
+      'exponent', 'range', 'bonusMultiplier',
+      'mulAleph', 'mulBet', 'mulLamed', 'mulTsadi', 'mulShin', 'mulKuf',
+    ]);
+    const [exponent, range, bonusMultiplier, mulAleph] = infinity.variables;
+    assert.deepEqual([exponent.cost(2), range.cost(2), mulAleph.cost(2)], [22, 29, 11]);
+    assert.equal(bonusMultiplier.cost, undefined);
+    assert.equal(range.baseValue, 2 * Math.E);
+    assert.equal(bonusMultiplier.baseValue, Math.E);
+    assert.deepEqual(
+      infinity.variables.slice(3).map(({ symbol, upgradable, includeInMasterEquation }) => ({
+        symbol, upgradable, includeInMasterEquation,
+      })),
+      [
+        { symbol: 'ℵ', upgradable: true, includeInMasterEquation: false },
+        { symbol: 'ב', upgradable: true, includeInMasterEquation: false },
+        { symbol: 'ל', upgradable: true, includeInMasterEquation: false },
+        { symbol: 'צ', upgradable: true, includeInMasterEquation: false },
+        { symbol: 'ש', upgradable: true, includeInMasterEquation: false },
+        { symbol: 'ק', upgradable: true, includeInMasterEquation: false },
+      ],
+    );
+    assert.equal(exponent.format(1.5), 'decimal:1.5:2 Exp');
+    assert.equal(range.format(3), 'decimal:3:2m');
+    assert.equal(bonusMultiplier.format(2), '×decimal:2:2');
+    assert.equal(mulAleph.format(0), 'whole:1 ℵ');
+  });
+
+  await test('Infinity equation: exponent preserves two-read unspent-Thero coercion and notes', async () => {
+    const { module, blueprintContext } = await importGroupedEquationModule('infinityTower');
+    const { infinity } = module;
+    const [exponent] = infinity.variables;
+    blueprintContext.getTowerEquationBlueprint = () => ({ id: 'infinity-blueprint' });
+    blueprintContext.ensureTowerUpgradeState = () => ({ variables: { exponent: { level: 2 } } });
+    blueprintContext.deriveGlyphRankFromLevel = () => 2;
+    let unspentReads = 0;
+    const changingContext = {
+      get unspentThero() {
+        unspentReads += 1;
+        return unspentReads === 1 ? 100 : '1000';
+      },
+    };
+    assert.equal(exponent.computeValue({
+      blueprint: {}, towerId: 'infinity', dynamicContext: changingContext,
+    }), Math.log(1000) * 2);
+    assert.equal(unspentReads, 2);
+    assert.equal(exponent.computeValue({
+      blueprint: {}, towerId: 'infinity', dynamicContext: null,
+    }), 0);
+    assert.equal(exponent.computeValue({
+      blueprint: {}, towerId: 'infinity', dynamicContext: { unspentThero: '50' },
+    }), 0);
+    assert.deepEqual(exponent.getSubEquations({
+      level: 3, value: NaN, dynamicContext: { unspentThero: 1000 },
+    }), [
+      {
+        expression: String.raw`\( \text{Exp} = \ln(\text{þ}) \times \aleph_{1} \)`,
+        values: String.raw`\( decimal:${Math.log(1000) * 2}:2 = \ln(game:1000) \times whole:2 \)`,
+      },
+      {
+        expression: String.raw`\( \text{þ} = \text{unspent thero (player money)} \)`,
+        variant: 'note',
+      },
+    ]);
+  });
+
+  await test('Infinity equation: range and glyph allocations preserve rank math and identities', async () => {
+    const { module, blueprintContext } = await importGroupedEquationModule('infinityTower');
+    const { infinity } = module;
+    const [, range, , mulAleph] = infinity.variables;
+    const stateCalls = [];
+    blueprintContext.getTowerEquationBlueprint = () => ({ id: 'infinity-blueprint' });
+    blueprintContext.ensureTowerUpgradeState = (towerId, blueprint) => {
+      stateCalls.push([towerId, blueprint]);
+      return { variables: { range: { level: 5 }, mulAleph: { level: 3 } } };
+    };
+    blueprintContext.deriveGlyphRankFromLevel = (level) => (Number(level) || 0) + 1;
+    assert.equal(range.computeValue({ blueprint: {}, towerId: 'infinity' }), 2 * Math.E + 2.5);
+    assert.equal(mulAleph.computeValue({ blueprint: {}, towerId: 'infinity' }), 4);
+    assert.deepEqual(range.getSubEquations({ level: 5, value: NaN }), [
+      {
+        expression: String.raw`\( \text{Rng} = 2e + 0.5(\aleph_{2} - 1) \)`,
+        values: String.raw`\( decimal:${2 * Math.E}:2 = decimal:${2 * Math.E}:2 + 0.5(whole:6 - 1) \)`,
+      },
+      {
+        expression: String.raw`\( e \approx 2.718 \text{ (Euler's number)} \)`,
+        variant: 'note',
+      },
+    ]);
+    assert.deepEqual(mulAleph.getSubEquations({ value: 4 }), [
+      {
+        expression: String.raw`\( \text{ℵ} = whole:4 \)`,
+        variant: 'values',
+        glyphEquation: true,
+      },
+    ]);
+  });
+
+  await test('Infinity equation: fused multiplier order, fallbacks, and result remain exact', async () => {
+    const { module, blueprintContext } = await importGroupedEquationModule('infinityTower');
+    const { infinity } = module;
+    const bonusMultiplier = infinity.variables[2];
+    const variableCalls = [];
+    const glyphValues = { mulAleph: 3, mulBet: 2 };
+    blueprintContext.getTowerEquationBlueprint = () => ({ id: 'infinity-blueprint' });
+    blueprintContext.computeTowerVariableValue = (towerId, variableKey) => {
+      variableCalls.push(variableKey);
+      return glyphValues[variableKey];
+    };
+    assert.equal(
+      bonusMultiplier.computeValue({ blueprint: {}, towerId: 'infinity' }),
+      Math.max(1, Math.log(6)),
+    );
+    assert.deepEqual(variableCalls, [
+      'mulAleph', 'mulBet', 'mulLamed', 'mulTsadi', 'mulShin', 'mulKuf',
+    ]);
+    const lines = bonusMultiplier.getSubEquations({ blueprint: {}, towerId: 'infinity', value: NaN });
+    assert.equal(
+      lines[0].values,
+      String.raw`\( decimal:${Math.log(6)}:2 = \ln(whole:3 \times whole:2 \times whole:1 \times whole:1 \times whole:1 \times whole:1) \)`,
+    );
+    assert.equal(lines[0].glyphEquation, true);
+    assert.deepEqual(lines[1], {
+      expression: String.raw`\( \text{Allocate glyphs below to boost the fused product} \)`,
+      variant: 'note',
+    });
+    assert.equal(infinity.computeResult({ exponent: 2, range: 3 }), 6);
+    assert.equal(infinity.computeResult({}), 0);
+    assert.equal(infinity.computeResult({ exponent: 2 }), 2 * (2 * Math.E));
+    const componentCalls = [];
+    const output = infinity.formatBaseEquationValues({
+      values: { exponent: 2 },
+      result: 6,
+      formatComponent(value) {
+        componentCalls.push(value);
+        return `component:${value}`;
+      },
+    });
+    assert.equal(output, `component:6 = component:2 × component:${2 * Math.E}`);
+    assert.deepEqual(componentCalls, [6, 2, 2 * Math.E]);
   });
 
   // --- assets/towerEquations/index.js ------------------------------------

@@ -15,19 +15,19 @@ This file serves four functions:
 
 ## Current Migration Dashboard
 
-<!-- migration-roadmap-counts: ts=71 generated=71 active_js=163 candidates=45 -->
-<!-- migration-roadmap-authorization: phase=24 -->
+<!-- migration-roadmap-counts: ts=73 generated=73 active_js=161 candidates=45 -->
+<!-- migration-roadmap-authorization: phase=25 -->
 
 | Item | Current state |
 |---|---|
-| Repository baseline | Build 756 on `claude/js-to-ts-game-conversion-ijybn5` (user-designated session branch off `main` checkpoint `f51f66c`), including the completed Phase 23 terminal-equation migration |
-| Completed migration history | Phases 0-23 remain complete; historical phase identities are preserved |
-| Next authorized implementation | **Phase 24 only:** basic and Infinity grouped equation definitions |
+| Repository baseline | Build 757 on `claude/js-to-ts-game-conversion-ijybn5` (user-designated session branch off `main` checkpoint `f51f66c`), including the completed Phase 23 and 24 equation migrations |
+| Completed migration history | Phases 0-24 remain complete; historical phase identities are preserved |
+| Next authorized implementation | **Phase 25 only:** the Greek grouped equation monolith |
 | Delivery branch | Work directly on `main`; create or switch to another branch only when the user explicitly requests it |
-| Active authored modules | 234 total: 71 TypeScript and 163 JavaScript |
-| Compatibility output | 71 generated `.js` siblings; they are runtime output, not backlog |
+| Active authored modules | 234 total: 73 TypeScript and 161 JavaScript |
+| Compatibility output | 73 generated `.js` siblings; they are runtime output, not backlog |
 | Decision candidates | 45 unreachable authored `.js` files requiring retirement, integration, or archival decisions |
-| Long-range sequence | Phases 24-55; Phase 54 is an extraction gate and assigns no backlog module |
+| Long-range sequence | Phases 25-55; Phase 54 is an extraction gate and assigns no backlog module |
 | Mechanical check | `npm run check:migration-roadmap` validates reachability, classifications, duplicate assignments, totals, and per-phase counts |
 
 The dashboard is the fast orientation surface. The historical ledger remains append-only evidence, while [`docs/TypeScriptMigrationRoadmapInventory.md`](docs/TypeScriptMigrationRoadmapInventory.md) is authoritative for exact future file assignments. Re-run the mechanical check and re-inventory the affected phases before changing any dashboard count.
@@ -112,12 +112,12 @@ The obsolete-Spire retirement is an intentional product change, not a general mi
 
 Inventory was originally recalculated from the live tree on **2026-07-16**, starting on `codex/phases-17-20-advanced-equations` at exact commit `2bad7891ca88baa20c1a084c31ecd939e11b4eca`, then continuing on the documentation-only branch `codex/typescript-migration-roadmap`. It was reconciled again after equipment/gem retirement merge `c96df03` and audited at `main` commit `0802d21`. The browser entry root is `index.html` -> `assets/main.js`.
 
-- **71 authored `.ts` modules** (excluding `.d.ts`; none exist).
-- **71 build-generated `.js` siblings** of those TypeScript modules. These are runtime output, not backlog.
-- **163 active authored `.js` modules**, verified reachable through static local imports from `assets/main.js`.
+- **73 authored `.ts` modules** (excluding `.d.ts`; none exist).
+- **73 build-generated `.js` siblings** of those TypeScript modules. These are runtime output, not backlog.
+- **161 active authored `.js` modules**, verified reachable through static local imports from `assets/main.js`.
 - **0 intentionally preserved legacy `.js` modules** with current repository evidence. The previously documented 19-file disabled Terrarium tree was deleted by `64ebc5e`.
 - **45 ambiguous or retirement/deletion-candidate `.js` modules**, all currently unreachable from the browser entry graph. They are excluded from the active backlog pending a separate decision.
-- **234 active authored modules** in total, so active module-count conversion is **30.3%** (`71 / 234`). The raw authored-language tree is 279 modules when the 45 decision candidates are included.
+- **234 active authored modules** in total, so active module-count conversion is **31.2%** (`73 / 234`). The raw authored-language tree is 279 modules when the 45 decision candidates are included.
 - Supplemental authored-line snapshot: **8,309 TypeScript lines** and **81,526 active JavaScript lines**. Line counts do not represent migration difficulty.
 
 Method: recursively enumerate `assets/` and `scripts/`; exclude `node_modules/`, `dist/`, `build/`, generated output, dependencies, fixtures, and non-source material; remove each `.js` file with a same-path `.ts` sibling; parse static relative `import`/`export ... from` edges; traverse from `assets/main.js`; and audit unreachable files against tests, retirement documentation, HTML harnesses, and recent commits. The full classification, dependency evidence, 168-module coverage map, and 45-file retirement list are in [`docs/TypeScriptMigrationRoadmapInventory.md`](docs/TypeScriptMigrationRoadmapInventory.md). Run `npm run check:migration-roadmap` to verify that classification against the current checkout.
@@ -181,6 +181,7 @@ The original statement that no conversion phase was complete is superseded by th
 | 21 | Rho advanced equation definition (`assets/towerEquations/advanced/rhoEquation.js`) | COMPLETE | Builds 751-752 on `codex/phase-21-rho-equation`; see the Phase 21 execution card and implementation log |
 | 22 | Kappa -> Lambda -> Mu -> Nu -> Xi advanced equation chain | COMPLETE | Implementation checkpoint `87f6afe` and Build 755 closeout on `main`; see the Phase 22 authorization card and implementation log |
 | 23 | Omicron, Pi, Chi, Psi, Omega terminal advanced equations | COMPLETE | Executed 2026-07-17 on `claude/js-to-ts-game-conversion-ijybn5` (user-designated session branch), Build 756; see the Phase 23 authorization card and implementation log |
+| 24 | Basic (Alpha/Beta/Gamma) and Infinity grouped equation definitions | COMPLETE | Executed 2026-07-17 on `claude/js-to-ts-game-conversion-ijybn5`, Build 757; see the Phase 24 authorization card and implementation log |
 
 ---
 
@@ -267,8 +268,8 @@ Exact file lists and per-module risk notes are in the linked coverage appendix. 
 | 21 | **COMPLETE** | Rho income equation; 1 module | 8, 12, 16-20; Rho dynamic context, upgrade-state reads, sub-equation contexts | Advanced barrel and typed registry retained exact identity; no shared contract edit was required | Six deterministic Rho tests cover metadata, costs, helper/getter timing, coercion/fallbacks, both formula branches, result math, and formatter order. |
 | 22 | **COMPLETE** | Kappa -> Lambda -> Mu -> Nu -> Xi equation chain; 5 modules | 21; shared blueprint variable/result/context contracts | Advanced barrel/registry and Towers tab equation consumers; one canonical `lockedNote` field added to the presenter-owned variable contract | Nineteen deterministic tests cover metadata, every cost curve, helper/state/dynamic fallbacks and order, sub-equations, results, formatting, and inherited coercion edges. |
 | 23 | **COMPLETE** | Omicron/Pi/Chi/Psi/Omega equations; 5 modules | 22 | Terminal equation shapes reused presenter/context contracts; `glyphCurrency`/`maxLevel` added to the presenter-owned variable contract on compiler evidence | Same barrel/registry retained exact identity; one authorized display fix restored the omicron golden-equation `\times` operator | Nineteen deterministic tests cover metadata, every cost curve, helper call counts, coercion/`NaN`/Infinity fallbacks, sub-equations, results, and formatter order. |
-| 24 | **AUTHORIZED NEXT** | Basic and Infinity grouped equations; 2 modules | 23 | Foundational tower equation and Infinity term contracts | Registry and all dependent equations/Towers tab | Registry identity/order plus per-tower golden cases; risk is broad foundational fan-out; exclude Greek monolith. |
-| 25 | **TENTATIVE NEAR-TERM** | Greek grouped equation monolith; 1 module | 24 | Per-tower variable/result types reusing the shared owner contract | Completes authored equation definitions consumed by registry/Towers tab | Characterize each tower independently before conversion; manual all-equation overlay pass; do not redesign/split formulas during migration. |
+| 24 | **COMPLETE** | Basic and Infinity grouped equations; 2 modules | 23 | Alpha/Beta/Gamma and Infinity definitions reused presenter/context contracts; `renderControlsInline` added to the presenter-owned variable contract on compiler evidence | Registry retained exact identity for all four definitions; no dependent equation changed | Ten per-tower golden tests cover metadata, cost curves, helper wiring and errors, connection/glyph-rank math, two-read dynamic getters, fused-product order, and formatter order. |
+| 25 | **AUTHORIZED NEXT** | Greek grouped equation monolith; 1 module | 24 | Per-tower variable/result types reusing the shared owner contract | Completes authored equation definitions consumed by registry/Towers tab | Characterize each tower independently before conversion; manual all-equation overlay pass; do not redesign/split formulas during migration. |
 | 26 | **TENTATIVE NEAR-TERM** | Pure tokens, units, geometry, wave codec, playfield facades, build data, Aleph registry; 11 modules | 25 | `Wave`, `EnemyGroup`, points, units, token spans, numeric helpers, Aleph ids | 31 importers for units, 13 for playfield formatting, level/editor and tower consumers | Edge/malformed/round-trip/property tests; no browser except wave-editor smoke; risk is preserving coercive legacy codec behavior. |
 | 27 | **TENTATIVE NEAR-TERM** | Gameplay config loaders, levels, configuration, enemies; 4 modules | 26 and Phase 4 tower data | Runtime-validated config/level/wave/enemy schemas | Main, playfield, managers, and achievements; compatibility adapters for untyped callers | Fetch/global/dynamic-import fallback tests, malformed JSON/config fixtures, seeded enemy helpers; browser config load; exclude balance changes. |
 | 28 | **TENTATIVE NEAR-TERM** | Tutorial and Powder state/queue/log/persistence; 5 modules | 26-27 and existing save owners | Tutorial/Powder snapshots and legacy validators | Autosave, main, Towers tab, and Powder UI | Round-trip plus malformed/old saves, queue ordering, event log retention; manual reload; never trust or rename saved keys. |
@@ -300,7 +301,7 @@ Exact file lists and per-module risk notes are in the linked coverage appendix. 
 | 54 | **TENTATIVE LATER** | Main responsibility-extraction gate; 0 backlog conversions | All active modules except `main.js` typed | Extract only still-owned cohesive responsibilities into new typed owners; define composition contract | Compatibility edits inside `assets/main.js` are expected, but it remains `.js` | Characterize startup order and globals before extraction; browser/Electron; completion means residual main is composition-only. No extension conversion yet. |
 | 55 | **TENTATIVE LATER** | Final `assets/main.js` → `assets/main.ts`; 1 module | 54 and every prior active-module phase | Typed application composition/startup/window API | `index.html` keeps loading generated `assets/main.js` | Startup order/global/API tests, browser portrait/desktop, save reload, full level, audio, and Electron. Complete only with no broad assertions and no owned feature logic left. |
 
-Phases 24-55 cover all 163 active authored JavaScript modules. Across Phases 21-55 there are **35 roadmap phases**: three completed conversion phases, one authorized conversion phase, 30 tentative conversion phases, and one tentative zero-module extraction gate (Phase 54). The remaining 31 conversion phases assign the active backlog and the gate prepares the final root without double-counting it. No active module is assigned twice.
+Phases 25-55 cover all 161 active authored JavaScript modules. Across Phases 21-55 there are **35 roadmap phases**: four completed conversion phases, one authorized conversion phase, 29 tentative conversion phases, and one tentative zero-module extraction gate (Phase 54). The remaining 30 conversion phases assign the active backlog and the gate prepares the final root without double-counting it. No active module is assigned twice.
 
 ### Critical path
 
@@ -378,7 +379,7 @@ The 45 unreachable JavaScript files are not migration backlog. The strongest ret
 
 ### Single next authorized phase
 
-Only Phase 24 is authorized. Later phases are sequencing hypotheses, not implementation authority.
+Only Phase 25 is authorized. Later phases are sequencing hypotheses, not implementation authority.
 
 #### Phase 21 execution card
 
@@ -475,6 +476,24 @@ Convert those files to strict `.ts` sources and regenerate only their same-path 
 **Required characterization:** exact metadata and variable order per exported definition; every cost/base/step formula; helper call counts and fallbacks; Number/Boolean coercion, `NaN`, Infinity, negative and fractional cases; every sub-equation branch and formatter order; result/base-equation behavior; registry identity for all four definitions. Tests must be deterministic and pass against original JavaScript before conversion and generated output afterward.
 
 **Completion gate:** use the standard implementation gate and phase record. No formula cleanup, balance change, broad assertion, `any`, suppression, Greek-monolith conversion, or simulation edit is authorized. Browser equation inspection is optional for this math-only slice but must be reported as performed or not performed. Completion must refresh counts, inventory coverage, Build metadata, and exactly one next authorization.
+
+**Completion record:** Phase 24 converted exactly the two authorized grouped definition files, retained all `.js` import/export specifiers and exact registry identity for Alpha, Beta, Gamma, and Infinity, and reused the presenter/context contracts. Because these modules call context helpers without optional chaining, each source uses a small `requireHelper` guard that preserves the original uninitialized-context `TypeError`; Beta's unknown-typed glyph read reuses the established native-`Math.max`-coercion helper, and Infinity's `unspentThero` read preserves the original two-read property-getter count. The only shared owner change adds the already-authored `renderControlsInline` field to `TowerEquationVariable`, proven necessary by the compiler against Beta's `betSlow` variable and already consumed by `assets/towerUpgradeOverlayController.js`. Ten focused tests passed first against the original JavaScript and then against generated TypeScript output. Final command evidence and the unperformed optional browser inspection are recorded in the Phase 24 implementation-log entry.
+
+#### Phase 25 authorization card
+
+**Intent:** migrate the Greek grouped equation monolith after Phase 24 completed the basic and Infinity grouped definitions. This 1,684-line file owns the Delta, Epsilon, Zeta, Eta, Theta, and Iota definitions and completes the authored equation-definition backlog consumed by the typed registry.
+
+**Exact authored sources:**
+
+- `assets/towerEquations/greekTowers.js` (Delta, Epsilon, Zeta, Eta, Theta, and Iota definitions)
+
+Convert the file to one strict `.ts` source and regenerate only its same-path `.js` sibling. Retain all `.js` import/export specifiers and exact registry identity for every exported definition object.
+
+**Dependency boundary:** downstream equations read Greek results only through `blueprintContext`, so no downstream file changes. Reuse `TowerEquationBlueprint`, presenter-owned value types, and `blueprintContext`. Do not convert the Towers tab, simulations, playfield, or main, and do not split or redesign formulas during migration.
+
+**Required characterization:** characterize each of the six towers independently before conversion — exact metadata and variable order; every cost/base/step formula; helper call counts and fallbacks; Number/Boolean coercion, `NaN`, Infinity, negative and fractional cases; every sub-equation branch and formatter order; result/base-equation behavior; registry identity for all six definitions. Tests must be deterministic and pass against original JavaScript before conversion and generated output afterward. An all-equation browser overlay pass is recommended and must be reported as performed or not performed.
+
+**Completion gate:** use the standard implementation gate and phase record. No formula cleanup, balance change, broad assertion, `any`, suppression, file split, or simulation edit is authorized. Completion must refresh counts, inventory coverage, Build metadata, and exactly one next authorization.
 
 ---
 
@@ -1334,17 +1353,29 @@ The equipment/gem retirement removed five active JavaScript modules from future 
 
 ## Next Suggested Step
 
-**Recommended Phase 24: basic and Infinity grouped equation definitions.** The normative implementation checklist is the [Phase 24 authorization card](#phase-24-authorization-card).
+**Recommended Phase 25: the Greek grouped equation monolith.** The normative implementation checklist is the [Phase 25 authorization card](#phase-25-authorization-card).
 
-Phase 23 closed the individually authored advanced-definition group, so the two grouped non-Greek definition files are the next coherent slice before the Greek monolith. Their Alpha/Beta/Gamma results are already consumed through typed presenter/context contracts by converted downstream equations.
+Phase 24 completed the basic and Infinity grouped definitions, so `assets/towerEquations/greekTowers.js` (1,684 lines; Delta, Epsilon, Zeta, Eta, Theta, Iota) is the sole remaining authored equation-definition module. Converting it completes the entire authored equation backlog consumed by the typed registry.
 
-**Bounded scope:** Convert only `assets/towerEquations/basicTowers.js` and `assets/towerEquations/infinityTower.js` to strict TypeScript. Reuse presenter/context owners and add only narrow guards required by existing values and callbacks. Do not include the Greek grouped monolith, Towers tab, simulations, playfield systems, or main integration.
+**Bounded scope:** Convert only `assets/towerEquations/greekTowers.js` to strict TypeScript as one source module. Characterize each of the six towers independently before conversion. Reuse presenter/context owners and add only narrow guards required by existing values and callbacks. Do not split the file, redesign formulas, or include the Towers tab, simulations, playfield systems, or main integration.
 
-**Acceptance criteria:** Preserve exact metadata, strings, formulas, repeated helper/getter calls, coercion, clamping, every cost curve, sub-equation order, result math, formatter callback order/output, `.js` imports, and registry identity for every exported definition; add no `any`, broad assertions, or suppressions; typecheck/build/lint/unit/smoke and roadmap checks pass; update counts/build number and record browser availability honestly.
+**Acceptance criteria:** Preserve exact metadata, strings, formulas, repeated helper/getter calls, coercion, clamping, every cost curve, sub-equation order, result math, formatter callback order/output, `.js` imports, and registry identity for all six definitions; add no `any`, broad assertions, or suppressions; typecheck/build/lint/unit/smoke and roadmap checks pass; update counts/build number and record browser availability honestly.
 
 ---
 
 ## Implementation Log
+
+### 2026-07-17 — Phase 24 grouped basic/Infinity equation conversion executed
+
+- **Baseline:** clean `claude/js-to-ts-game-conversion-ijybn5` at Phase 23 closeout commit `5ec2f3e` (Build 756). Roadmap check (71/71/163/45), typecheck, build, lint, 203/203 unit tests plus retired-Spire checks, and smoke test all passed before implementation.
+- **Authorized boundary:** only `assets/towerEquations/basicTowers.js` and `assets/towerEquations/infinityTower.js` moved to strict `.ts`; their generated siblings, ten focused tests plus a shared grouped-equation test harness, one evidence-backed presenter contract edit, roadmap/inventory records, generated `dist/`, and build metadata are included. No Greek-monolith, Towers tab, simulation, playfield, main, formula, or balance behavior entered scope.
+- **Dependency audit:** these modules call context helpers without optional chaining, so each source uses a `requireHelper` guard preserving the original uninitialized-context `TypeError` (characterized by test). Beta's `betSlow` glyph read preserves native `Math.max` coercion over the presenter's `unknown` return; Infinity's `unspentThero` dynamic-context read preserves the original two-read property-getter count (characterized with a stateful getter). Registry identity for `alpha`, `beta`, `gamma`, and `infinity` is unchanged and remains covered by the existing registry suite.
+- **Behavior oracle:** ten deterministic tests were added, increasing the suite from 203 to 212, all passing first against the original JavaScript and then against generated TypeScript output. They cover exact metadata/order, every cost curve, glyph-rank helper argument order, connection-count wiring (including Gamma's alpha/beta split), string/`NaN`/Infinity coercion including the slow-field `NaN` passthrough, sub-equation single-object expression+values shape, the fused-glyph lookup order, and base-formatter call order including Beta/Gamma's early `slowText`/`burstText` construction.
+- **Contracts:** both sources end each exported definition with `satisfies TowerEquationBlueprint`; the Infinity glyph factory returns the presenter-owned `TowerEquationVariable`. `TowerEquationVariable.renderControlsInline?: boolean` is the only shared owner edit, proven by the compiler and already consumed by the upgrade overlay. No `any`, broad assertion, suppression, or duplicate shared contract was added.
+- **Output and counts:** Build 757. Counts are 73 TypeScript sources, 73 generated siblings, 161 active authored JavaScript modules, and 45 decision candidates (31.2% of 234 active authored modules converted). The supplemental line snapshot is 10,169 TypeScript lines and 78,544 active JavaScript lines.
+- **Automated evidence:** `npm run check:migration-roadmap` passes at 73/73/161/45; `npm run typecheck`, `npm run build`, `npm run lint`, `npm run test:unit` (212/212 plus retired-Spire checks), `npm test`, and `git diff --check` pass. The malformed-storage fixture prints its expected parse diagnostic while the unit command exits 0.
+- **Manual evidence:** optional browser equation-display verification was not performed; this math-only phase changes no DOM, input, Canvas, audio, save, or Electron path.
+- **Residual risk and handoff:** no known behavior gap or temporary compatibility seam remains. Phase 24 is complete; only Phase 25 (the Greek grouped equation monolith) is authorized next under its single-file card.
 
 ### 2026-07-17 — Phase 23 terminal equation conversion executed
 

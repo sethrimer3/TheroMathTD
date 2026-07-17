@@ -114,6 +114,8 @@ export interface TowerEquationVariable {
   glyphCurrency?: string;
   /** Inclusive upgrade-level cap read by the Towers tab and upgrade overlay. */
   maxLevel?: number;
+  /** Inline attachment rendering flag read by the tower upgrade overlay. */
+  renderControlsInline?: boolean;
   attachedToVariable?: unknown;
   category?: unknown;
   includeInMasterEquation?: unknown;
