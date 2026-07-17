@@ -4563,6 +4563,280 @@ async function run() {
     assert.equal(configuration.getTowerLoadoutLimit(), 4);
   });
 
+  // --- assets/tutorialState.js ---------------------------------------------
+  await test('tutorial state: storage keys, unlock flows, and prologue checks remain exact', async () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thero-unit-test-tutorial-'));
+    fs.writeFileSync(path.join(tmpDir, 'package.json'), JSON.stringify({ type: 'module' }));
+    const assetsDir = path.join(tmpDir, 'assets');
+    fs.mkdirSync(assetsDir, { recursive: true });
+    fs.copyFileSync(path.join(rootDir, 'assets', 'tutorialState.js'), path.join(assetsDir, 'tutorialState.js'));
+    fs.writeFileSync(
+      path.join(assetsDir, 'autoSave.js'),
+      `export const storage = new Map();
+       export const writes = [];
+       export function readStorage(key) { return storage.has(key) ? storage.get(key) : null; }
+       export function writeStorage(key, value) { writes.push([key, value]); storage.set(key, value); }`,
+    );
+    const tutorial = await import(pathToFileURL(path.join(assetsDir, 'tutorialState.js')).href);
+    const storageStub = await import(pathToFileURL(path.join(assetsDir, 'autoSave.js')).href);
+    assert.equal(tutorial.isTutorialCompleted(), false);
+    storageStub.storage.set('glyph-defense-idle:tutorial-state', 'completed');
+    storageStub.storage.set('glyph-defense-idle:towers-tab-unlocked', 'true');
+    storageStub.storage.set('glyph-defense-idle:codex-unlocked', 'false');
+    tutorial.loadTutorialState();
+    assert.equal(tutorial.isTutorialCompleted(), true);
+    assert.equal(tutorial.isTowersTabUnlocked(), true);
+    assert.equal(tutorial.isCodexUnlocked(), false);
+    assert.equal(tutorial.isAchievementsUnlocked(), false);
+    tutorial.unlockCodex();
+    tutorial.unlockAchievements();
+    assert.deepEqual(storageStub.writes, [
+      ['glyph-defense-idle:codex-unlocked', 'true'],
+      ['glyph-defense-idle:achievements-unlocked', 'true'],
+    ]);
+    tutorial.resetTutorialState();
+    assert.equal(tutorial.isTutorialCompleted(), false);
+    assert.equal(tutorial.isTowersTabUnlocked(), false);
+    assert.deepEqual(storageStub.writes.slice(2), [
+      ['glyph-defense-idle:tutorial-state', ''],
+      ['glyph-defense-idle:towers-tab-unlocked', ''],
+      ['glyph-defense-idle:codex-unlocked', ''],
+      ['glyph-defense-idle:achievements-unlocked', ''],
+    ]);
+    const prologueIds = ['Prologue - 1', 'Prologue - 2', 'Prologue - 3', 'Prologue - Story'];
+    assert.deepEqual(tutorial.getPrologueLevelIds(), prologueIds);
+    tutorial.getPrologueLevelIds().push('mutation');
+    assert.deepEqual(tutorial.getPrologueLevelIds(), prologueIds);
+    assert.equal(tutorial.isPrologueLevel('Prologue - 2'), true);
+    assert.equal(tutorial.isPrologueLevel('Next'), false);
+    const checked = [];
+    tutorial.checkTutorialCompletion((levelId) => {
+      checked.push(levelId);
+      return true;
+    });
+    assert.deepEqual(checked, prologueIds);
+    assert.equal(tutorial.isTutorialCompleted(), true);
+    checked.length = 0;
+    tutorial.checkTutorialCompletion(() => {
+      checked.push('called');
+      return false;
+    });
+    assert.deepEqual(checked, []);
+  });
+
+  // --- assets/powder/powderState.js ----------------------------------------
+  await test('powder state context: configuration, initial state, and element wiring remain exact', async () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thero-unit-test-powder-state-'));
+    fs.writeFileSync(path.join(tmpDir, 'package.json'), JSON.stringify({ type: 'module' }));
+    const powderDir = path.join(tmpDir, 'assets', 'powder');
+    const towersDir = path.join(tmpDir, 'scripts', 'features', 'towers');
+    fs.mkdirSync(powderDir, { recursive: true });
+    fs.mkdirSync(towersDir, { recursive: true });
+    fs.copyFileSync(
+      path.join(rootDir, 'assets', 'powder', 'powderState.js'),
+      path.join(powderDir, 'powderState.js'),
+    );
+    fs.writeFileSync(
+      path.join(towersDir, 'powderTower.js'),
+      `export const DEFAULT_MOTE_PALETTE = { defaultMarker: true };
+       export const mergeCalls = [];
+       export function mergeMotePalette(palette) {
+         mergeCalls.push(palette);
+         return { merged: palette };
+       }`,
+    );
+    const stateModule = await import(pathToFileURL(path.join(powderDir, 'powderState.js')).href);
+    const towerStub = await import(pathToFileURL(path.join(towersDir, 'powderTower.js')).href);
+    const context = stateModule.createPowderStateContext();
+    assert.deepEqual(context.powderConfig, {
+      sandOffsetInactive: 0, sandOffsetActive: 1, duneHeightBase: 1, duneHeightMax: 6,
+      thetaBase: 1.3, zetaBase: 1.6, simulatedDuneGainMax: 3.4, wallBaseGapMotes: 5,
+      wallGapPerGlyph: 1, wallMaxGapMotes: 75, alephTierAdvanceCount: 30,
+      alephWallTierMin: 1, alephWallTierMax: 15, wallGapViewportRatio: 0.15,
+    });
+    assert.equal(context.powderState.sandOffset, 1);
+    assert.equal(context.powderState.simulationMode, 'sand');
+    assert.equal(context.powderState.wallGapTarget, 5);
+    assert.deepEqual(context.powderState.motePalette, { merged: { defaultMarker: true } });
+    assert.deepEqual(towerStub.mergeCalls, [{ defaultMarker: true }]);
+    assert.deepEqual(context.powderState.alephTierTransition, {
+      active: false, stage: 'idle', triggerGlyphCount: 0, lockedGlyphsLit: null,
+      sourceTier: 1, targetTier: 1, timers: [],
+    });
+    assert.deepEqual(context.powderGlyphColumns, []);
+    assert.equal(context.getPowderElements(), null);
+    const elements = { marker: true };
+    context.setPowderElements(elements);
+    assert.equal(context.getPowderElements(), elements);
+  });
+
+  // --- assets/powderDropQueue.js -------------------------------------------
+  await test('powder drop queue: flush normalization, color cloning, and clearing remain exact', async () => {
+    const queueModule = await importAsEsm('assets/powderDropQueue.js');
+    const scheduled = [];
+    const drops = [];
+    const simulation = { queueDrop: (payload) => drops.push(payload) };
+    queueModule.flushPendingMoteDrops({
+      powderState: { pendingMoteDrops: null },
+      powderSimulation: null,
+      schedulePowderBasinSave: () => scheduled.push('no-sim'),
+    });
+    assert.deepEqual(scheduled, []);
+    const color = { r: 1, g: 2 };
+    const pending = [4.4, { size: 2.6, color }, { size: 0.2 }, 'invalid', { size: NaN }];
+    queueModule.flushPendingMoteDrops({
+      powderState: { pendingMoteDrops: pending },
+      powderSimulation: simulation,
+      schedulePowderBasinSave: () => scheduled.push('saved'),
+    });
+    assert.deepEqual(drops, [
+      { size: 4 },
+      { size: 3, color: { r: 1, g: 2 } },
+      { size: 1 },
+    ]);
+    assert.notEqual(drops[1].color, color);
+    assert.deepEqual(pending, []);
+    assert.deepEqual(scheduled, ['saved']);
+  });
+
+  // --- assets/powderEventLog.js --------------------------------------------
+  await test('powder event log: entry formats, ordering, and retention limit remain exact', async () => {
+    const logModule = await importAsEsm('assets/powderEventLog.js');
+    const fragmentItems = [];
+    const fakeDocument = {
+      createDocumentFragment: () => ({
+        items: [],
+        append(item) { this.items.push(item); },
+      }),
+      createElement: () => ({ textContent: '' }),
+    };
+    const logList = {
+      innerHTML: '',
+      hiddenAttr: false,
+      lastFragment: null,
+      setAttribute() { this.hiddenAttr = true; },
+      removeAttribute() { this.hiddenAttr = false; },
+      append(fragment) {
+        this.lastFragment = fragment;
+        fragmentItems.length = 0;
+        fragment.items.forEach((item) => fragmentItems.push(item.textContent));
+      },
+    };
+    const logEmpty = { hidden: false };
+    const originalDocument = globalThis.document;
+    try {
+      globalThis.document = fakeDocument;
+      logModule.configurePowderEventLog({
+        formatGameNumber: (value) => `game:${value}`,
+        formatDecimal: (value, digits) => `decimal:${value}:${digits}`,
+        formatSignedPercentage: (value) => `signed:${value}`,
+        getCurrentPowderBonuses: () => ({ sandBonus: 0.25, duneBonus: 0, crystalBonus: 0, totalMultiplier: 1 }),
+        powderState: { duneHeight: 3, charges: 2 },
+        powderElements: { logList, logEmpty },
+      });
+      logModule.recordPowderEvent('unknown-type');
+      assert.deepEqual(fragmentItems, []);
+      logModule.recordPowderEvent('sand-stabilized');
+      logModule.recordPowderEvent('dune-raise', {});
+      logModule.recordPowderEvent('crystal-charge', {});
+      logModule.recordPowderEvent('developer-adjust', { field: 'glyphs', value: '12' });
+      assert.deepEqual(fragmentItems, [
+        'Developer adjusted Glyph reserves · game:12.',
+        'Crystal lattice charged (2/3) · Resonance rising.',
+        `Dune surveyed · h = 3, Δm = decimal:${Math.log2(4)}:2.`,
+        'Sandfall stabilized · Mote bonus signed:0.25.',
+      ]);
+      logModule.recordPowderEvent('crystal-charge', { charges: 0 });
+      assert.equal(fragmentItems[0], 'Crystal lattice charged (0/3) · Resonance rising.');
+      logModule.recordPowderEvent('mode-switch');
+      logModule.recordPowderEvent('sand-released');
+      logModule.recordPowderEvent('achievement-unlocked', {});
+      assert.equal(fragmentItems.length, 6);
+      assert.equal(fragmentItems[0], 'Achievement seal unlocked.');
+      assert.equal(logEmpty.hidden, true);
+    } finally {
+      globalThis.document = originalDocument;
+    }
+  });
+
+  // --- assets/powderPersistence.js -----------------------------------------
+  await test('powder persistence: snapshot cloning, migration, and guarded restore remain exact', async () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thero-unit-test-powder-persistence-'));
+    fs.writeFileSync(path.join(tmpDir, 'package.json'), JSON.stringify({ type: 'module' }));
+    const assetsDir = path.join(tmpDir, 'assets');
+    const towersDir = path.join(tmpDir, 'scripts', 'features', 'towers');
+    fs.mkdirSync(assetsDir, { recursive: true });
+    fs.mkdirSync(towersDir, { recursive: true });
+    for (const fileName of ['powderPersistence.js', 'saveCompatibility.js']) {
+      fs.copyFileSync(path.join(rootDir, 'assets', fileName), path.join(assetsDir, fileName));
+    }
+    fs.writeFileSync(
+      path.join(towersDir, 'powderTower.js'),
+      `export function mergeMotePalette(palette) {
+         return { defaultMerged: palette };
+       }`,
+    );
+    const persistenceModule = await import(pathToFileURL(path.join(assetsDir, 'powderPersistence.js')).href);
+    assert.throws(() => persistenceModule.createPowderPersistence({}), /Well persistence requires state and configuration\./);
+    const powderState = {
+      sandOffset: 1, duneHeight: 4, charges: 2, simulatedDuneGain: 1.5, wallGlyphsLit: 3,
+      glyphsAwarded: 7, pendingMoteDrops: [{ size: 2 }], motePalette: { sand: '#fff' },
+      wallGapTarget: 9, viewTransform: { scale: 2, nested: { x: 1 } },
+      alephWallTier: 2, alephTierAlephValue: 5, alephTierTransitionCheckpoint: 1,
+      simulationMode: 'crystal', loadedSimulationState: { fallback: true },
+    };
+    const paletteCalls = [];
+    const domCalls = [];
+    const saveCalls = [];
+    const persistence = persistenceModule.createPowderPersistence({
+      powderState,
+      powderConfig: { marker: true },
+      mergeMotePalette: (palette) => {
+        paletteCalls.push(palette);
+        return { customMerged: palette };
+      },
+      applyMindGatePaletteToDom: (palette) => domCalls.push(palette),
+      schedulePowderBasinSave: () => saveCalls.push('saved'),
+      getPowderSimulation: () => null,
+    });
+    const snapshot = persistence.getPowderBasinSnapshot();
+    assert.deepEqual(snapshot.wellOfInspiration.motePalette, { customMerged: { sand: '#fff' } });
+    assert.deepEqual(snapshot.wellOfInspiration.pendingMoteDrops, [{ size: 2 }]);
+    assert.notEqual(snapshot.wellOfInspiration.pendingMoteDrops[0], powderState.pendingMoteDrops[0]);
+    assert.deepEqual(snapshot.wellOfInspiration.viewTransform, { scale: 2, nested: { x: 1 } });
+    assert.notEqual(snapshot.wellOfInspiration.viewTransform.nested, powderState.viewTransform.nested);
+    assert.equal(snapshot.wellOfInspiration.simulationMode, 'sand');
+    assert.deepEqual(snapshot.simulation, { fallback: true });
+    persistence.applyPowderBasinSnapshot(null);
+    assert.deepEqual(saveCalls, []);
+    persistence.applyPowderBasinSnapshot({
+      wellOfInspiration: {
+        duneHeight: 6,
+        charges: Infinity,
+        motePalette: { sand: '#123' },
+        pendingMoteDrops: [{ size: 5 }, 'raw'],
+        viewTransform: { scale: 3 },
+        wallGlyphsLit: '4',
+      },
+      simulation: { restored: true },
+    });
+    assert.equal(powderState.duneHeight, 6);
+    assert.equal(powderState.charges, 2);
+    assert.equal(powderState.wallGlyphsLit, '4');
+    assert.deepEqual(powderState.motePalette, { customMerged: { sand: '#123' } });
+    assert.deepEqual(domCalls, [{ customMerged: { sand: '#123' } }]);
+    assert.deepEqual(powderState.pendingMoteDrops, [{ size: 5 }, 'raw']);
+    assert.deepEqual(powderState.viewTransform, { scale: 3 });
+    assert.equal(powderState.simulationMode, 'sand');
+    assert.deepEqual(powderState.loadedSimulationState, { restored: true });
+    assert.deepEqual(saveCalls, ['saved']);
+    // Legacy aliases route through the shared migration helper.
+    persistence.applyPowderBasinSnapshot({ powder: { duneHeight: 2 } });
+    assert.equal(powderState.duneHeight, 2);
+    assert.equal(powderState.loadedSimulationState, null);
+    assert.deepEqual(paletteCalls, [{ sand: '#fff' }, { sand: '#123' }]);
+  });
+
   // --- assets/towerEquations/index.js ------------------------------------
   await test('tower equation index: registry preserves all 27 keys, order, and imported identities', async () => {
     const { registryModule, sourceById } = await importTowerEquationIndexModule();
