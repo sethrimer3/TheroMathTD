@@ -2,36 +2,36 @@
 
 This appendix is the mechanically checked coverage record for the long-range roadmap in [`../JavaToTypeScriptConversionPlan.md`](../JavaToTypeScriptConversionPlan.md). It records the live source classification and assigns every active authored JavaScript module to one implementation phase. The phase order after Phase 21 is tentative.
 
-<!-- migration-roadmap-counts: ts=85 generated=85 active_js=149 candidates=45 -->
-<!-- migration-roadmap-authorization: phase=27 -->
+<!-- migration-roadmap-counts: ts=89 generated=89 active_js=145 candidates=45 -->
+<!-- migration-roadmap-authorization: phase=28 -->
 
 ## Verified inventory
 
 **Inventory date:** 2026-07-17
 
-**Inventory base:** the completed Phase 26 implementation on the user-designated session branch `claude/js-to-ts-game-conversion-ijybn5`, based on `main` checkpoint `f51f66c`
+**Inventory base:** the completed Phase 27 implementation on the user-designated session branch `claude/js-to-ts-game-conversion-ijybn5`, based on `main` checkpoint `f51f66c`
 
-**Delivery branch:** `claude/js-to-ts-game-conversion-ijybn5` (Build 759), explicitly designated for this session; otherwise work on `main`
+**Delivery branch:** `claude/js-to-ts-game-conversion-ijybn5` (Build 760), explicitly designated for this session; otherwise work on `main`
 
 **Runtime root:** `index.html` -> `assets/main.js`
 
 | Classification | Count | Treatment |
 |---|---:|---|
-| Authored TypeScript source | 85 | Converted; `.d.ts` files would be excluded, but none are present. |
-| Build-generated `.js` siblings of authored `.ts` | 85 | Runtime compatibility output; never count as backlog. |
-| Active authored JavaScript | 149 | Reachable from `assets/main.js` through static local imports; all assigned below. |
+| Authored TypeScript source | 89 | Converted; `.d.ts` files would be excluded, but none are present. |
+| Build-generated `.js` siblings of authored `.ts` | 89 | Runtime compatibility output; never count as backlog. |
+| Active authored JavaScript | 145 | Reachable from `assets/main.js` through static local imports; all assigned below. |
 | Intentionally preserved legacy JavaScript | 0 | The previously documented 19-file Terrarium legacy tree was deleted by `64ebc5e`; no surviving file has evidence strong enough for this category. |
 | Retirement/deletion candidates or ambiguous authored JavaScript | 45 | Not reachable from the browser entry graph; excluded pending a separate retirement audit. |
 | Generated/vendor/dependency/distribution material | Not counted | `node_modules/`, `dist/`, `build/`, source maps, dependencies, assets, fixtures, and non-source artifacts. |
 
-The repository therefore has 234 active authored JS/TS modules: 85 TypeScript plus 149 active JavaScript. The raw authored-language tree has 279 modules when the 45 decision candidates are included. Active conversion is 36.3% by module count (`85 / 234`). The supplemental line snapshot is 13,079 TypeScript lines and 75,839 active JavaScript lines; line counts are informative, not scheduling weights.
+The repository therefore has 234 active authored JS/TS modules: 89 TypeScript plus 145 active JavaScript. The raw authored-language tree has 279 modules when the 45 decision candidates are included. Active conversion is 38.0% by module count (`89 / 234`). The supplemental line snapshot is 14,359 TypeScript lines and 74,748 active JavaScript lines; line counts are informative, not scheduling weights.
 
 ## Method and limits
 
 1. Enumerated `assets/**/*.ts`, `scripts/**/*.ts`, `assets/**/*.js`, and `scripts/**/*.js`, excluding `node_modules/`, `dist/`, and `build/`.
 2. Removed every `.js` file with a same-path `.ts` sibling from the backlog.
 3. Parsed static relative `import`, side-effect `import`, and `export ... from` specifiers and traversed from `assets/main.js`.
-4. Verified all resolved edges exist. The traversal found 233 reachable runtime `.js` modules: 84 generated siblings plus 149 authored JavaScript modules. The eighty-fifth generated sibling, `assets/data/towers/types.js`, is type-only output and is correctly not imported at runtime.
+4. Verified all resolved edges exist. The traversal found 233 reachable runtime `.js` modules: 88 generated siblings plus 145 authored JavaScript modules. The eighty-ninth generated sibling, `assets/data/towers/types.js`, is type-only output and is correctly not imported at runtime.
 5. Searched the 45 unreachable files in tests, retirement documentation, configuration, HTML harnesses, and recent retirement commits. Static reachability cannot prove runtime intent, so those files remain decision candidates rather than being deleted or migrated.
 6. Read representative owners at every risk tier, including equation definitions, core utilities, config loading, save boundaries, tower modules, powder simulation, playfield systems/managers/renderers, `assets/playfield.js`, and `assets/main.js`.
 7. Added `npm run check:migration-roadmap`, which repeats the source enumeration and static traversal; compares active and candidate paths to these tables; rejects duplicate assignments; verifies machine markers and visible count statements; checks decision-group subtotals, the total assigned backlog, and every remaining module count; and enforces the shared marker-named phase as the sole authorization.
@@ -53,7 +53,7 @@ Limitations: the graph does not treat JSDoc `import()` references as runtime edg
 
 The pre-retirement cross-cutting scan of the former 179-module tree found 11 save/serialization boundaries, 64 DOM owners/consumers, 75 Canvas-related modules, 46 browser-global users, 34 timer/animation users, 43 randomness users, and 28 audio-related modules. Repeat that keyword scan before scheduling affected phases; a module can appear in several categories. Save data and configuration JSON remain `unknown` at entry and require runtime validation before narrowing.
 
-Existing automated coverage is concentrated in the 230-case compiled-output core test script and static import/retirement checks. Most remaining production JavaScript has only recursive smoke coverage. Repository HTML harnesses cover selected Wave Editor, renderer, Shin, and Cardinal Warden scenarios, but they are manual artifacts and several target code that is no longer active.
+Existing automated coverage is concentrated in the 237-case compiled-output core test script and static import/retirement checks. Most remaining production JavaScript has only recursive smoke coverage. Repository HTML harnesses cover selected Wave Editor, renderer, Shin, and Cardinal Warden scenarios, but they are manual artifacts and several target code that is no longer active.
 
 ## Active module-to-phase coverage
 
@@ -61,7 +61,6 @@ Risk labels are relative migration risk: Low (pure/static), Medium (state or nar
 
 | Phase | Active authored JavaScript modules | Subsystem | Risk | Prerequisites | Notes |
 |---:|---|---|---|---|---|
-| 27 | `assets/gameplayConfigLoaders.js`<br>`assets/levels.js`<br>`assets/configuration.js`<br>`assets/enemies.js` | Configuration, levels, enemies | Medium-High | 26, Phase 4 tower types | Validate JSON/global inputs; define owner types for levels, waves, enemies, gems, and gameplay config. |
 | 28 | `assets/tutorialState.js`<br>`assets/powder/powderState.js`<br>`assets/powderDropQueue.js`<br>`assets/powderEventLog.js`<br>`assets/powderPersistence.js` | Small state and persistence owners | Medium | 26-27, existing save types | Treat local storage and legacy snapshots as untrusted; retain key compatibility. |
 | 29 | `scripts/features/towers/powderGridUtils.js`<br>`scripts/features/towers/powderPaletteUtils.js`<br>`scripts/features/towers/powderTowerData.js` | Well/Powder utilities and data | Medium-High | 26, 28 | Define cell, palette, wall, mote, and simulation-adapter contracts without typing the monolith yet. |
 | 30 | `scripts/features/towers/powderTower.js` | Well/Powder simulation owner | Critical | 29 | 2,326-line Canvas/timer/randomness class; requires seeded/controlled characterization and save round trips. |
@@ -107,7 +106,7 @@ Totals reconcile as 17 + 12 + 10 + 6 = 45.
 
 ## Mechanical reconciliation rules
 
-- Each of the 149 active authored `.js` paths appears in exactly one coverage row.
+- Each of the 145 active authored `.js` paths appears in exactly one coverage row.
 - No path with a same-path authored `.ts` sibling appears in the active coverage table.
 - The 45 decision candidates appear only in the retirement section and are excluded from phase totals.
 - Assigned phase counts sum to 168; Phase 54 adds no module and Phase 55 assigns only `assets/main.js`.

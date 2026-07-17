@@ -15,19 +15,19 @@ This file serves four functions:
 
 ## Current Migration Dashboard
 
-<!-- migration-roadmap-counts: ts=85 generated=85 active_js=149 candidates=45 -->
-<!-- migration-roadmap-authorization: phase=27 -->
+<!-- migration-roadmap-counts: ts=89 generated=89 active_js=145 candidates=45 -->
+<!-- migration-roadmap-authorization: phase=28 -->
 
 | Item | Current state |
 |---|---|
-| Repository baseline | Build 759 on `claude/js-to-ts-game-conversion-ijybn5` (user-designated session branch off `main` checkpoint `f51f66c`), including the completed Phase 23-26 migrations |
-| Completed migration history | Phases 0-26 remain complete; historical phase identities are preserved |
-| Next authorized implementation | **Phase 27 only:** configuration, level, and enemy owners |
+| Repository baseline | Build 760 on `claude/js-to-ts-game-conversion-ijybn5` (user-designated session branch off `main` checkpoint `f51f66c`), including the completed Phase 23-27 migrations |
+| Completed migration history | Phases 0-27 remain complete; historical phase identities are preserved |
+| Next authorized implementation | **Phase 28 only:** tutorial and Powder state/persistence owners |
 | Delivery branch | Work directly on `main`; create or switch to another branch only when the user explicitly requests it |
-| Active authored modules | 234 total: 85 TypeScript and 149 JavaScript |
-| Compatibility output | 85 generated `.js` siblings; they are runtime output, not backlog |
+| Active authored modules | 234 total: 89 TypeScript and 145 JavaScript |
+| Compatibility output | 89 generated `.js` siblings; they are runtime output, not backlog |
 | Decision candidates | 45 unreachable authored `.js` files requiring retirement, integration, or archival decisions |
-| Long-range sequence | Phases 27-55; Phase 54 is an extraction gate and assigns no backlog module |
+| Long-range sequence | Phases 28-55; Phase 54 is an extraction gate and assigns no backlog module |
 | Mechanical check | `npm run check:migration-roadmap` validates reachability, classifications, duplicate assignments, totals, and per-phase counts |
 
 The dashboard is the fast orientation surface. The historical ledger remains append-only evidence, while [`docs/TypeScriptMigrationRoadmapInventory.md`](docs/TypeScriptMigrationRoadmapInventory.md) is authoritative for exact future file assignments. Re-run the mechanical check and re-inventory the affected phases before changing any dashboard count.
@@ -112,12 +112,12 @@ The obsolete-Spire retirement is an intentional product change, not a general mi
 
 Inventory was originally recalculated from the live tree on **2026-07-16**, starting on `codex/phases-17-20-advanced-equations` at exact commit `2bad7891ca88baa20c1a084c31ecd939e11b4eca`, then continuing on the documentation-only branch `codex/typescript-migration-roadmap`. It was reconciled again after equipment/gem retirement merge `c96df03` and audited at `main` commit `0802d21`. The browser entry root is `index.html` -> `assets/main.js`.
 
-- **85 authored `.ts` modules** (excluding `.d.ts`; none exist).
-- **85 build-generated `.js` siblings** of those TypeScript modules. These are runtime output, not backlog.
-- **149 active authored `.js` modules**, verified reachable through static local imports from `assets/main.js`.
+- **89 authored `.ts` modules** (excluding `.d.ts`; none exist).
+- **89 build-generated `.js` siblings** of those TypeScript modules. These are runtime output, not backlog.
+- **145 active authored `.js` modules**, verified reachable through static local imports from `assets/main.js`.
 - **0 intentionally preserved legacy `.js` modules** with current repository evidence. The previously documented 19-file disabled Terrarium tree was deleted by `64ebc5e`.
 - **45 ambiguous or retirement/deletion-candidate `.js` modules**, all currently unreachable from the browser entry graph. They are excluded from the active backlog pending a separate decision.
-- **234 active authored modules** in total, so active module-count conversion is **36.3%** (`85 / 234`). The raw authored-language tree is 279 modules when the 45 decision candidates are included.
+- **234 active authored modules** in total, so active module-count conversion is **38.0%** (`89 / 234`). The raw authored-language tree is 279 modules when the 45 decision candidates are included.
 - Supplemental authored-line snapshot: **8,309 TypeScript lines** and **81,526 active JavaScript lines**. Line counts do not represent migration difficulty.
 
 Method: recursively enumerate `assets/` and `scripts/`; exclude `node_modules/`, `dist/`, `build/`, generated output, dependencies, fixtures, and non-source material; remove each `.js` file with a same-path `.ts` sibling; parse static relative `import`/`export ... from` edges; traverse from `assets/main.js`; and audit unreachable files against tests, retirement documentation, HTML harnesses, and recent commits. The full classification, dependency evidence, 168-module coverage map, and 45-file retirement list are in [`docs/TypeScriptMigrationRoadmapInventory.md`](docs/TypeScriptMigrationRoadmapInventory.md). Run `npm run check:migration-roadmap` to verify that classification against the current checkout.
@@ -184,6 +184,7 @@ The original statement that no conversion phase was complete is superseded by th
 | 24 | Basic (Alpha/Beta/Gamma) and Infinity grouped equation definitions | COMPLETE | Executed 2026-07-17 on `claude/js-to-ts-game-conversion-ijybn5`, Build 757; see the Phase 24 authorization card and implementation log |
 | 25 | Greek grouped equation monolith (`assets/towerEquations/greekTowers.js`) | COMPLETE | Executed 2026-07-17 on `claude/js-to-ts-game-conversion-ijybn5`, Build 758; see the Phase 25 authorization card and implementation log |
 | 26 | Pure utilities, tokens, units, geometry, wave codec, playfield facades, build data, Aleph registry (11 modules) | COMPLETE | Executed 2026-07-17 on `claude/js-to-ts-game-conversion-ijybn5`, Build 759; see the Phase 26 authorization card and implementation log |
+| 27 | Configuration, level, and enemy owners (4 modules) | COMPLETE | Executed 2026-07-17 on `claude/js-to-ts-game-conversion-ijybn5`, Build 760; see the Phase 27 authorization card and implementation log |
 
 ---
 
@@ -273,8 +274,8 @@ Exact file lists and per-module risk notes are in the linked coverage appendix. 
 | 24 | **COMPLETE** | Basic and Infinity grouped equations; 2 modules | 23 | Alpha/Beta/Gamma and Infinity definitions reused presenter/context contracts; `renderControlsInline` added to the presenter-owned variable contract on compiler evidence | Registry retained exact identity for all four definitions; no dependent equation changed | Ten per-tower golden tests cover metadata, cost curves, helper wiring and errors, connection/glyph-rank math, two-read dynamic getters, fused-product order, and formatter order. |
 | 25 | **COMPLETE** | Greek grouped equation monolith; 1 module | 24 | All six definitions reused presenter/context contracts; no shared owner edit was required | Completes the authored equation definitions consumed by registry/Towers tab; registry retained exact identity | Nine per-tower deterministic tests characterized each tower independently; the recommended browser overlay pass was not performed and is recorded honestly in the implementation log. |
 | 26 | **COMPLETE** | Pure tokens, units, geometry, wave codec, playfield facades, build data, Aleph registry; 11 modules | 25 | Owner-defined `DecodedWave`/`EncodableWave`, `NormalizedPoint`, token span, unit, and Aleph chain contracts | 31 importers for units and 13 for playfield formatting consume unchanged export surfaces | Nine deterministic tests cover conversions, geometry, easing, trimming, tokenization, subscripts/durations, wave parse/encode/validate legacy behavior, and chain squaring; two pre-existing codec/regex defects recorded, not fixed. |
-| 27 | **AUTHORIZED NEXT** | Gameplay config loaders, levels, configuration, enemies; 4 modules | 26 and Phase 4 tower data | Runtime-validated config/level/wave/enemy schemas | Main, playfield, managers, and achievements; compatibility adapters for untyped callers | Fetch/global/dynamic-import fallback tests, malformed JSON/config fixtures, seeded enemy helpers; browser config load; exclude balance changes. |
-| 28 | **TENTATIVE NEAR-TERM** | Tutorial and Powder state/queue/log/persistence; 5 modules | 26-27 and existing save owners | Tutorial/Powder snapshots and legacy validators | Autosave, main, Towers tab, and Powder UI | Round-trip plus malformed/old saves, queue ordering, event log retention; manual reload; never trust or rename saved keys. |
+| 27 | **COMPLETE** | Gameplay config loaders, levels, configuration, enemies; 4 modules | 26 and Phase 4 tower data | Owner-defined level/wave/blueprint/progress-snapshot, shell, and resource-container records; JSON/global inputs stay `unknown` at entry | Main, playfield, managers, and achievements keep the same validated records and call order | Seven deterministic tests cover fetch/embedded/module fallback order, malformed inputs, seeded shell assignment, compact-wave normalization, unlock chains, snapshot round trips, ladder mirrors, and setter guards. |
+| 28 | **AUTHORIZED NEXT** | Tutorial and Powder state/queue/log/persistence; 5 modules | 26-27 and existing save owners | Tutorial/Powder snapshots and legacy validators | Autosave, main, Towers tab, and Powder UI | Round-trip plus malformed/old saves, queue ordering, event log retention; manual reload; never trust or rename saved keys. |
 | 29 | **TENTATIVE NEAR-TERM** | Powder grid/palette/data utilities; 3 modules | 26, 28 | Cell/material/wall/mote/palette and narrow simulation adapter types | PowderSimulation and later palette/render consumers | Small-grid golden states, bounds, palette normalization, controlled randomness; exclude PowderSimulation class. |
 | 30 | **TENTATIVE NEAR-TERM** | `PowderSimulation`; 1 module | 29 | Owner-defined simulation state, cell buffers, lifecycle, persistence snapshot, viewport API | 13 direct importers including color, main, UI, render layers | Seeded step/render/save characterization, timer/RAF fakes, manual touch/resize/save; critical monolith risk; no feature extraction unless needed for type ownership and separately documented. |
 | 31 | **TENTATIVE NEAR-TERM** | Palette, performance, audio, lifecycle, rendering helper; 6 modules | 26, 30 | Palette/RGB, performance segment, audio manifest/settings, lifecycle interfaces | 36 palette importers plus playfield/tower/audio/main consumers | Palette/storage/audio/timer tests; manual theme switching and sound controls; preserve lazy browser behavior. |
@@ -303,7 +304,7 @@ Exact file lists and per-module risk notes are in the linked coverage appendix. 
 | 54 | **TENTATIVE LATER** | Main responsibility-extraction gate; 0 backlog conversions | All active modules except `main.js` typed | Extract only still-owned cohesive responsibilities into new typed owners; define composition contract | Compatibility edits inside `assets/main.js` are expected, but it remains `.js` | Characterize startup order and globals before extraction; browser/Electron; completion means residual main is composition-only. No extension conversion yet. |
 | 55 | **TENTATIVE LATER** | Final `assets/main.js` → `assets/main.ts`; 1 module | 54 and every prior active-module phase | Typed application composition/startup/window API | `index.html` keeps loading generated `assets/main.js` | Startup order/global/API tests, browser portrait/desktop, save reload, full level, audio, and Electron. Complete only with no broad assertions and no owned feature logic left. |
 
-Phases 27-55 cover all 149 active authored JavaScript modules. Across Phases 21-55 there are **35 roadmap phases**: six completed conversion phases, one authorized conversion phase, 27 tentative conversion phases, and one tentative zero-module extraction gate (Phase 54). The remaining 28 conversion phases assign the active backlog and the gate prepares the final root without double-counting it. No active module is assigned twice.
+Phases 28-55 cover all 145 active authored JavaScript modules. Across Phases 21-55 there are **35 roadmap phases**: seven completed conversion phases, one authorized conversion phase, 26 tentative conversion phases, and one tentative zero-module extraction gate (Phase 54). The remaining 27 conversion phases assign the active backlog and the gate prepares the final root without double-counting it. No active module is assigned twice.
 
 ### Critical path
 
@@ -381,7 +382,7 @@ The 45 unreachable JavaScript files are not migration backlog. The strongest ret
 
 ### Single next authorized phase
 
-Only Phase 27 is authorized. Later phases are sequencing hypotheses, not implementation authority.
+Only Phase 28 is authorized. Later phases are sequencing hypotheses, not implementation authority.
 
 #### Phase 21 execution card
 
@@ -528,6 +529,22 @@ Convert those files to strict `.ts` sources and regenerate only their same-path 
 **Required characterization:** loader fallback order including malformed JSON/config fixtures; level/wave derivation; enemy registry identity and seeded spawn helpers with mocked randomness; coercion, `NaN`, and missing-field cases. Tests must be deterministic and pass against original JavaScript before conversion and generated output afterward. A browser configuration-load smoke is recommended and must be reported as performed or not performed.
 
 **Completion gate:** use the standard implementation gate and phase record. No balance change, broad assertion, `any`, or suppression is authorized. Completion must refresh counts, inventory coverage, Build metadata, and exactly one next authorization.
+
+**Completion record:** Phase 27 converted exactly the four authorized owners, retained every export surface, `.js` import specifier, loader fallback order, and consumer call order. JSON, fetch, dynamic-import, and global inputs enter as `unknown` and are narrowed by small guards; `levels.ts` owner-defines the level blueprint/config/wave/progress-snapshot records, `enemies.ts` the shell definition/carrier records, and `configuration.ts` the resource-container contract, while its Towers-tab, Codex, and achievements dependencies remain loosely typed JavaScript boundaries. The internal `assertResourceContainers` check became a value-returning `requireResourceContainers` with the identical error message so strict null analysis holds without assertions. Seven focused tests passed first against the original JavaScript and then against generated TypeScript output, including a stub-dependency harness for the configuration orchestrator. Final command evidence and the unperformed recommended browser configuration-load smoke are recorded in the Phase 27 implementation-log entry.
+
+#### Phase 28 authorization card
+
+**Intent:** migrate the tutorial and Powder state/queue/log/persistence owners after Phase 27 typed the configuration boundary. These five small state owners validate untrusted storage and legacy snapshots while keeping saved keys unchanged.
+
+**Exact authored sources:** `assets/tutorialState.js`, `assets/powder/powderState.js`, `assets/powderDropQueue.js`, `assets/powderEventLog.js`, and `assets/powderPersistence.js`.
+
+Convert those files to strict `.ts` sources and regenerate only their same-path `.js` siblings. Retain all `.js` import/export specifiers and every persisted key name.
+
+**Dependency boundary:** treat local storage and legacy snapshot payloads as `unknown` with runtime validation. Reuse existing save-owner contracts; autosave, main, Towers tab, and Powder UI keep the same hook shapes. Do not convert the Powder simulation monolith, playfield systems, or main.
+
+**Required characterization:** round trips plus malformed/old-save fixtures, queue ordering, event-log retention limits, and default resets. Tests must be deterministic and pass against original JavaScript before conversion and generated output afterward. A manual save/reload browser check is recommended and must be reported as performed or not performed.
+
+**Completion gate:** use the standard implementation gate and phase record. No key rename, broad assertion, `any`, or suppression is authorized. Completion must refresh counts, inventory coverage, Build metadata, and exactly one next authorization.
 
 ---
 
@@ -1390,17 +1407,30 @@ The equipment/gem retirement removed five active JavaScript modules from future 
 
 ## Next Suggested Step
 
-**Recommended Phase 27: configuration, level, and enemy owners.** The normative implementation checklist is the [Phase 27 authorization card](#phase-27-authorization-card).
+**Recommended Phase 28: tutorial and Powder state/queue/log/persistence owners.** The normative implementation checklist is the [Phase 28 authorization card](#phase-28-authorization-card).
 
-Phase 26 established the shared primitive contracts, so the four configuration/level/enemy owners are next. They validate JSON/global inputs at entry and owner-define the records that combat and rendering phases consume.
+Phase 27 typed the configuration boundary, so the five small tutorial/Powder state owners are next. They validate untrusted storage and legacy snapshots ahead of the Powder utility and simulation phases.
 
-**Bounded scope:** Convert only `assets/gameplayConfigLoaders.js`, `assets/levels.js`, `assets/configuration.js`, and `assets/enemies.js` to strict TypeScript. Treat external inputs as `unknown` with runtime validation. Do not include combat systems, tower simulations, playfield systems, or main integration.
+**Bounded scope:** Convert only `assets/tutorialState.js`, `assets/powder/powderState.js`, `assets/powderDropQueue.js`, `assets/powderEventLog.js`, and `assets/powderPersistence.js` to strict TypeScript. Treat storage payloads as `unknown` with runtime validation and keep every persisted key unchanged. Do not include the Powder simulation monolith, playfield systems, or main integration.
 
-**Acceptance criteria:** Preserve loader fallback order, level/wave derivation, enemy registry identity, and seeded spawn behavior; add deterministic tests with malformed fixtures and mocked randomness that pass against original JavaScript first and generated output afterward; add no `any`, broad assertions, or suppressions; typecheck/build/lint/unit/smoke and roadmap checks pass; update counts/build number and record browser availability honestly.
+**Acceptance criteria:** Preserve snapshot round trips, queue ordering, event-log retention, and default resets including malformed/legacy fixtures; add deterministic tests that pass against original JavaScript first and generated output afterward; add no `any`, broad assertions, or suppressions; typecheck/build/lint/unit/smoke and roadmap checks pass; update counts/build number and record browser availability honestly.
 
 ---
 
 ## Implementation Log
+
+### 2026-07-17 — Phase 27 configuration, level, and enemy owner conversion executed
+
+- **Baseline:** clean `claude/js-to-ts-game-conversion-ijybn5` at Phase 26 closeout commit `595bc0d` (Build 759). Roadmap check (85/85/149/45), typecheck, build, lint, 230/230 unit tests plus retired-Spire checks, and smoke test all passed before implementation.
+- **Authorized boundary:** only `assets/gameplayConfigLoaders.js`, `assets/levels.js`, `assets/configuration.js`, and `assets/enemies.js` moved to strict `.ts`; their generated siblings, seven focused tests plus two dedicated harnesses, roadmap/inventory records, generated `dist/`, and build metadata are included. No combat, simulation, playfield, or main behavior entered scope.
+- **Boundary typing:** fetch, dynamic-import, global, and JSON payloads enter as `unknown` and are narrowed by object/finite-number guards. The loaders keep their exact fallback order, error retention, and cached lazy dynamic-import construction (the Function-built importer is invoked through `Reflect.apply` to avoid assertions); `configuration.ts` keeps its Towers-tab/Codex/levels/achievements imports as loosely typed JavaScript boundaries, and its internal container assertion became the value-returning `requireResourceContainers` with the identical error message.
+- **Owner contracts established:** `LevelBlueprintRecord`/`LevelConfigRecord`/`LevelWaveRecord`/`LevelStateRecord`/`LevelProgressSnapshot` (levels), `EnemyShellDefinition`/`EnemyShellCarrier`/`EnemyShellSprites` (enemies), and `ConfigurationResourceContainer` (configuration).
+- **Behavior oracle:** seven deterministic tests were added, increasing the suite from 230 to 237, all passing first against the original JavaScript and then against generated TypeScript output. They cover fetch success/non-ok/network-failure/unavailable chains, embedded-global object gating, seeded shell assignment and Node sprite gating, clone-helper coercion, compact-wave parsing with the developer-test-range synthesis, unlock chains and multiplier overrides, snapshot round trips with the Prologue migration, applied defaults with loadout normalization and dedupe, Ladder campaign mirrors, cache reuse, loader fallback order, and setter guards.
+- **Output and counts:** Build 760. Counts are 89 TypeScript sources, 89 generated siblings, 145 active authored JavaScript modules, and 45 decision candidates (38.0% of 234 active authored modules converted). The supplemental line snapshot is 14,359 TypeScript lines and 74,748 active JavaScript lines.
+- **Automated evidence:** `npm run check:migration-roadmap` passes at 89/89/145/45; `npm run typecheck`, `npm run build`, `npm run lint`, `npm run test:unit` (237/237 plus retired-Spire checks), `npm test`, and `git diff --check` pass. The malformed-storage fixture prints its expected parse diagnostic while the unit command exits 0.
+- **Entry-validation note:** `applyGameplayConfigInternal` now normalizes a truthy non-object payload to an empty record at entry. The original would instead crash mid-application with a strict-mode `TypeError` when assigning `.towers` onto the primitive; every object payload — the only shape the loaders, embedded global, and JSON module can realistically produce — behaves identically. Recorded here as the phase's authorized runtime-validation boundary rather than a silent change.
+- **Manual evidence:** the recommended browser configuration-load smoke was not performed; loader fallback order and applied-configuration effects are covered by the stub-dependency harness, and this phase changes no DOM, input, Canvas, audio, save, or Electron path.
+- **Residual risk and handoff:** no known behavior gap or temporary compatibility seam remains. Phase 27 is complete; only Phase 28 (tutorial and Powder state/persistence owners) is authorized next under its five-module card.
 
 ### 2026-07-17 — Phase 26 pure utility and wave-schema conversion executed
 

@@ -364,6 +364,119 @@ async function importGroupedEquationModule(fileName) {
   };
 }
 
+// Import the compiled levels module with the real generated wave codec so
+// compact-string parsing and developer-range synthesis stay authentic.
+async function importLevelsModule() {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thero-unit-test-levels-'));
+  fs.writeFileSync(path.join(tmpDir, 'package.json'), JSON.stringify({ type: 'module' }));
+  const assetsDir = path.join(tmpDir, 'assets');
+  fs.mkdirSync(assetsDir, { recursive: true });
+  for (const fileName of ['levels.js', 'waveEncoder.js']) {
+    fs.copyFileSync(path.join(rootDir, 'assets', fileName), path.join(assetsDir, fileName));
+  }
+  return import(pathToFileURL(path.join(assetsDir, 'levels.js')).href);
+}
+
+// Import the compiled configuration orchestrator against recording stubs for
+// its five JavaScript dependencies and the typed tower-data registry.
+async function importConfigurationModule() {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thero-unit-test-configuration-'));
+  fs.writeFileSync(path.join(tmpDir, 'package.json'), JSON.stringify({ type: 'module' }));
+  const assetsDir = path.join(tmpDir, 'assets');
+  const towersDataDir = path.join(assetsDir, 'data', 'towers');
+  fs.mkdirSync(towersDataDir, { recursive: true });
+  fs.copyFileSync(
+    path.join(rootDir, 'assets', 'configuration.js'),
+    path.join(assetsDir, 'configuration.js'),
+  );
+  fs.writeFileSync(
+    path.join(towersDataDir, 'index.js'),
+    `export default [{ id: 'alpha' }, { id: 'beta' }, { id: 'gamma' }];`,
+  );
+  fs.writeFileSync(
+    path.join(assetsDir, 'towersTab.js'),
+    `export const calls = [];
+     export const loadoutState = { selected: [] };
+     export const unlockState = { unlocked: new Set() };
+     export function setTowerDefinitions(defs) {
+       calls.push(['setTowerDefinitions', defs.map((def) => def.id)]);
+     }
+     export function setTowerLoadoutLimit(limit) {
+       calls.push(['setTowerLoadoutLimit', limit]);
+     }
+     export function getTowerLoadoutState() { return loadoutState; }
+     export function getTowerUnlockState() { return unlockState; }
+     export function getTowerDefinition(id) {
+       return ['alpha', 'beta', 'gamma'].includes(id) ? { id } : null;
+     }
+     export function setMergingLogicUnlocked(value) {
+       calls.push(['setMergingLogicUnlocked', value]);
+     }
+     export function initializeDiscoveredVariablesFromUnlocks(unlocked) {
+       calls.push(['initializeDiscoveredVariablesFromUnlocks', Array.from(unlocked).sort()]);
+     }`,
+  );
+  fs.writeFileSync(
+    path.join(assetsDir, 'codex.js'),
+    `export const codexCalls = [];
+     export function setEnemyCodexEntries(entries) { codexCalls.push(entries); }`,
+  );
+  fs.writeFileSync(
+    path.join(assetsDir, 'levels.js'),
+    `export const levelCalls = [];
+     export const multiplierBox = { value: 4 };
+     export function setLevelBlueprints(maps) { levelCalls.push(['setLevelBlueprints', maps]); }
+     export function setLevelConfigs(levels) { levelCalls.push(['setLevelConfigs', levels]); }
+     export function initializeInteractiveLevelProgression() { levelCalls.push(['initializeInteractiveLevelProgression']); }
+     export function pruneLevelState() { levelCalls.push(['pruneLevelState']); }
+     export function getStartingTheroMultiplier() { return multiplierBox.value; }`,
+  );
+  fs.writeFileSync(
+    path.join(assetsDir, 'achievementsTab.js'),
+    `export const achievementCalls = [];
+     export async function generateLevelAchievements() { achievementCalls.push('generateLevelAchievements'); }`,
+  );
+  fs.writeFileSync(
+    path.join(assetsDir, 'gameplayConfigLoaders.js'),
+    `export const loaderBehavior = {
+       fetchResult: null,
+       fetchError: null,
+       embedded: null,
+       moduleResult: null,
+       calls: [],
+     };
+     export function getEmbeddedGameplayConfig() {
+       loaderBehavior.calls.push('embedded');
+       return loaderBehavior.embedded;
+     }
+     export async function loadGameplayConfigViaFetch() {
+       loaderBehavior.calls.push('fetch');
+       if (loaderBehavior.fetchError) {
+         throw loaderBehavior.fetchError;
+       }
+       return loaderBehavior.fetchResult;
+     }
+     export async function loadGameplayConfigViaModule() {
+       loaderBehavior.calls.push('module');
+       return loaderBehavior.moduleResult;
+     }`,
+  );
+  const configurationModule = await import(pathToFileURL(path.join(assetsDir, 'configuration.js')).href);
+  const towersTabModule = await import(pathToFileURL(path.join(assetsDir, 'towersTab.js')).href);
+  const codexModule = await import(pathToFileURL(path.join(assetsDir, 'codex.js')).href);
+  const levelsModule = await import(pathToFileURL(path.join(assetsDir, 'levels.js')).href);
+  const loadersModule = await import(pathToFileURL(path.join(assetsDir, 'gameplayConfigLoaders.js')).href);
+  const achievementsModule = await import(pathToFileURL(path.join(assetsDir, 'achievementsTab.js')).href);
+  return {
+    configuration: configurationModule,
+    towersTab: towersTabModule,
+    codex: codexModule,
+    levels: levelsModule,
+    loaders: loadersModule,
+    achievements: achievementsModule,
+  };
+}
+
 // Import a fresh compiled shared-context module for each state-sensitive test.
 function importBlueprintContextModule() {
   return importAsEsm('assets/towerEquations/blueprintContext.js');
@@ -4143,6 +4256,311 @@ async function run() {
     registry.reset();
     assert.equal(registry.getAllStates().size, 0);
     assert.equal(registry.getState('t1'), null);
+  });
+
+  // --- assets/gameplayConfigLoaders.js -------------------------------------
+  await test('gameplay config loaders: fallback URL, fetch chain, and embedded lookup remain exact', async () => {
+    const loaders = await importAsEsm('assets/gameplayConfigLoaders.js');
+    assert.equal(loaders.resolveFallbackUrl('./data/config.json'), null);
+    const fetchCalls = [];
+    const originalFetch = globalThis.fetch;
+    try {
+      globalThis.fetch = async (url, options) => {
+        fetchCalls.push([url, options]);
+        if (url === 'https://ok.example/config.json') {
+          return { ok: true, json: async () => ({ from: url }) };
+        }
+        if (url === 'https://bad.example/config.json') {
+          return { ok: false, status: 503 };
+        }
+        throw new Error(`network refused: ${url}`);
+      };
+      assert.deepEqual(
+        await loaders.fetchJsonWithFallback('https://ok.example/config.json', './data/config.json'),
+        { from: 'https://ok.example/config.json' },
+      );
+      assert.deepEqual(fetchCalls, [
+        ['https://ok.example/config.json', { cache: 'no-store' }],
+      ]);
+      await assert.rejects(
+        loaders.fetchJsonWithFallback('https://bad.example/config.json', './data/config.json'),
+        /Failed to load JSON from https:\/\/bad\.example\/config\.json: 503/,
+      );
+      await assert.rejects(
+        loaders.fetchJsonWithFallback('https://down.example/config.json', './data/config.json'),
+        /network refused/,
+      );
+      await assert.rejects(loaders.fetchJsonWithFallback(null, './data/config.json'), /JSON fetch failed/);
+      globalThis.fetch = undefined;
+      await assert.rejects(
+        loaders.loadGameplayConfigViaFetch('https://ok.example/config.json', './data/config.json'),
+        /Fetch API is unavailable/,
+      );
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+    const globalRoot = globalThis;
+    const embedded = { defaults: {} };
+    try {
+      globalRoot.__THERO_EMBEDDED_GAMEPLAY_CONFIG__ = embedded;
+      assert.equal(loaders.getEmbeddedGameplayConfig(), embedded);
+      globalRoot.__THERO_EMBEDDED_GAMEPLAY_CONFIG__ = 'not-an-object';
+      assert.equal(loaders.getEmbeddedGameplayConfig(), null);
+      globalRoot.__CUSTOM_CONFIG_KEY__ = embedded;
+      assert.equal(loaders.getEmbeddedGameplayConfig('__CUSTOM_CONFIG_KEY__'), embedded);
+    } finally {
+      delete globalRoot.__THERO_EMBEDDED_GAMEPLAY_CONFIG__;
+      delete globalRoot.__CUSTOM_CONFIG_KEY__;
+    }
+    assert.equal(await loaders.importJsonModule(''), null);
+  });
+
+  // --- assets/enemies.js ---------------------------------------------------
+  await test('enemy shells: definitions, seeded assignment, and sprite gating remain exact', async () => {
+    const enemies = await importAsEsm('assets/enemies.js');
+    assert.equal(enemies.ENEMY_SHELL_DEFINITIONS.length, 10);
+    assert.equal(enemies.ENEMY_SHELL_DEFINITIONS[0].id, 'armadillo_blue');
+    assert.equal(enemies.ENEMY_SHELL_DEFINITIONS[4].backSprite, null);
+    const originalRandom = Math.random;
+    try {
+      Math.random = () => 0.45;
+      const enemy = {};
+      enemies.assignRandomShell(enemy);
+      const expected = enemies.ENEMY_SHELL_DEFINITIONS[4];
+      assert.equal(enemy.shellId, expected.id);
+      assert.equal(enemy.shellFrontSprite, expected.frontSprite);
+      assert.equal(enemy.shellBackSprite, expected.backSprite);
+      Math.random = () => 0;
+      enemies.assignRandomShell(enemy);
+      assert.equal(enemy.shellId, expected.id);
+      enemies.assignRandomShell(null);
+    } finally {
+      Math.random = originalRandom;
+    }
+    assert.equal(enemies.getEnemyShellSprites(null), null);
+    assert.equal(enemies.getEnemyShellSprites({}), null);
+    // Node has no Image constructor, so sprites never cache and gating returns null.
+    assert.equal(
+      enemies.getEnemyShellSprites({ shellFrontSprite: 'front.png', shellBackSprite: 'back.png' }),
+      null,
+    );
+  });
+
+  // --- assets/levels.js ----------------------------------------------------
+  await test('levels: clone helpers and configuration normalization remain exact', async () => {
+    const levels = await importLevelsModule();
+    assert.deepEqual(levels.cloneVectorArray('nope'), []);
+    assert.deepEqual(levels.cloneVectorArray([{ x: 1, y: NaN }, null, { x: '2', y: 3 }]), [
+      { x: 1, y: 0 },
+      { x: 2, y: 3 },
+    ]);
+    assert.deepEqual(levels.cloneWaveArray([null])[0], {
+      count: 0, interval: 1, hp: 0, speed: 0, reward: 0,
+    });
+    const cloned = levels.cloneWaveArray([{ count: '4', interval: 2, extra: 'kept', enemyGroups: [{ count: 1 }] }])[0];
+    assert.deepEqual(cloned, {
+      count: 0, interval: 2, hp: 0, speed: 0, reward: 0,
+      extra: 'kept', minionCount: undefined, enemyGroups: [{ count: 1 }],
+    });
+    levels.setLevelBlueprints([{ id: 'L1', isStoryLevel: 1 }, { id: 'L2' }]);
+    assert.equal(levels.levelBlueprints[0].isStoryLevel, true);
+    assert.equal(levels.levelLookup.get('L2').isStoryLevel, false);
+    levels.setLevelConfigs([
+      null,
+      { id: 'L1', waves: '1:2A1e2/1.5', path: [{ x: 0.1, y: 0.2 }] },
+      { id: 'Developer - Test Range', waves: [] },
+    ]);
+    const parsed = levels.levelConfigs.get('L1');
+    assert.equal(parsed.waves.length, 1);
+    assert.equal(parsed.waves[0].hp, 100);
+    assert.deepEqual(parsed.path, [{ x: 0.1, y: 0.2 }]);
+    const testRange = levels.levelConfigs.get('Developer - Test Range');
+    assert.equal(testRange.lives, Number.POSITIVE_INFINITY);
+    assert.equal(testRange.preventDefeat, true);
+    assert.equal(testRange.endlessCycleHpMultiplier, 100);
+    assert.equal(testRange.waves.length, 20);
+    assert.deepEqual(testRange.waves[0], {
+      label: 'Epsilon Type calibration', count: 1, interval: 5,
+      hp: 10000, speed: 0.05, reward: 0, color: '#4a90e2', codexId: 'etype',
+    });
+    assert.equal(levels.isStoryOnlyLevel('L1'), true);
+    assert.equal(levels.isStoryOnlyLevel('missing'), false);
+  });
+
+  await test('levels: progression, unlock chain, and multiplier overrides remain exact', async () => {
+    const levels = await importLevelsModule();
+    levels.setLevelBlueprints([{ id: 'A' }, { id: 'B' }, { id: 'C' }]);
+    levels.setLevelConfigs([{ id: 'A', waves: [] }, { id: 'B', waves: [] }, { id: 'C', waves: [] }]);
+    assert.deepEqual(levels.initializeInteractiveLevelProgression(), ['A', 'B', 'C']);
+    assert.equal(levels.isLevelUnlocked('A'), true);
+    assert.equal(levels.isLevelUnlocked('B'), false);
+    assert.equal(levels.isLevelUnlocked('not-interactive'), true);
+    levels.setDeveloperModeUnlockOverride(true);
+    assert.equal(levels.isLevelUnlocked('B'), true);
+    levels.setDeveloperModeUnlockOverride(false);
+    levels.levelState.set('A', { completed: true });
+    levels.unlockNextInteractiveLevel('A');
+    assert.equal(levels.isLevelUnlocked('B'), true);
+    assert.equal(levels.isLevelUnlocked('C'), false);
+    assert.equal(levels.getCompletedInteractiveLevelCount(), 1);
+    assert.equal(levels.getBaseStartingTheroMultiplier(3), 8);
+    assert.equal(levels.getStartingTheroMultiplier(), 2);
+    assert.equal(levels.setDeveloperTheroMultiplierOverride(5), 5);
+    assert.equal(levels.getStartingTheroMultiplier(), 5);
+    assert.equal(levels.setDeveloperTheroMultiplierOverride(-1), null);
+    assert.equal(levels.getStartingTheroMultiplier(), 2);
+    assert.equal(levels.isSecretLevelId('The Secret Vault'), true);
+    assert.equal(levels.isSecretLevelId('Prologue - 1'), false);
+    assert.equal(levels.getPreviousInteractiveLevelId('B'), 'A');
+    assert.equal(levels.getPreviousInteractiveLevelId('A'), null);
+  });
+
+  await test('levels: progress snapshot round trip and prologue migration remain exact', async () => {
+    const levels = await importLevelsModule();
+    levels.setLevelBlueprints([
+      { id: 'Prologue - 1' }, { id: 'Prologue - 2' }, { id: 'Prologue - 3' },
+      { id: 'Prologue - Story', isStoryLevel: true }, { id: 'Next' },
+    ]);
+    levels.setLevelConfigs([
+      { id: 'Prologue - 1', waves: [] }, { id: 'Prologue - 2', waves: [] },
+      { id: 'Prologue - 3', waves: [] }, { id: 'Next', waves: [] },
+    ]);
+    levels.initializeInteractiveLevelProgression();
+    levels.levelState.set('Prologue - 1', {
+      entered: true, completed: true, bestWave: 7.5,
+      lastResult: { outcome: 'victory', timestamp: 123, stats: { kills: 9, bogus: NaN } },
+    });
+    const snapshot = levels.getLevelProgressSnapshot();
+    assert.deepEqual(snapshot, {
+      version: 1,
+      unlocked: ['Prologue - 1'],
+      state: [{
+        id: 'Prologue - 1', entered: true, completed: true, bestWave: 7.5,
+        lastResult: { outcome: 'victory', timestamp: 123, stats: { kills: 9 } },
+      }],
+    });
+    assert.equal(levels.applyLevelProgressSnapshot(null), false);
+    const restored = levels.applyLevelProgressSnapshot({
+      state: [
+        { id: 'Prologue - 1', completed: true },
+        { id: 'Prologue - 2', completed: true },
+        { id: 'Prologue - 3', completed: true },
+        null,
+      ],
+      unlocked: ['Prologue - 1', 'Prologue - 2', 'Prologue - 3', 'unknown'],
+    });
+    assert.equal(restored, true);
+    // Prologue migration marks the story level complete and unlocked.
+    assert.equal(levels.unlockedLevels.has('Prologue - Story'), true);
+    assert.deepEqual(levels.levelState.get('Prologue - Story'), {
+      entered: true, running: false, completed: true, storySeen: true,
+    });
+    // Empty unlock list rebuilds the chain from completed state.
+    levels.applyLevelProgressSnapshot({
+      state: [{ id: 'Prologue - 1', completed: true }],
+      unlocked: [],
+    });
+    assert.equal(levels.unlockedLevels.has('Prologue - 1'), true);
+    assert.equal(levels.unlockedLevels.has('Prologue - 2'), true);
+  });
+
+  // --- assets/configuration.js ---------------------------------------------
+  await test('configuration: applied defaults, loadout normalization, and ladder mirrors remain exact', async () => {
+    const { configuration, towersTab, codex, levels, loaders, achievements } =
+      await importConfigurationModule();
+    const baseResources = {};
+    const resourceState = {};
+    configuration.registerResourceContainers({ baseResources, resourceState });
+    loaders.loaderBehavior.fetchResult = {
+      defaults: {
+        towerLoadoutLimit: 3.9,
+        baseStartThero: 200,
+        baseCoreIntegrity: 500,
+        initialTowerLoadout: ['beta', 'beta', 'nope', 'alpha', 'gamma'],
+        initialUnlockedTowers: ['gamma', 'nope'],
+      },
+      enemies: [{ id: 'prime' }],
+      maps: [
+        { id: 'M1', title: 'T1', campaign: 'Story', path: 'p' },
+        { id: 'Old Ladder', campaign: 'Ladder' },
+        { id: 'Dev Ladder', campaign: 'Ladder', developerOnly: true },
+        { id: 'S1', campaign: 'Story', isStoryLevel: true },
+      ],
+      levels: [{ id: 'M1', displayName: 'D1' }],
+    };
+    const applied = await configuration.ensureGameplayConfigLoaded();
+    assert.equal(configuration.getTowerLoadoutLimit(), 3);
+    assert.equal(configuration.getBaseStartThero(), 200);
+    assert.equal(configuration.getBaseCoreIntegrity(), 500);
+    assert.equal(baseResources.score, 800);
+    assert.equal(resourceState.score, 800);
+    assert.deepEqual(
+      [baseResources.scoreRate, baseResources.energyRate, baseResources.fluxRate],
+      [1, 0, 0],
+    );
+    assert.deepEqual(towersTab.loadoutState.selected, ['beta', 'alpha', 'gamma']);
+    assert.deepEqual(Array.from(towersTab.unlockState.unlocked).sort(), ['alpha', 'beta', 'gamma']);
+    assert.deepEqual(towersTab.calls.filter(([name]) => name === 'setMergingLogicUnlocked'), [
+      ['setMergingLogicUnlocked', true],
+    ]);
+    assert.deepEqual(codex.codexCalls, [[{ id: 'prime' }]]);
+    const ladderMaps = applied.maps.filter((map) => map.campaign === 'Ladder');
+    assert.deepEqual(ladderMaps, [
+      { id: 'Dev Ladder', campaign: 'Ladder', developerOnly: true },
+      {
+        id: 'Ladder - M1', title: 'T1 (Endless)', campaign: 'Ladder', path: 'p',
+        focus: 'p', example: 'Endless mirror of the story map.', forceEndlessMode: true,
+      },
+    ]);
+    assert.deepEqual(applied.levels[1], {
+      id: 'Ladder - M1', displayName: 'D1 (Endless)', campaign: 'Ladder',
+      forceEndlessMode: true, isStoryLevel: false,
+    });
+    assert.deepEqual(achievements.achievementCalls, ['generateLevelAchievements']);
+    assert.deepEqual(
+      levels.levelCalls.map(([name]) => name),
+      ['setLevelBlueprints', 'setLevelConfigs', 'initializeInteractiveLevelProgression', 'pruneLevelState'],
+    );
+    // A second call reuses the cached configuration without invoking loaders.
+    loaders.loaderBehavior.calls.length = 0;
+    assert.equal(await configuration.ensureGameplayConfigLoaded(), applied);
+    assert.deepEqual(loaders.loaderBehavior.calls, []);
+    assert.equal(configuration.getGameplayConfigData(), applied);
+    configuration.resetGameplayConfigCache();
+    assert.equal(configuration.getGameplayConfigData(), null);
+  });
+
+  await test('configuration: loader fallback order, setter guards, and starting Thero remain exact', async () => {
+    const { configuration, loaders, levels } = await importConfigurationModule();
+    configuration.registerResourceContainers({ baseResources: {}, resourceState: {} });
+    loaders.loaderBehavior.fetchError = new Error('fetch down');
+    loaders.loaderBehavior.embedded = { defaults: { baseStartThero: 75 } };
+    await configuration.ensureGameplayConfigLoaded();
+    assert.deepEqual(loaders.loaderBehavior.calls, ['fetch', 'embedded']);
+    assert.equal(configuration.getBaseStartThero(), 75);
+    configuration.resetGameplayConfigCache();
+    loaders.loaderBehavior.calls.length = 0;
+    loaders.loaderBehavior.embedded = null;
+    loaders.loaderBehavior.moduleResult = { defaults: {} };
+    await configuration.ensureGameplayConfigLoaded();
+    assert.deepEqual(loaders.loaderBehavior.calls, ['fetch', 'embedded', 'module']);
+    assert.equal(configuration.getBaseStartThero(), 50);
+    configuration.resetGameplayConfigCache();
+    loaders.loaderBehavior.moduleResult = null;
+    await assert.rejects(configuration.ensureGameplayConfigLoaded(), /fetch down/);
+    levels.multiplierBox.value = 3;
+    configuration.setBaseStartThero(100);
+    assert.equal(configuration.calculateStartingThero(), 300);
+    configuration.setBaseStartThero(-5);
+    assert.equal(configuration.getBaseStartThero(), 100);
+    configuration.setBaseCoreIntegrity(0);
+    assert.equal(configuration.getBaseCoreIntegrity(), 100);
+    configuration.setBaseCoreIntegrity(250);
+    assert.equal(configuration.getBaseCoreIntegrity(), 250);
+    configuration.overrideTowerLoadoutLimit(NaN);
+    assert.equal(configuration.getTowerLoadoutLimit(), 2);
+    configuration.overrideTowerLoadoutLimit(4.7);
+    assert.equal(configuration.getTowerLoadoutLimit(), 4);
   });
 
   // --- assets/towerEquations/index.js ------------------------------------
