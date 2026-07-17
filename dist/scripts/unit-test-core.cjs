@@ -292,6 +292,10 @@ async function importAdvancedEquationModule(exportName) {
      export function formatGameNumber(value) {
        formatCalls.push(['game', value]);
        return \`game:\${String(value)}\`;
+     }
+     export function formatPercentage(value) {
+       formatCalls.push(['percent', value]);
+       return \`percent:\${String(value)}\`;
      }`,
   );
   const equationModule = await import(pathToFileURL(equationDest).href);
@@ -2498,6 +2502,561 @@ async function run() {
     assert.equal(output, 'component:12 = component:4 × whole:3');
     assert.deepEqual(calls, [12, 4]);
     assert.deepEqual(formatCalls, [['whole', 3]]);
+  });
+
+  // --- assets/towerEquations/advanced/omicronEquation.js -----------------
+  await test('Omicron equation: metadata, references, costs, and value formatting remain exact', async () => {
+    const { equation: omicron, formatCalls } = await importAdvancedEquationModule('omicron');
+    assert.equal(omicron.mathSymbol, 'ο');
+    assert.equal(omicron.baseEquation, String.raw`\( ο = \delta \times \xi \)`);
+    assert.deepEqual(omicron.variables.map(({ key, upgradable }) => ({ key, upgradable })), [
+      { key: 'delta', upgradable: false },
+      { key: 'xi', upgradable: false },
+      { key: 'aleph1', upgradable: true },
+      { key: 'aleph2', upgradable: true },
+      { key: 'aleph3', upgradable: true },
+    ]);
+    assert.deepEqual(omicron.variables.slice(0, 2).map((variable) => variable.reference), [
+      'delta', 'xi',
+    ]);
+    const [delta, xi, aleph1, aleph2, aleph3] = omicron.variables;
+    assert.deepEqual([
+      aleph1.cost(-3), aleph1.cost(2.5),
+      aleph2.cost(-3), aleph2.cost(2.5),
+      aleph3.cost(-3), aleph3.cost(2.5),
+    ], [1, 16, 1, 17, 1, 20.5]);
+    assert.equal(delta.format(-2), 'game:0');
+    assert.equal(xi.format(4.5), 'decimal:4.5:2');
+    assert.equal(aleph1.format(3), 'decimal:4:2%');
+    assert.equal(aleph2.format(3), 'decimal:1.3:2 m/s');
+    assert.equal(aleph3.format(3), 'whole:4 units');
+    assert.deepEqual(formatCalls, [
+      ['game', 0], ['decimal', 4.5, 2], ['decimal', 4, 2],
+      ['decimal', 1.3, 2], ['whole', 4],
+    ]);
+  });
+
+  await test('Omicron equation: Delta sub-equations preserve helper call counts and spawn-rate math', async () => {
+    const { equation: omicron, blueprintContext, formatCalls } =
+      await importAdvancedEquationModule('omicron');
+    const calls = [];
+    const deltaBlueprint = { id: 'delta-blueprint' };
+    blueprintContext.calculateTowerEquationResult = (towerId) => {
+      calls.push(['result', towerId]);
+      return 4;
+    };
+    blueprintContext.getTowerEquationBlueprint = (towerId) => {
+      calls.push(['blueprint', towerId]);
+      return deltaBlueprint;
+    };
+    blueprintContext.computeTowerVariableValue = (towerId, variableKey, blueprint) => {
+      calls.push(['variable', towerId, variableKey, blueprint]);
+      return 2;
+    };
+    assert.deepEqual(omicron.variables[0].getSubEquations({
+      blueprint: null, towerId: 'omicron', value: 10,
+    }), [
+      { expression: String.raw`\( atk = \delta \times \xi \)` },
+      { values: String.raw`\( game:40 = game:10 \times game:4 \)`, variant: 'values' },
+      { expression: String.raw`\( \text{spd} = \text{spd}_{\delta} / 5 \)` },
+      { values: String.raw`\( decimal:0.008:3 = decimal:0.04:3 / 5 \)`, variant: 'values' },
+    ]);
+    assert.deepEqual(calls, [
+      ['result', 'xi'], ['result', 'xi'],
+      ['blueprint', 'delta'],
+      ['variable', 'delta', 'aleph1', deltaBlueprint],
+      ['variable', 'delta', 'aleph1', deltaBlueprint],
+    ]);
+    assert.deepEqual(formatCalls, [
+      ['game', 40], ['game', 10], ['game', 4],
+      ['decimal', 0.008, 3], ['decimal', 0.04, 3],
+    ]);
+    formatCalls.length = 0;
+    blueprintContext.calculateTowerEquationResult = null;
+    blueprintContext.getTowerEquationBlueprint = null;
+    blueprintContext.computeTowerVariableValue = null;
+    assert.deepEqual(omicron.variables[0].getSubEquations({
+      blueprint: null, towerId: 'omicron', value: NaN,
+    }), [
+      { expression: String.raw`\( atk = \delta \times \xi \)` },
+      { values: String.raw`\( game:0 = game:0 \times game:0 \)`, variant: 'values' },
+      { expression: String.raw`\( \text{spd} = \text{spd}_{\delta} / 5 \)` },
+      { values: String.raw`\( decimal:0.04:3 = decimal:0.2:3 / 5 \)`, variant: 'values' },
+    ]);
+  });
+
+  await test('Omicron equation: Xi sub-equations, result fallbacks, and base formatting stay exact', async () => {
+    const { equation: omicron, blueprintContext } = await importAdvancedEquationModule('omicron');
+    const calls = [];
+    blueprintContext.calculateTowerEquationResult = (towerId) => {
+      calls.push(towerId);
+      return towerId === 'delta' ? 3 : 5;
+    };
+    assert.deepEqual(omicron.variables[1].getSubEquations({
+      blueprint: null, towerId: 'omicron', value: NaN,
+    }), [
+      { expression: String.raw`\( atk = \delta \times \xi \)` },
+      { values: String.raw`\( game:0 = game:3 \times game:0 \)`, variant: 'values' },
+    ]);
+    assert.deepEqual(calls, ['delta', 'delta']);
+    assert.equal(omicron.computeResult({ delta: 4, xi: 5 }), 20);
+    calls.length = 0;
+    assert.equal(omicron.computeResult({ delta: '4', xi: Infinity }), 15);
+    assert.deepEqual(calls, ['delta', 'delta', 'xi', 'xi']);
+    blueprintContext.calculateTowerEquationResult = null;
+    assert.equal(omicron.computeResult({}), 0);
+    const componentCalls = [];
+    const output = omicron.formatBaseEquationValues({
+      values: { delta: 4, xi: -5 },
+      result: -20,
+      formatComponent(value) {
+        componentCalls.push(value);
+        return `component:${value}`;
+      },
+    });
+    assert.equal(output, 'component:-20 = component:4 × component:0');
+    assert.deepEqual(componentCalls, [-20, 4, 0]);
+  });
+
+  await test('Omicron equation: golden equation emits literal \\times LaTeX with no tab character', async () => {
+    // Authorized display fix: the original JS used `\times` inside a plain
+    // template literal, which JavaScript interprets as TAB + "imes" and breaks
+    // the golden equation on the omicron tower card. The migrated source must
+    // emit the literal `\times` LaTeX operator like every other blueprint.
+    const { equation: omicron } = await importAdvancedEquationModule('omicron');
+    const output = omicron.formatGoldenEquation({
+      formatVariable: (key) => `var:${key}`,
+      formatResult: () => 'result:o',
+    });
+    assert.equal(output, '\\( result:o = var:delta \\times var:xi \\)');
+    assert.ok(!output.includes('\t'), 'golden equation must not contain a raw tab character');
+  });
+
+  // --- assets/towerEquations/advanced/piEquation.js ----------------------
+  await test('Pi equation: metadata, glyph identity, costs, and value formatting remain exact', async () => {
+    const { equation: pi, formatCalls } = await importAdvancedEquationModule('pi');
+    assert.equal(pi.mathSymbol, String.raw`\pi`);
+    assert.equal(pi.baseEquation, String.raw`\( \pi = \omicron^{|\theta| / (100 - \text{Bet}_{1})} \)`);
+    assert.deepEqual(pi.variables.map(({ key, upgradable }) => ({ key, upgradable })), [
+      { key: 'omicron', upgradable: false },
+      { key: 'bet1', upgradable: true },
+      { key: 'lamed1', upgradable: true },
+      { key: 'rng', upgradable: false },
+    ]);
+    const [omicron, bet1, lamed1, rng] = pi.variables;
+    assert.equal(bet1.symbol, '⁦בּ₁⁩');
+    assert.equal(bet1.glyphLabel, '⁦בּ₁⁩');
+    assert.deepEqual(
+      [bet1.glyphCurrency, bet1.maxLevel, lamed1.glyphCurrency, lamed1.maxLevel],
+      ['aleph', 50, 'aleph', 10],
+    );
+    assert.deepEqual([
+      bet1.cost(-3), bet1.cost(NaN), bet1.cost(2.9),
+      lamed1.cost(-3), lamed1.cost(2.9),
+    ], [2, 2, 8, 5, 15]);
+    assert.equal(omicron.format(4.5), 'decimal:4.5:2');
+    assert.equal(bet1.format(150), 'whole:1 divisor');
+    assert.equal(bet1.format(NaN), 'whole:100 divisor');
+    assert.equal(lamed1.format(2.5), 'whole:4.5 lasers');
+    assert.equal(rng.format(999), 'decimal:4:2m');
+    assert.deepEqual([rng.baseValue, rng.includeInMasterEquation], [4, false]);
+    assert.deepEqual(formatCalls, [
+      ['decimal', 4.5, 2], ['whole', 1], ['whole', 100],
+      ['whole', 4.5], ['decimal', 4, 2],
+    ]);
+  });
+
+  await test('Pi equation: Omicron sub-equations preserve blueprint fallback and the 180° example', async () => {
+    const { equation: pi, blueprintContext, formatCalls } = await importAdvancedEquationModule('pi');
+    const calls = [];
+    const piBlueprint = { id: 'pi-blueprint' };
+    blueprintContext.getTowerEquationBlueprint = (towerId) => {
+      calls.push(['blueprint', towerId]);
+      return piBlueprint;
+    };
+    blueprintContext.computeTowerVariableValue = (towerId, variableKey, blueprint) => {
+      calls.push(['variable', towerId, variableKey, blueprint]);
+      return 60;
+    };
+    const attack = Math.pow(2, 180 / 40);
+    assert.deepEqual(pi.variables[0].getSubEquations({
+      blueprint: null, towerId: 'pi', value: 2,
+    }), [
+      { expression: String.raw`\( \text{atk} = \omicron^{|\theta| / (100 - \text{Bet}_{1})} \)` },
+      {
+        values: String.raw`\( game:${attack} = decimal:2:2^{180 / whole:40} \text{ (at } 180°) \)`,
+        variant: 'values',
+      },
+    ]);
+    assert.deepEqual(calls, [['blueprint', 'pi'], ['variable', 'pi', 'bet1', piBlueprint]]);
+    assert.deepEqual(formatCalls, [['game', attack], ['decimal', 2, 2], ['whole', 40]]);
+  });
+
+  await test('Pi equation: Bet₁ and Lamed₁ sub-equations preserve divisor math and the glyph line', async () => {
+    const { equation: pi, blueprintContext, formatCalls } = await importAdvancedEquationModule('pi');
+    const calls = [];
+    blueprintContext.calculateTowerEquationResult = (towerId) => {
+      calls.push(towerId);
+      return 2;
+    };
+    const attack = Math.pow(2, 360 / 97);
+    assert.deepEqual(pi.variables[1].getSubEquations({
+      blueprint: {}, towerId: 'pi', level: 3.7, value: NaN,
+    }), [
+      { expression: String.raw`\( \text{divisor} = 100 - \text{Bet}_{1} \)` },
+      { values: String.raw`\( whole:97 = 100 - whole:3 \)`, variant: 'values' },
+      {
+        expression: String.raw`\( \text{dmg at } 360° = game:${attack} \)`,
+        variant: 'values',
+        glyphEquation: true,
+      },
+    ]);
+    assert.deepEqual(calls, ['omicron']);
+    assert.deepEqual(formatCalls, [['whole', 97], ['whole', 3], ['game', attack]]);
+    formatCalls.length = 0;
+    assert.deepEqual(pi.variables[2].getSubEquations({ level: 2.9, value: NaN }), [
+      { expression: String.raw`\( \text{numLaser} = 2 + \text{Lamed}_{1} \)` },
+      { values: String.raw`\( whole:4 = 2 + whole:2 \)`, variant: 'values' },
+    ]);
+    assert.deepEqual(pi.variables[3].getSubEquations(), [
+      { expression: String.raw`\( \text{rng} = 4\text{m} \)` },
+    ]);
+    assert.deepEqual(formatCalls, [['whole', 4], ['whole', 2]]);
+  });
+
+  await test('Pi equation: result clamps, helper fallback, and base formatting remain exact', async () => {
+    const { equation: pi, blueprintContext } = await importAdvancedEquationModule('pi');
+    assert.equal(pi.computeResult({ omicron: 4, bet1: 90 }), Math.pow(4, 36));
+    assert.equal(pi.computeResult({ omicron: 4, bet1: 200 }), Math.pow(4, 50));
+    assert.equal(pi.computeResult({ omicron: 0.5, bet1: 0 }), 1);
+    const calls = [];
+    blueprintContext.calculateTowerEquationResult = (towerId) => {
+      calls.push(towerId);
+      return 2;
+    };
+    assert.equal(pi.computeResult({ bet1: 40 }), Math.pow(2, 6));
+    assert.deepEqual(calls, ['omicron']);
+    blueprintContext.calculateTowerEquationResult = () => NaN;
+    assert.equal(pi.computeResult({}), 1);
+    const componentCalls = [];
+    const output = pi.formatBaseEquationValues({
+      values: { omicron: 3, bet1: 50 },
+      result: 7,
+      formatComponent(value) {
+        componentCalls.push(value);
+        return `component:${value}`;
+      },
+    });
+    assert.equal(output, 'component:7 = component:3^{360°/component:50}');
+    assert.deepEqual(componentCalls, [7, 3, 50]);
+  });
+
+  // --- assets/towerEquations/advanced/chiEquation.js ----------------------
+  await test('Chi equation: metadata and Phi-squared core computations remain exact', async () => {
+    const { equation: chi, blueprintContext } = await importAdvancedEquationModule('chi');
+    assert.equal(chi.mathSymbol, String.raw`\chi`);
+    assert.equal(
+      chi.baseEquation,
+      String.raw`\( \chi = \text{core} \times \text{hpFrac} \times (1 + \text{spd}) \times \text{thralls} \)`,
+    );
+    assert.deepEqual(chi.variables.map(({ key, upgradable }) => ({ key, upgradable })), [
+      { key: 'phiAnchor', upgradable: false },
+      { key: 'core', upgradable: false },
+      { key: 'healthFraction', upgradable: false },
+      { key: 'speedBonus', upgradable: false },
+      { key: 'maxThralls', upgradable: false },
+    ]);
+    assert.equal(chi.variables[0].reference, 'phi');
+    assert.deepEqual(chi.variables.map((variable) => variable.includeInMasterEquation), [
+      false, true, true, true, true,
+    ]);
+    const calls = [];
+    blueprintContext.calculateTowerEquationResult = (towerId) => {
+      calls.push(towerId);
+      return 3;
+    };
+    const [, core, healthFraction, speedBonus, maxThralls] = chi.variables;
+    assert.equal(core.computeValue(), 9);
+    const normalized = Math.log10(10);
+    assert.equal(healthFraction.computeValue(), 0.28 + normalized * 0.05);
+    assert.equal(speedBonus.computeValue(), 0.12 + normalized * 0.035);
+    assert.equal(maxThralls.computeValue(), 3);
+    assert.deepEqual(calls, ['phi', 'phi', 'phi', 'phi']);
+    blueprintContext.calculateTowerEquationResult = () => 0;
+    assert.equal(core.computeValue(), 1);
+    blueprintContext.calculateTowerEquationResult = null;
+    assert.equal(core.computeValue(), 1);
+  });
+
+  await test('Chi equation: sub-equations preserve clamp displays and percentage formatting', async () => {
+    const { equation: chi, blueprintContext, formatCalls } = await importAdvancedEquationModule('chi');
+    blueprintContext.calculateTowerEquationResult = () => 3;
+    const [phiAnchor, , healthFraction, , maxThralls] = chi.variables;
+    assert.deepEqual(phiAnchor.getSubEquations({ value: NaN }), [
+      { expression: String.raw`\( \phi_{\text{anchor}} = \phi \)` },
+      { values: String.raw`\( game:3 = \phi \)` },
+    ]);
+    assert.deepEqual(healthFraction.getSubEquations({ value: NaN }), [
+      {
+        expression: String.raw`\( \text{hpFrac} = \operatorname{clamp}(0.28 + \log_{10}(\chi_{\text{core}} + 1) \times 0.05,\,0.25,\,0.85) \)`,
+      },
+      {
+        values: String.raw`\( percent:0.33 = \operatorname{clamp}(0.28 + decimal:1:2 \times 0.05,\,0.25,\,0.85) \)`,
+        variant: 'values',
+      },
+    ]);
+    assert.deepEqual(maxThralls.getSubEquations({ value: 7.4 }), [
+      { expression: String.raw`\( \text{thralls} = 2 + \left\lfloor \log_{10}(\chi_{\text{core}} + 1) \right\rceil \)` },
+      { values: String.raw`\( whole:7.4 = 2 + \left\lfloor decimal:1:2 \right\rceil \)`, variant: 'values' },
+    ]);
+    assert.deepEqual(formatCalls, [
+      ['game', 3],
+      ['percent', 0.33], ['decimal', 1, 2],
+      ['whole', 7.4], ['decimal', 1, 2],
+    ]);
+  });
+
+  await test('Chi equation: result coercion, clamping, and base formatting remain exact', async () => {
+    const { equation: chi, formatCalls } = await importAdvancedEquationModule('chi');
+    assert.equal(
+      chi.computeResult({ core: 9, healthFraction: 0.5, speedBonus: 0.5, maxThralls: 3 }),
+      20.25,
+    );
+    assert.equal(
+      chi.computeResult({ core: '2', healthFraction: 0, speedBonus: -3, maxThralls: '0' }),
+      0.5,
+    );
+    assert.equal(chi.computeResult({}), 0.25);
+    const componentCalls = [];
+    const output = chi.formatBaseEquationValues({
+      values: { core: 4, healthFraction: 0.9, speedBonus: 0.25, maxThralls: 2.5 },
+      result: 11,
+      formatComponent(value) {
+        componentCalls.push(value);
+        return `component:${value}`;
+      },
+    });
+    assert.equal(output, 'component:11 = component:4 × percent:0.85 × component:1.25 × component:2.5');
+    assert.deepEqual(componentCalls, [11, 4, 1.25, 2.5]);
+    assert.deepEqual(formatCalls, [['percent', 0.85]]);
+  });
+
+  // --- assets/towerEquations/advanced/psiEquation.js ----------------------
+  await test('Psi equation: metadata, glyph labels, and every cost curve remain exact', async () => {
+    const { equation: psi } = await importAdvancedEquationModule('psi');
+    assert.equal(psi.mathSymbol, String.raw`\psi`);
+    assert.equal(
+      psi.baseEquation,
+      String.raw`\( \psi = \text{merge}_{\text{CD}} \times \text{count}_{\text{max}} \)`,
+    );
+    assert.deepEqual(psi.variables.map(({ key, glyphLabel }) => ({ key, glyphLabel })), [
+      { key: 'mergeCooldown', glyphLabel: 'ℵ₁' },
+      { key: 'maxMergeCount', glyphLabel: 'ℵ₂' },
+      { key: 'mergeSpeedExponent', glyphLabel: 'ℵ₃' },
+      { key: 'aoeRadiusMultiplier', glyphLabel: 'ℵ₄' },
+      { key: 'aoeDamageMultiplier', glyphLabel: 'ℵ₅' },
+      { key: 'rangeMeters', glyphLabel: 'ℵ₆' },
+      { key: 'allowBossMerges', glyphLabel: 'ℵ₇' },
+    ]);
+    assert.deepEqual(psi.variables.map((variable) => variable.includeInMasterEquation), [
+      true, true, false, false, false, false, false,
+    ]);
+    assert.deepEqual(psi.variables.map((variable) => variable.cost(0)), [
+      140, 180, 150, 190, 200, 160, 500,
+    ]);
+    assert.deepEqual(psi.variables.map((variable) => variable.cost(2.9)), [
+      219, 314, 246, 321, 365, 258, Number.MAX_SAFE_INTEGER,
+    ]);
+    assert.deepEqual(psi.variables.map((variable) => variable.cost(-5)), [
+      140, 180, 150, 190, 200, 160, 500,
+    ]);
+  });
+
+  await test('Psi equation: value formatting and upgrade metadata remain exact', async () => {
+    const { equation: psi } = await importAdvancedEquationModule('psi');
+    const [cooldown, count, exponent, radius, damage, range, boss] = psi.variables;
+    assert.deepEqual(psi.variables.map(({ baseValue, step }) => [baseValue, step]), [
+      [6.0, -0.5], [3, 1], [0.5, 0.05], [1.0, 0.15], [1.0, 0.2], [7.0, 0.5], [0, 1],
+    ]);
+    assert.equal(cooldown.format(NaN), 'decimal:0.5:2s');
+    assert.equal(cooldown.format(4.25), 'decimal:4.25:2s');
+    assert.equal(count.format(5.7), 'whole:5 enemies');
+    assert.equal(exponent.format(0), 'decimal:0.1:3');
+    assert.equal(radius.format(1.5), 'decimal:1.5:2× (decimal:3:2m)');
+    assert.equal(damage.format(-2), 'decimal:0:2× HP');
+    assert.equal(range.format(0), 'decimal:0.5:2m');
+    assert.equal(boss.format(1), 'Enabled');
+    assert.equal(boss.format(0.9), 'Disabled');
+  });
+
+  await test('Psi equation: sub-equations preserve rank derivation and quantized displays', async () => {
+    const { equation: psi, formatCalls } = await importAdvancedEquationModule('psi');
+    const [cooldown, count, exponent, radius, damage, range, boss] = psi.variables;
+    assert.deepEqual(cooldown.getSubEquations({ value: 4.2 }), [
+      { expression: String.raw`\( \text{CD} = 6.0 - 0.5 \times \aleph_{1} \)` },
+      { expression: String.raw`\( \text{CD} \ge 0.5\,\text{s} \)` },
+      { values: String.raw`\( decimal:4.5:2\,\text{s} = 6.0 - 0.5 \times whole:3 \)`, variant: 'values' },
+    ]);
+    assert.deepEqual(count.getSubEquations({ value: 7.9 }), [
+      { expression: String.raw`\( \text{count}_{\text{max}} = 3 + \aleph_{2} \)` },
+      { expression: String.raw`\( \text{count}_{\text{max}} \ge 2 \)` },
+      { values: String.raw`\( whole:7 = 3 + whole:4 \)`, variant: 'values' },
+    ]);
+    assert.deepEqual(exponent.getSubEquations({ value: 0.65 }), [
+      { expression: String.raw`\( \text{exp}_{\text{spd}} = 0.5 + 0.05 \times \aleph_{3} \)` },
+      { expression: String.raw`\( \text{speed}_{\psi} = \overline{\text{speed}}^{\text{exp}_{\text{spd}}} \)` },
+      { values: String.raw`\( decimal:0.65:3 = 0.5 + 0.05 \times whole:3 \)`, variant: 'values' },
+    ]);
+    assert.deepEqual(radius.getSubEquations({ value: 1.45 }), [
+      { expression: String.raw`\( \text{R}_{\text{AoE}} = 1.0 + 0.15 \times \aleph_{4} \)` },
+      { expression: String.raw`\( \text{radius} = 2.0 \times \text{R}_{\text{AoE}} \)` },
+      { values: String.raw`\( decimal:2.9:2\,\text{m} = 2.0 \times decimal:1.45:2 \)`, variant: 'values' },
+    ]);
+    assert.deepEqual(damage.getSubEquations({ value: 1.4 }), [
+      { expression: String.raw`\( \text{D}_{\text{AoE}} = 1.0 + 0.2 \times \aleph_{5} \)` },
+      { expression: String.raw`\( \text{dmg}_{\text{AoE}} = \text{HP}_{\psi} \times \text{D}_{\text{AoE}} \)` },
+      { values: String.raw`\( decimal:1.4:2 = 1.0 + 0.2 \times whole:1 \)`, variant: 'values' },
+    ]);
+    assert.deepEqual(range.getSubEquations({ value: 9.5 }), [
+      { expression: String.raw`\( m = 7.0 + 0.5 \times \aleph_{6} \)` },
+      { values: String.raw`\( decimal:9.5:2\,\text{m} = 7.0 + 0.5 \times whole:5 \)`, variant: 'values' },
+    ]);
+    assert.deepEqual(boss.getSubEquations({ value: 1 }), [
+      { expression: String.raw`\( \text{boss} = \aleph_{7} \ge 1 \)` },
+      { values: String.raw`\( \text{status} = \text{enabled} \)`, variant: 'values' },
+    ]);
+    assert.deepEqual(boss.getSubEquations({ value: 0.9 })[1], {
+      values: String.raw`\( \text{status} = \text{disabled} \)`,
+      variant: 'values',
+    });
+    assert.deepEqual(formatCalls, [
+      ['decimal', 4.5, 2], ['whole', 3],
+      ['whole', 7], ['whole', 4],
+      ['decimal', 0.65, 3], ['whole', 3],
+      ['decimal', 2.9, 2], ['decimal', 1.45, 2],
+      ['decimal', 1.4, 2], ['whole', 1],
+      ['decimal', 9.5, 2], ['whole', 5],
+    ]);
+  });
+
+  await test('Psi equation: utility result and base formatting remain exact', async () => {
+    const { equation: psi, formatCalls } = await importAdvancedEquationModule('psi');
+    assert.equal(psi.computeResult({ mergeCooldown: 4, maxMergeCount: 6 }), 15);
+    assert.equal(psi.computeResult({}), 5);
+    assert.equal(psi.computeResult({ mergeCooldown: 0.1, maxMergeCount: 1.9 }), 40);
+    const componentCalls = [];
+    const output = psi.formatBaseEquationValues({
+      values: { mergeCooldown: 4, maxMergeCount: 6.9 },
+      result: 15,
+      formatComponent(value) {
+        componentCalls.push(value);
+        return `component:${value}`;
+      },
+    });
+    assert.equal(output, 'component:15 = component:6 ÷ decimal:4:2');
+    assert.deepEqual(componentCalls, [15, 6]);
+    assert.deepEqual(formatCalls, [['decimal', 4, 2]]);
+  });
+
+  // --- assets/towerEquations/advanced/omegaEquation.js --------------------
+  await test('Omega equation: metadata, glyph labels, and cost curves remain exact', async () => {
+    const { equation: omega } = await importAdvancedEquationModule('omega');
+    assert.equal(omega.mathSymbol, String.raw`\Omega`);
+    assert.equal(omega.baseEquation, String.raw`\( \Omega = \text{slice} \times \text{HP}_{\text{max}} \)`);
+    assert.deepEqual(omega.variables.map(({ key, glyphLabel }) => ({ key, glyphLabel })), [
+      { key: 'omega_range', glyphLabel: 'ℵ₁' },
+      { key: 'omega_particleCount', glyphLabel: 'ℵ₂' },
+      { key: 'omega_cooldown', glyphLabel: 'ℵ₃' },
+      { key: 'omega_sliceFrac', glyphLabel: 'ℵ₄' },
+      { key: 'omega_priorityMode', glyphLabel: 'ℵ₅' },
+      { key: 'omega_multiMode', glyphLabel: 'ℵ₆' },
+    ]);
+    assert.deepEqual(omega.variables.map((variable) => variable.includeInMasterEquation), [
+      false, false, false, true, false, false,
+    ]);
+    assert.deepEqual(omega.variables.map((variable) => variable.cost(0)), [
+      400, 500, 600, 800, 150, 200,
+    ]);
+    assert.deepEqual(omega.variables.map((variable) => variable.cost(2.9)), [
+      784, 1051, 1350, 2048, Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER,
+    ]);
+    assert.deepEqual(omega.variables.map((variable) => variable.cost(-5)), [
+      400, 500, 600, 800, 150, 200,
+    ]);
+  });
+
+  await test('Omega equation: value formatting preserves derived ranges, caps, and mode labels', async () => {
+    const { equation: omega } = await importAdvancedEquationModule('omega');
+    const [range, particles, cooldown, slice, priority, multi] = omega.variables;
+    assert.equal(range.format(0.5), 'decimal:1.5:2× (decimal:10.5:2m)');
+    assert.equal(particles.format(5.7), 'whole:13 particles');
+    assert.equal(cooldown.format(1), 'decimal:2:2× (decimal:2:2s)');
+    assert.equal(slice.format(0.5), 'decimal:40:1%');
+    assert.equal(slice.format(-1), 'decimal:10:1%');
+    assert.equal(priority.format(1), 'Strongest (HP)');
+    assert.equal(priority.format(0.9), 'First (Exit)');
+    assert.equal(multi.format(1), 'Multi-target');
+    assert.equal(multi.format(NaN), 'Single-target');
+  });
+
+  await test('Omega equation: sub-equations preserve NaN fallbacks and derived displays', async () => {
+    const { equation: omega, formatCalls } = await importAdvancedEquationModule('omega');
+    const [range, particles, cooldown, slice, priority, multi] = omega.variables;
+    assert.deepEqual(range.getSubEquations({ value: NaN }), [
+      { expression: String.raw`\( \text{R}_{\Omega} = 1 + 0.15 \times \aleph_{1} \)` },
+      { expression: String.raw`\( \text{range} = 7.0 \times \text{R}_{\Omega} \)` },
+      { values: String.raw`\( decimal:14:2\,\text{m} = 7.0 \times decimal:2:2 \)`, variant: 'values' },
+    ]);
+    assert.deepEqual(particles.getSubEquations({ value: 5.9 }), [
+      { expression: String.raw`\( \text{N}_{\text{orb}} = 8 + 2 \times \aleph_{2} \)` },
+      { values: String.raw`\( whole:13 = 8 + 2 \times whole:2 \)`, variant: 'values' },
+    ]);
+    assert.deepEqual(cooldown.getSubEquations({ value: 1 }), [
+      { expression: String.raw`\( \text{C}^{-1} = 1 + 0.2 \times \aleph_{3} \)` },
+      { expression: String.raw`\( \text{cooldown} = 4.0 / \text{C}^{-1} \)` },
+      { values: String.raw`\( decimal:2:2\,\text{s} = 4.0 / decimal:2:2 \)`, variant: 'values' },
+    ]);
+    assert.deepEqual(slice.getSubEquations({ value: 0.045 }), [
+      { expression: String.raw`\( \text{slice} = \min(0.40, 0.10 + 0.015 \times \aleph_{4}) \)` },
+      {
+        values: String.raw`\( decimal:14.500000000000002:1\% = \min(40\%, 10\% + 1.5\% \times whole:3) \)`,
+        variant: 'values',
+      },
+    ]);
+    assert.deepEqual(priority.getSubEquations({ value: 1 }), [
+      { expression: String.raw`\( \text{mode}_{\text{pri}} = \aleph_{5} \ge 1 \)` },
+      { values: String.raw`\( \text{mode} = \text{strongest} \)`, variant: 'values' },
+    ]);
+    assert.deepEqual(multi.getSubEquations({ value: 0 }), [
+      { expression: String.raw`\( \text{mode}_{\text{dist}} = \aleph_{6} \ge 1 \)` },
+      { values: String.raw`\( \text{mode} = \text{single} \)`, variant: 'values' },
+    ]);
+    assert.deepEqual(formatCalls, [
+      ['decimal', 14, 2], ['decimal', 2, 2],
+      ['whole', 13], ['whole', 2],
+      ['decimal', 2, 2], ['decimal', 2, 2],
+      ['decimal', 14.500000000000002, 1], ['whole', 3],
+    ]);
+  });
+
+  await test('Omega equation: slice-percentage result and base formatting remain exact', async () => {
+    const { equation: omega, formatCalls } = await importAdvancedEquationModule('omega');
+    assert.equal(omega.computeResult({ omega_sliceFrac: 5 }), 40);
+    assert.equal(omega.computeResult({}), 10);
+    assert.equal(omega.computeResult({ omega_sliceFrac: '0.1' }), 20);
+    assert.equal(omega.computeResult({ omega_sliceFrac: -3 }), 10);
+    const componentCalls = [];
+    const output = omega.formatBaseEquationValues({
+      values: { omega_sliceFrac: 5 },
+      result: 40,
+      formatComponent(value) {
+        componentCalls.push(value);
+        return `component:${value}`;
+      },
+    });
+    assert.equal(output, 'component:40% = decimal:40:1% of max HP');
+    assert.deepEqual(componentCalls, [40]);
+    assert.deepEqual(formatCalls, [['decimal', 40, 1]]);
   });
 
   // --- assets/towerEquations/index.js ------------------------------------

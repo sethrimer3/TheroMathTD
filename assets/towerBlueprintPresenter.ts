@@ -110,6 +110,10 @@ export interface TowerEquationVariable {
   lockedNote?: string;
   units?: string;
   glyphLabel?: string;
+  /** Glyph currency identifier read by the Towers-tab upgrade purchase flow. */
+  glyphCurrency?: string;
+  /** Inclusive upgrade-level cap read by the Towers tab and upgrade overlay. */
+  maxLevel?: number;
   attachedToVariable?: unknown;
   category?: unknown;
   includeInMasterEquation?: unknown;
